@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Polygon Package Importer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Polygon Package Importer</h1>
+    <button id="settings" class="link-button" type="button">설정</button>
+  </header>
+
+  <section id="needSetup" hidden>
+    <p>Polygon API 키를 등록해야 합니다.</p>
+    <button id="openSetup" class="primary" type="button">API 설정</button>
+  </section>
+
+  <section id="importForm" aria-label="패키지 가져오기">
+    <label for="zipFile">패키지 ZIP</label>
+    <input id="zipFile" type="file" accept=".zip,application/zip">
+    <p id="packageInfo" class="secondary" aria-live="polite">ZIP 파일을 선택하세요.</p>
+
+    <fieldset class="mode">
+      <legend>가져올 위치</legend>
+      <label><input type="radio" name="mode" value="create" checked> 새 문제</label>
+      <label><input type="radio" name="mode" value="replace"> 기존 문제</label>
+    </fieldset>
+
+    <div id="problemIdField" class="field" hidden>
+      <label for="problemId">Polygon 문제 ID</label>
+      <input id="problemId" type="text" inputmode="numeric" autocomplete="off" placeholder="123456">
+      <p class="secondary">ZIP에 없는 기존 항목은 삭제될 수 있습니다.</p>
+    </div>
+
+    <label class="checkbox"><input id="commit" type="checkbox" checked> 완료 후 커밋</label>
+    <button id="start" class="primary submit" type="button" disabled>가져오기</button>
+  </section>
+
+  <section id="progressSection" hidden aria-labelledby="progressTitle">
+    <div class="section-heading">
+      <h2 id="progressTitle">최근 작업</h2>
+      <button id="clearStatus" class="link-button" type="button" hidden>지우기</button>
+    </div>
+    <p id="jobSummary" class="secondary"></p>
+    <p id="stateLabel" role="status">상태 확인 중</p>
+    <div id="jobActions" hidden><button id="retry" type="button">다시 시도</button></div>
+    <details id="logDetails">
+      <summary>로그</summary>
+      <pre id="log"></pre>
+    </details>
+  </section>
+
+  <p id="error" role="alert" hidden></p>
+</main>
+<script type="module" src="popup.js"></script>
+</body>
+</html>

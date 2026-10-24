@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API 설정 · Polygon Package Importer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>API 설정</h1>
+    <p>Polygon Package Importer</p>
+  </header>
+
+  <section class="panel">
+    <div id="credentialStatus" class="status-line" role="status">확인 중</div>
+
+    <div id="credentialInitHelp" hidden>
+      <p class="error">저장소에 접근할 수 없습니다. 확장 프로그램을 새로고침해 주세요.</p>
+      <button id="retryCredentials" type="button">다시 확인</button>
+    </div>
+
+    <div id="credentialSetup" hidden>
+      <p class="help"><a href="https://polygon.codeforces.com/settings" target="_blank" rel="noopener">Polygon API 설정</a>에서 키를 발급받으세요.</p>
+      <label for="key">API Key</label>
+      <input id="key" type="password" autocomplete="off" spellcheck="false">
+      <label for="secret">API Secret</label>
+      <input id="secret" type="password" autocomplete="off" spellcheck="false">
+      <div class="actions">
+        <button id="saveCredentials" type="button" class="primary">저장</button>
+        <button id="cancelReplace" type="button" hidden>취소</button>
+      </div>
+    </div>
+
+    <div id="credentialMigration" hidden>
+      <p class="help">이전 버전의 API 키를 이전하려면 기존 보관함 암호를 입력하세요. 이 과정은 한 번만 필요합니다.</p>
+      <label for="legacyPassword">보관함 암호</label>
+      <input id="legacyPassword" type="password" autocomplete="off">
+      <div class="actions">
+        <button id="migrateCredentials" type="button" class="primary">기존 키 이전</button>
+      </div>
+    </div>
+
+    <div id="credentialManage" hidden>
+      <div class="actions">
+        <button id="replaceCredentials" type="button">키 변경</button>
+        <button id="deleteCredentials" type="button" class="danger">삭제</button>
+      </div>
+    </div>
+
+    <div id="credentialFeedback" class="feedback" role="status" aria-live="polite" hidden></div>
+  </section>
+
+  <p class="footnote">API 키는 이 Chrome 프로필에 암호화해 저장합니다. 공용 PC에서는 사용하지 마세요.</p>
+</main>
+<script type="module" src="settings.js"></script>
+</body>
+</html>
