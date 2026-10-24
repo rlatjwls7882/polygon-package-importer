@@ -1,91 +1,59 @@
-# Chrome Web Store 등록 정보
+# Chrome Web Store 등록 문구
 
-등록 양식에 붙여넣기 위한 자료입니다. 스토어에 업로드하거나 심사 제출하지 않은 상태입니다.
+Chrome 웹스토어에 붙여넣을 설명은 아래 일반 텍스트 파일을 사용합니다. 이 Markdown 문서의 제목이나 강조 기호를 복사하지 마세요.
 
-## 기본 정보
+| 항목 | 한국어 | 영어 |
+| --- | --- | --- |
+| 짧은 요약 | [summary-ko.txt](summary-ko.txt) | [summary-en.txt](summary-en.txt) |
+| 상세 설명 | [description-ko.txt](description-ko.txt) | [description-en.txt](description-en.txt) |
 
-- 이름: **Polygon ZIP Uploader**
-- 주 언어: 한국어
+상세 설명 파일에는 Markdown, HTML, 이모지 장식, 반복 키워드를 사용하지 않았습니다. 줄바꿈과 일반 텍스트 항목으로 작성했습니다.
+
+## 등록 정보
+
+- 이름: Polygon ZIP Uploader
 - 카테고리: 개발자 도구(Developer Tools)
 - 가격: 무료
-- 배포: 공개(Public)
-- 홈페이지: https://github.com/rlatjwls7882/polygon-package-importer
+- GitHub: https://github.com/rlatjwls7882/polygon-package-importer
 - 지원: https://github.com/rlatjwls7882/polygon-package-importer/issues
 - 개인정보 처리방침: https://github.com/rlatjwls7882/polygon-package-importer/blob/main/PRIVACY.md
-- 아이콘: `store-assets/store-icon-128.png`
-- 스크린샷: `store-assets/screenshots/`
+- 아이콘: [store-icon-128.png](store-icon-128.png)
+- 스크린샷: [screenshots/01-popup.png](screenshots/01-popup.png)
+- 확장 프로그램 배포 ZIP: https://github.com/rlatjwls7882/polygon-package-importer/releases/tag/v0.6.0
 
-## 짧은 설명 (한국어)
+현재 확장 프로그램 v0.6.0의 팝업과 설정 화면은 한국어입니다. 영어 텍스트는 추후 영어 로케일을 지원할 때 사용할 번역본으로 준비했습니다. Chrome 웹스토어에서 언어별 상세 설명을 별도로 노출하려면 확장 프로그램의 로케일 설정(`_locales/en`, `_locales/ko` 및 `default_locale`)과 스토어 등록 언어가 일치해야 합니다. 현재 v0.6.0에 다국어 UI가 구현되어 있다고 표시하지 마세요.
 
-컴퓨터에 저장된 Polygon 문제 패키지 ZIP을 Codeforces Polygon에 업로드합니다. 새 문제를 만들거나 기존 문제의 내용을 갱신합니다.
+## 문구 검수 기준
 
-## Short description (English)
+- 로컬 ZIP을 통째로 서버에 저장하는 API가 아니라, ZIP의 구성요소를 읽어 Polygon API로 문제에 반영합니다.
+- 단일 문제 ZIP과 기본 `tests` 테스트셋을 지원하며 모든 패키지 설정을 완전히 복원한다고 주장하지 않습니다.
+- 팝업을 닫아도 업로드를 이어갈 수 있지만, 브라우저 종료 등으로 중단될 수 있습니다.
+- 기존 문제 갱신 시 ZIP에 없는 항목이 삭제될 수 있고 자동 백업 및 롤백은 없습니다.
+- Polygon 계정과 API Key·Secret이 필요합니다.
+- Codeforces의 공식 확장 프로그램이 아니며, 제휴·후원을 받았다는 인상을 주지 않습니다.
+- 심사 전 실제 Chrome과 Polygon 테스트 계정에서 ZIP 업로드를 종단 간 검증해야 합니다.
 
-Upload local Polygon problem-package ZIP files to Codeforces Polygon. Create new problems or update existing ones.
+## 심사 항목에 사용할 목적과 권한 설명
 
-## 상세 설명 (한국어)
+전용 목적: 컴퓨터에서 선택한 단일 Polygon 문제 패키지 ZIP을 분석하고, Codeforces Polygon API를 통해 새 문제를 생성하거나 사용자가 편집할 수 있는 기존 문제를 갱신합니다.
 
-컴퓨터에 저장된 Polygon 문제 패키지 ZIP을 선택해 Codeforces Polygon에 업로드할 수 있습니다. Polygon API로 새 문제를 생성하거나 기존 문제의 파일·지문·테스트를 갱신합니다.
+storage: 사용자가 입력한 Polygon API Key와 Secret을 암호화해 Chrome 프로필에 저장하고, 가져오기 진행 상태와 최근 로그를 보관하기 위해 사용합니다.
 
-- 로컬 ZIP에서 지문, 소스 코드, 솔루션, 테스트 및 기본 문제 설정 읽기
-- 새 문제 생성 또는 기존 문제 ID 지정
-- 기존 항목과 동일한 파일·테스트는 재전송하지 않음
-- 팝업을 닫아도 업로드 진행, 중단된 작업 재시도
-- Polygon API 요청 제한(HTTP 429)에 따른 대기 및 재시도
+offscreen: 팝업이 닫혀도 ZIP을 분석하고 Polygon API 업로드를 수행하기 위해 Offscreen Document를 사용합니다.
 
-**사용 조건:** Polygon 계정과 API Key·Secret이 필요합니다. 인증 정보는 Chrome 프로필에 암호화해 저장합니다.
+polygon.codeforces.com 호스트: 사용자가 요청한 문제의 조회·생성·갱신 및 결과 확인을 위해 해당 Polygon API에만 접근합니다. 다른 사이트의 웹페이지 내용이나 방문 기록을 읽기 위한 권한이 아닙니다.
 
-**제한:** 일부 특수 패키지 설정은 완전히 복원되지 않습니다. 컴파일러 버전과 결과를 Polygon에서 확인하세요. 기존 문제 덮어쓰기는 자동 백업과 롤백을 제공하지 않습니다. 중단 시 일부 항목만 변경될 수 있습니다.
+원격 코드: 사용하지 않습니다. 확장 프로그램의 스크립트는 배포 ZIP에 포함되어 있습니다. Polygon API로 데이터 요청을 보내는 것과 원격 JavaScript를 실행하는 것은 다릅니다.
 
-Codeforces에서 공식 제공하는 확장 프로그램이 아닙니다.
+사용자 데이터: Polygon API Key·Secret을 로컬에 암호화해 저장하고, 사용자가 선택한 ZIP 내용과 필요한 문제 정보를 Polygon API로 전송합니다. 개발자 자체 서버나 광고·추적 서비스로는 전송하지 않습니다. 개인정보 처리방침과 실제 구현을 기준으로 대시보드의 데이터 범주를 신고하세요.
 
-## Detailed description (English, optional)
+## 제출 전 확인
 
-Select a Polygon problem-package ZIP from your computer and upload its contents to Codeforces Polygon through the Polygon API. Create a new problem or update an existing problem by ID.
+- [ ] v0.6.0 ZIP을 Chrome에 설치해 실제 Polygon 테스트 계정으로 가져오기 확인
+- [ ] 설명과 실제 기능 및 컴파일러 제약이 일치하는지 확인
+- [ ] 개인정보 처리방침과 지원 URL을 공개 접근 가능한 상태로 유지
+- [ ] 개발자 계정 연락처, 심사 정보, 사용자 데이터 및 권한 사용 근거 입력
+- [ ] 기능을 설명하는 실제 확장 프로그램 스크린샷과 아이콘 업로드
+- [ ] 필요 시 심사용 계정과 테스트 문제 준비(운영 API Key는 공개 저장소에 올리지 않기)
 
-- Import statements, source files, solutions, tests and basic settings
-- Skip unchanged files and tests
-- Continue uploads when the popup closes
-- Retry interrupted imports and handle API rate limits
-
-A Polygon account and API Key/Secret are required. Credentials are encrypted in the local Chrome profile.
-
-Not all package features can be reconstructed exactly. Check compiler settings and uploaded files in Polygon. Existing problem updates have no automatic backup or rollback and may leave partial changes after interruption.
-
-This is an independent, unofficial extension.
-
-## Privacy practices (리뷰어 설명)
-
-**Single purpose:** 사용자가 컴퓨터에서 선택한 Polygon 문제 패키지 ZIP을 Codeforces Polygon API로 새 문제 또는 기존 문제에 업로드합니다.
-
-**권한 사용 목적**
-
-- `storage`: 암호화된 API 인증 정보와 작업 상태를 Chrome 프로필에 저장합니다.
-- `offscreen`: 팝업 종료 후에도 ZIP 분석 및 Polygon API 업로드를 계속 수행합니다.
-- `https://polygon.codeforces.com/*`: 사용자가 요청한 문제 생성·갱신 작업을 Polygon API로 전송합니다.
-
-**Remote code:** 사용하지 않습니다. 실행 로직은 확장 프로그램 안에 모두 들어 있습니다. 외부 통신은 Polygon API 요청뿐입니다.
-
-**User data:** 인증 정보(API Key·Secret)를 로컬에서 암호화해 저장합니다. 사용자가 선택한 ZIP에 포함된 지문·코드·테스트만 업로드 명령 후 Codeforces Polygon에 전송합니다. 개발자 서버에 전달하거나 판매하지 않습니다.
-
-스토어 대시보드의 사용자 데이터 선언은 업로드 시점의 실제 데이터 처리와 최신 정책에 맞춰 선택하세요. 인증 정보를 취급하므로 '민감한 정보를 처리하지 않음'으로 선언하지 마세요.
-
-## 리뷰어 테스트 안내
-
-1. 확장 프로그램 아이콘을 클릭하고 최초 API 설정 화면을 확인합니다.
-2. Polygon 테스트 계정으로 발급한 API Key와 Secret을 입력합니다.
-3. 팝업에서 테스트용 ZIP을 선택합니다.
-4. 리뷰어가 소유한 테스트 문제에 업로드하거나 새 문제를 생성합니다.
-5. Polygon에서 파일·테스트·Checker 등을 확인합니다.
-
-**리뷰어용 테스트 API 계정/키를 제공해야 할 수 있습니다.** 실제 운영 계정의 API Key·Secret은 저장소나 이 파일에 넣지 마세요.
-
-## 등록자가 직접 확인할 항목
-
-- [ ] Chrome 웹스토어 개발자 등록비, 2단계 인증, 개발자 연락처
-- [ ] 업로드 전 실제 Chrome + Polygon 계정으로 종단 간 테스트
-- [ ] 배포 ZIP, 버전 및 아이콘 확인
-- [ ] 개인정보 처리방침 URL 공개 접근 확인
-- [ ] 사용자 데이터·권한·원격 코드 선언 확인
-- [ ] 필요 시 리뷰어용 테스트 계정/API Key 마련
-- [ ] 배포 범위 및 스토어 제출 전 최종 확인
+관련 정책: https://developer.chrome.com/docs/webstore/program-policies/listing-requirements

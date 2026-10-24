@@ -30,6 +30,8 @@ jobs:
           node tests/test_credential_ui.mjs
           node tests/test_storage_errors.mjs
           node tests/test_vault.mjs
+      - name: Validate Store listing text
+        run: python tests/check_listing.py
       - name: Validate JavaScript syntax
         run: |
           for file in *.js; do node --check "$file"; done

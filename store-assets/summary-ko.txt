@@ -1,0 +1,1 @@
+컴퓨터의 Polygon 문제 패키지 ZIP을 Codeforces Polygon에 업로드해 새 문제를 만들거나 기존 문제를 갱신합니다.

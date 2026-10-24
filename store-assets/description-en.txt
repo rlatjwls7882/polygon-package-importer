@@ -1,0 +1,20 @@
+Polygon ZIP Uploader imports the contents of a Polygon problem-package ZIP saved on your computer into Codeforces Polygon. It reads the ZIP locally, then uses the Polygon API to create a problem or update an existing one.
+
+Features
+- Import problem statements, source files, solutions, tests, and basic settings from a ZIP package
+- Create a new problem or update an existing problem you have permission to edit
+- Compare against an existing problem and skip re-uploading unchanged files and tests
+- Keep an import running after closing the popup, or retry if it is interrupted
+
+How to use
+1. Enter your Polygon API key and secret in the extension settings.
+2. Select a problem-package ZIP containing problem.xml from your computer.
+3. Choose a new or existing problem and start the upload.
+4. Check the imported files and compiler settings in Polygon.
+
+Important
+- A Codeforces Polygon account and API credentials are required.
+- Only single-problem packages with the default tests test set are supported. Some special settings and compiler selections may need manual adjustment.
+- Updating an existing problem may remove items that are not in the ZIP. No automatic backup or rollback is provided.
+
+This is an independent extension and is not affiliated with or endorsed by Codeforces.
