@@ -5,7 +5,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 root = Path(__file__).resolve().parents[1]
 version = json.loads((root / 'manifest.json').read_text(encoding='utf-8'))['version']
-output = root / 'dist' / f'polygon-package-importer-v{version}.zip'
+output = root / 'dist' / f'polygon-zip-uploader-v{version}.zip'
 output.parent.mkdir(exist_ok=True)
 
 files = [
@@ -14,7 +14,7 @@ files = [
     'polygon-import.js', 'job-store.js', 'status.js',
     'api.js', 'sync.js', 'zip.js', 'model.js',
     'credential-store.js', 'credential-vault.js', 'credentials-ui.js',
-    'README.md', 'PRIVACY.md',
+    'LICENSE',
     'icons/icon16.png', 'icons/icon48.png', 'icons/icon128.png'
 ]
 

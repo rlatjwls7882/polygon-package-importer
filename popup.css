@@ -6,7 +6,7 @@
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { width: 376px; margin: 0; }
+body { width: 376px; margin: 0 auto; }
 main { padding: 16px; }
 
 header, .section-heading {

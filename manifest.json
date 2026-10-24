@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Polygon Package Importer",
-  "version": "0.5.2",
-  "description": "Import Polygon problem packages from ZIP files.",
+  "name": "Polygon ZIP Uploader",
+  "version": "0.6.0",
+  "description": "Upload local Polygon problem-package ZIP files to Codeforces Polygon. Create new problems or update existing ones.",
   "minimum_chrome_version": "118",
   "action": {
-    "default_title": "Polygon Package Importer",
+    "default_title": "Polygon ZIP Uploader",
     "default_popup": "popup.html"
   },
   "options_ui": {
@@ -16,8 +16,13 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["storage", "offscreen"],
-  "host_permissions": ["https://polygon.codeforces.com/*"],
+  "permissions": [
+    "storage",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://polygon.codeforces.com/*"
+  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

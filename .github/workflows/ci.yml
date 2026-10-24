@@ -1,0 +1,44 @@
+name: Test and package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run tests
+        run: |
+          python tests/run_logic.py
+          node tests/test_job_store.mjs
+          node tests/test_background.mjs
+          node tests/test_api_rate.mjs
+          node tests/test_credential_store.mjs
+          node tests/test_credential_ui.mjs
+          node tests/test_storage_errors.mjs
+          node tests/test_vault.mjs
+      - name: Validate JavaScript syntax
+        run: |
+          for file in *.js; do node --check "$file"; done
+      - name: Build Chrome Web Store package
+        run: |
+          python tests/build_release.py
+          python tests/check_release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chrome-web-store-package
+          path: dist/*.zip
+          if-no-files-found: error

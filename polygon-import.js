@@ -100,7 +100,7 @@ export async function executeImport({job, api, onProgress = async () => {}}) {
     if (job.commit && (changed || !!current?.modified)) {
       const commit = await step('변경 사항 커밋',
         () => api.problem('commitChanges', id,
-          {minorChanges:'true', message:'Import from Polygon Package Importer'}));
+          {minorChanges:'true', message:'Import from Polygon ZIP Uploader'}));
       if (!commit || commit.conflictOccurred ||
           (commit.committed !== true && commit.message !== 'No changes')) {
         throw Error('커밋 결과를 확인할 수 없습니다.');

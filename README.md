@@ -1,6 +1,6 @@
-# Polygon Package Importer
+# Polygon ZIP Uploader
 
-Codeforces Polygon 문제 패키지 ZIP을 가져오는 Chrome 확장 프로그램입니다. 새 문제를 생성하거나 기존 문제를 동기화할 수 있습니다.
+컴퓨터에 저장된 Polygon 문제 패키지 ZIP을 Codeforces Polygon에 직접 업로드하는 Chrome 확장 프로그램입니다. 새 문제를 생성하거나 기존 문제의 파일·지문·테스트를 갱신할 수 있습니다.
 
 - ZIP의 지문, 소스, 솔루션, Checker, Validator 및 테스트 복원
 - 기존 내용과 비교해 변경된 항목만 전송
@@ -21,7 +21,7 @@ Codeforces Polygon 문제 패키지 ZIP을 가져오는 Chrome 확장 프로그�
 1. 확장 프로그램 아이콘을 누릅니다. 처음에는 [Polygon API 설정](https://polygon.codeforces.com/settings)에서 발급받은 Key와 Secret을 등록해야 합니다.
 2. 팝업에서 Polygon 패키지 ZIP을 선택합니다.
 3. **새 문제** 또는 **기존 문제**를 선택합니다. 기존 문제를 변경하려면 문제 ID를 입력합니다.
-4. 필요하면 **완료 후 커밋**을 해제하고 **가져오기**를 누릅니다.
+4. 필요하면 **완료 후 커밋**을 해제하고 **Polygon에 업로드**를 누릅니다.
 
 업로드 상태는 팝업을 다시 열어 확인할 수 있습니다. 중단된 작업은 **다시 시도**로 이어서 동기화합니다.
 
@@ -70,6 +70,8 @@ python tests/check_release.py
 
 결과물은 `dist/`에 생성됩니다. 테스트는 실제 Polygon 문제를 수정하지 않습니다.
 
+스토어 등록용 설명과 이미지 파일은 [store-assets/LISTING.md](store-assets/LISTING.md)에 정리해 뒀습니다.
+
 ## 권한
 
 | 권한 | 용도 |
@@ -81,3 +83,7 @@ python tests/check_release.py
 [Polygon API 문서](https://github.com/Codeforces/polygon-misc/blob/main/API.md)
 
 이 확장 프로그램은 Codeforces의 공식 제품이 아닙니다.
+
+## 라이선스
+
+[MIT License](LICENSE)

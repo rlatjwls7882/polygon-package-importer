@@ -37,12 +37,13 @@ async function processJob(jobId, encryptedRecord) {
         })
     });
 
-    await clearJob(jobId);
     await publish('IMPORT_COMPLETE', {
       jobId, phase:'done', progress:100, problemId:result.id,
       message:'완료 · 문제 #' + result.id + ' · 변경 ' +
         result.mutations + '개 · 생략 ' + result.skipped + '개'
     });
+    // Keep the ZIP until the completion state is safely recorded.
+    await clearJob(jobId).catch(() => {});
   } catch (error) {
     await publish('IMPORT_COMPLETE', {
       jobId, phase:'error',

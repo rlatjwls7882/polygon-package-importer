@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Polygon Package Importer</title>
+  <title>Polygon ZIP Uploader</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
 <main>
   <header>
-    <h1>Polygon Package Importer</h1>
+    <h1>Polygon ZIP Uploader</h1>
     <button id="settings" class="link-button" type="button">설정</button>
   </header>
 
@@ -19,7 +19,7 @@
   </section>
 
   <section id="importForm" aria-label="패키지 가져오기">
-    <label for="zipFile">패키지 ZIP</label>
+    <label for="zipFile">로컬 Polygon 패키지 ZIP</label>
     <input id="zipFile" type="file" accept=".zip,application/zip">
     <p id="packageInfo" class="secondary" aria-live="polite">ZIP 파일을 선택하세요.</p>
 
@@ -36,7 +36,8 @@
     </div>
 
     <label class="checkbox"><input id="commit" type="checkbox" checked> 완료 후 커밋</label>
-    <button id="start" class="primary submit" type="button" disabled>가져오기</button>
+    <button id="start" class="primary submit" type="button" disabled>Polygon에 업로드</button>
+    <p class="secondary">업로드를 누르면 선택한 파일이 Codeforces Polygon으로 전송됩니다.</p>
   </section>
 
   <section id="progressSection" hidden aria-labelledby="progressTitle">
