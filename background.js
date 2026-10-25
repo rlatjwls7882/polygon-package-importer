@@ -1,4 +1,4 @@
-import { readJob, clearJob } from './job-store.js';
+import { readJob, stageJob, clearJob } from './job-store.js';
 import { CREDENTIAL_KEY } from './credential-store.js';
 import { STATUS_KEY } from './status.js';
 
@@ -48,10 +48,20 @@ async function startImport(jobId) {
   starting = true;
   let prepared = false;
   try {
-    if ((await getStatus())?.phase === 'running') throw Error('이미 업로드 중입니다.');
+    const previous = await getStatus();
+    if (previous?.phase === 'running') throw Error('이미 업로드 중입니다.');
 
-    const job = await readJob();
+    let job = await readJob();
     if (job?.id !== jobId) throw Error('선택한 ZIP을 찾지 못했습니다.');
+    // Migrate failed create jobs saved by older versions so Retry doesn't
+    // create another Polygon problem when the original ID is already known.
+    const resumeId = String(previous?.problemId ?? '');
+    if (job.mode === 'create' && previous?.id === job.id &&
+        previous.phase === 'error' && previous.partial &&
+        /^[1-9]\d{0,11}$/.test(resumeId)) {
+      job = {...job, mode:'replace', problemId:resumeId};
+      await stageJob(job);
+    }
 
     const credentials = (await chrome.storage.local.get(CREDENTIAL_KEY))[CREDENTIAL_KEY];
     if (!credentials) throw Error('API 키를 등록하세요.');

@@ -211,10 +211,32 @@ assert(changedStatement.calls.indexOf('problem.saveStatement')<
 console.log('PASS: old images are deleted after replacement statement is saved');
 
 const created=await buildMock();
+let createdId = null;
 const newProblem=await executeImport({
-  job:{...job,mode:'create',problemId:null},api:created.api
+  job:{...job,mode:'create',problemId:null},api:created.api,
+  onCreated:id=>{
+    createdId=id;
+    assert.equal(created.calls.at(-1),'problem.create',
+      'save the created ID before sending any mutation');
+  }
 });
 assert.equal(newProblem.id,42);
+assert.equal(createdId,42);
 assert(!created.calls.includes('problem.statementResources'));
 assert(!created.calls.includes('problem.deleteStatementResource'));
 console.log('PASS: creating a fresh problem never queries or deletes old images');
+
+const failedSave=await buildMock();
+let knownId=null;
+await assert.rejects(()=>executeImport({
+  job:{...job,mode:'create',problemId:null},api:failedSave.api,
+  onCreated:id=>{knownId=id;throw Error('failed to store created ID');}
+}),error=>{
+  assert.match(error.message,/failed to store created ID/);
+  assert.equal(error.problemId,42);
+  assert.equal(error.partial,true);
+  return true;
+});
+assert.equal(knownId,42);
+assert(!failedSave.calls.some(s=>s.startsWith('problem.save') || s==='problem.updateInfo'));
+console.log('PASS: created ID is persisted before any upload and surfaced on failure');

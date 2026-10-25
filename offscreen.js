@@ -1,4 +1,4 @@
-import { readJob, clearJob } from './job-store.js';
+import { readJob, stageJob, clearJob } from './job-store.js';
 import { decryptCredentialRecord } from './credential-store.js';
 import { PolygonAPI } from './api.js';
 import { executeImport } from './polygon-import.js';
@@ -30,6 +30,9 @@ async function processJob(jobId, encryptedRecord) {
 
     const result = await executeImport({
       job, api,
+      // Persist the created ID before uploading any content. If the browser
+      // closes mid-upload, the stored job resumes against the same problem.
+      onCreated:id => stageJob({...job, mode:'replace', problemId:String(id)}),
       onProgress:({message,progress}) =>
         publish('IMPORT_PROGRESS', {
           jobId, message:api.safeDetail(message),
