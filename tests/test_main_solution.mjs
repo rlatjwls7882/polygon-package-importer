@@ -56,7 +56,8 @@ function fixture(initial, wanted, files = {}) {
     async run() {
       const snapshot = {solutions:[...state.values()].map(s => ({
         name:s.name, tag:s.tag, length:new TextEncoder().encode(s.content).length
-      })), statements:{}, files:{sourceFiles:[], resourceFiles:[], auxFiles:[]}, tests:[]};
+      })), statements:{}, statementResources:[],
+        files:{sourceFiles:[], resourceFiles:[], auxFiles:[]}, tests:[]};
       return syncPackage({api, id:883, plan, archive, target:snapshot,
         read:(label, fn) => fn(), write:(label, fn) => fn()});
     }
