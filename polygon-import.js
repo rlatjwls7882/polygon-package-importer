@@ -49,7 +49,7 @@ function assertCurrentTarget(before, listed) {
   }
 }
 
-export async function executeImport({job, api, onProgress = async () => {}}) {
+export async function executeImport({job, api, onProgress = async () => {}, onCreated = async () => {}}) {
   if (!job || !job.file || !['create','replace'].includes(job.mode)) {
     throw Error('가져오기 작업 정보가 올바르지 않습니다.');
   }
@@ -88,6 +88,7 @@ export async function executeImport({job, api, onProgress = async () => {}}) {
         throw Error('새 문제 생성 응답에 올바른 문제 ID가 없습니다.');
       }
       changed = true;
+      await onCreated(id);
     }
 
     result = await syncPackage({

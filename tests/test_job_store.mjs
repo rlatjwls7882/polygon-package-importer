@@ -15,6 +15,15 @@ assert.equal(restored.file.size, file.size);
 assert.equal(restored.problemId,'598703');
 console.log('PASS: selected ZIP blob is retained across popup lifetime in IndexedDB');
 
+// Once Polygon creates an ID, changing the stored job to 'replace' preserves
+// the ZIP so an interrupted upload never creates a duplicate problem.
+await stageJob({...restored, mode:'create', problemId:null});
+await stageJob({...await readJob(), mode:'replace', problemId:'583386'});
+const resumed=await readJob();
+assert.equal(resumed.problemId,'583386');
+assert.equal(resumed.file.size,file.size);
+console.log('PASS: created problem ID survives job updates with the ZIP intact');
+
 await clearJob('other-job');
 assert((await readJob())?.file);
 await clearJob(saved.id);

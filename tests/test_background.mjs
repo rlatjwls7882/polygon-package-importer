@@ -52,6 +52,10 @@ const chrome={
       if(created!==1) return;
       register((message,sender,respond)=>{
         if(message.type!=='IMPORT_EXECUTE') return;
+        if(message.jobId==='job-legacy') {
+          respond({ok:true});
+          return;
+        }
         assert.equal(message.jobId,'job-42');
         assert.equal(message.encryptedRecord.version,2);
         respond({ok:true});
@@ -111,3 +115,22 @@ assert.equal(recovered.status.phase,'error');
 assert(recovered.status.message.includes('중단'));
 assert.equal((await readJob()).id,interrupted.id);
 console.log('PASS: browser restart marks abandoned work as retryable');
+
+// Existing failed create jobs must resume the known problem, not create a
+// second one, even if they were staged by the old extension version.
+const legacy={...job,id:'job-legacy',mode:'create',problemId:null};
+await stageJob(legacy);
+await mock.chrome.storage.local.set({[STATUS_KEY]:{
+  id:legacy.id, phase:'error', partial:true,
+  problemId:583386, filename:legacy.filename, message:'file missing'
+}});
+const retry=await sendMessage({type:'IMPORT_START',jobId:legacy.id});
+assert.equal(retry.ok,true);
+const restored=await readJob();
+assert.equal(restored.mode,'replace');
+assert.equal(restored.problemId,'583386');
+assert.equal(restored.file.size,file.size);
+const resumed=await sendMessage({type:'IMPORT_QUERY'});
+assert.equal(resumed.status.mode,'replace');
+assert.equal(resumed.status.problemId,'583386');
+console.log('PASS: retry of a previously failed create reuses its problem ID');
