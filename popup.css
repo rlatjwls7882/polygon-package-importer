@@ -22,7 +22,7 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 p { margin: 0; }
 
 label, legend { font-weight: 550; }
-input[type="file"], input[type="text"] {
+input[type="file"], input[type="text"], input[type="password"] {
   display: block;
   width: 100%;
   margin-top: 7px;
@@ -41,7 +41,7 @@ input[type="file"]::file-selector-button {
   cursor: pointer;
 }
 
-input[type="text"] { height: 34px; }
+input[type="text"], input[type="password"] { height: 34px; }
 input[type="radio"], input[type="checkbox"] { margin: 0; accent-color: #2259b7; }
 
 button {
@@ -85,7 +85,19 @@ button.link-button:hover { text-decoration: underline; }
 .field { margin-top: 14px; }
 .checkbox { margin-top: 17px; }
 .submit { width: 100%; margin-top: 14px; }
-#needSetup p { margin-bottom: 12px; }
+#credentialPanel .section-heading { margin-bottom: 9px; }
+#credentialPanel .status-line { margin-bottom: 12px; color: #57606a; }
+#credentialPanel .status-line.error, #credentialPanel .feedback.error { color: #a12420; }
+#credentialPanel label { display: block; margin-top: 12px; }
+#credentialPanel input[type="password"] { background: #fff; }
+#credentialPanel .credential-help { margin-bottom: 12px; }
+#credentialPanel .credential-actions { display: flex; gap: 8px; margin-top: 16px; }
+#credentialPanel .feedback { margin-top: 12px; font-size: 12px; overflow-wrap: anywhere; }
+#credentialPanel .credential-note { margin-top: 16px; }
+#credentialPanel .error { margin-bottom: 9px; color: #a12420; }
+button.danger { color: #a12420; }
+a { color: #245ab8; text-decoration: none; }
+a:hover { text-decoration: underline; }
 
 #progressSection {
   margin-top: 20px;

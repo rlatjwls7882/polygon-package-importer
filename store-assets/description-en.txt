@@ -7,7 +7,7 @@ Features
 - Keep an import running after closing the popup, or retry if it is interrupted
 
 How to use
-1. Enter your Polygon API key and secret in the extension settings.
+1. Enter your Polygon API key and secret directly in the popup. If already registered, the upload form opens immediately.
 2. Select a problem-package ZIP containing problem.xml from your computer.
 3. Choose a new or existing problem and start the upload.
 4. Check the imported files and compiler settings in Polygon.

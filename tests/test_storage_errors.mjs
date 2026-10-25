@@ -29,7 +29,7 @@ globalThis.indexedDB=createFakeIndexedDB();
 const ui=new CredentialsUI();
 await ui.init();
 assert.equal(ui.state,'error');
-assert(elements.credentialStatus.textContent.includes('확장 프로그램 설정 페이지'));
+assert(elements.credentialStatus.textContent.includes('Chrome 확장 프로그램 팝업'));
 assert(!elements.credentialInitHelp.hidden);
 assert(elements.credentialSetup.hidden);
 console.log('PASS: direct file:// access is rejected');

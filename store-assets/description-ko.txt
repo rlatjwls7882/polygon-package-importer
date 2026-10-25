@@ -7,7 +7,7 @@ Polygon ZIP Uploader는 컴퓨터에 저장된 Polygon 문제 패키지 ZIP의 �
 - 팝업을 닫은 뒤에도 업로드 진행 및 중단된 작업 재시도
 
 사용 방법
-1. Polygon API Key와 Secret을 설정 화면에 등록합니다.
+1. 확장 프로그램 팝업에서 Polygon API Key와 Secret을 등록합니다. 등록된 경우 바로 ZIP 업로드 화면이 나타납니다.
 2. 컴퓨터에서 problem.xml이 포함된 문제 패키지 ZIP을 선택합니다.
 3. 새 문제 또는 기존 문제를 선택하고 업로드합니다.
 4. Polygon에서 가져온 파일과 컴파일러 설정을 확인합니다.
