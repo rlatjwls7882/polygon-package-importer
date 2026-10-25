@@ -256,9 +256,12 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   const toDelete = oldTests.filter(t =>
     !wantedTests.has(Number(t.index)) ||
     (t.manual && wantedTests.get(Number(t.index))?.method !== 'manual'));
-  for (const old of toDelete.sort((a, b) => Number(b.index) - Number(a.index))) {
-    await apply('불필요한 기존 테스트 삭제: ' + old.index,
-      () => api.problem('deleteTest', id, {testset:'tests', testIndex:old.index}), true);
+  if (toDelete.length) {
+    // Polygon supports deleting multiple tests in one atomic pre-check,
+    // avoiding one API round trip per obsolete manual test.
+    const testIndices = toDelete.map(t => Number(t.index)).sort((a, b) => b - a).join(',');
+    await apply('불필요한 기존 테스트 일괄 삭제: ' + toDelete.length + '개',
+      () => api.problem('deleteTest', id, {testset:'tests', testIndices}), true);
   }
   if (toDelete.length) {
     const snapshot = await read('테스트 삭제 후 현재 상태 확인',
