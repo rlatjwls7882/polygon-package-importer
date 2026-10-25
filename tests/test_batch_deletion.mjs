@@ -39,7 +39,7 @@ function fixture({failDeletion = false} = {}) {
   };
   const snapshot=()=>({
     files:{sourceFiles:[],resourceFiles:[],auxFiles:[]},
-    statements:{},solutions:[],tests:tests.map(t=>({...t}))
+    statements:{},statementResources:[],solutions:[],tests:tests.map(t=>({...t}))
   });
   const archive={async text(path){return path+'\n';}};
   const run=()=>syncPackage({api,id:42,plan,archive,target:snapshot(),

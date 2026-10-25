@@ -96,6 +96,8 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     throw Error('ZIP에 메인 솔루션이 여러 개 있습니다.');
   if (new Set(plan.solutions.map(s => s.name)).size !== plan.solutions.length)
     throw Error('ZIP에 이름이 중복된 솔루션이 있습니다.');
+  if (target && !Array.isArray(target.statementResources))
+    throw Error('기존 지문 첨부 리소스 목록을 조회하지 못해 덮어쓰기를 중단했습니다.');
 
   let mutations = 0, testMutations = 0, skipped = 0;
   const apply = async (label, fn, isTest = false) => {
@@ -366,6 +368,15 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
           Number(remote.index) === t.index && !!remote.manual === (t.method === 'manual'))))
       throw Error('업로드 후 테스트 개수·번호·생성 방식이 ZIP과 다릅니다.');
   } else unchanged('동일한 테스트 전체');
+
+  // Statement Resources (including images) are separate from problem.files.
+  // A ZIP without importable statement attachments must not leave older
+  // images on the problem. Delete them only after all other writes succeed.
+  // On interruption the next run re-reads Polygon and removes only survivors.
+  if (existing) for (const file of target.statementResources) {
+    await apply('기존 지문 첨부 파일 삭제: ' + file.name,
+      () => api.problem('deleteStatementResource', id, {name:file.name}));
+  }
 
   return {mutations, testMutations, skipped};
 }

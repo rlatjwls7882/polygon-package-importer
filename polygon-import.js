@@ -11,16 +11,19 @@ export async function readTarget(api, id, plan) {
     throw Error('문제 #' + id + '에 쓰기 권한이 없습니다.');
   }
 
-  const [tests, files, solutions, statements, stresses] = await Promise.all([
+  const [tests, files, solutions, statements, statementResources, stresses] = await Promise.all([
     api.problem('tests', id, { testset:'tests', noInputs:'false' }),
     api.problem('files', id),
     api.problem('solutions', id),
     api.problem('statements', id),
+    api.problem('statementResources', id),
     api.problem('stresses', id)
   ]);
 
-  if (!Array.isArray(tests) || !files || !Array.isArray(solutions) || !statements) {
-    throw Error('기존 문제의 정보를 완전히 읽지 못했습니다.');
+  if (!Array.isArray(tests) || !files || !Array.isArray(solutions) || !statements ||
+      !Array.isArray(statementResources) || statementResources.some(f =>
+        !f || typeof f.name !== 'string' || !f.name)) {
+    throw Error('기존 문제의 지문 첨부 리소스를 포함한 정보를 완전히 읽지 못했습니다.');
   }
   if (Array.isArray(stresses) && stresses.length) {
     throw Error('기존 문제에 Stress 테스트가 있어 덮어쓰기를 중단했습니다.');
@@ -31,7 +34,7 @@ export async function readTarget(api, id, plan) {
     plan.checkerTests.length ? api.problem('checkerTests', id) : Promise.resolve([])
   ]);
   return {
-    ...entry, tests, files, solutions, statements, validatorTests, checkerTests
+    ...entry, tests, files, solutions, statements, statementResources, validatorTests, checkerTests
   };
 }
 

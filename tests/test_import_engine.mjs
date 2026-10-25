@@ -71,6 +71,7 @@ async function buildMock() {
     entry:{id:42,revision:1,workingCopyRevision:1,modified:false,
       deleted:false,accessType:'OWNER',name:'demo',owner:'me'},
     tests,files,solutions:sols,statements:Object.fromEntries(plan.statements.map(s=>[s.lang,clone(s)])),
+    statementResources:[],
     tags:[...plan.tags], info:clone(plan.info),
     checker:plan.checker,validator:plan.validator,script:'gen 99 > 2',commit:0
   };
@@ -90,6 +91,7 @@ async function buildMock() {
         case 'files':return clone(state.files);
         case 'solutions':return clone(state.solutions);
         case 'statements':return clone(state.statements);
+        case 'statementResources':return clone(state.statementResources);
         case 'tests':return clone(state.tests);
         case 'checker':return state.checker;
         case 'validator':return state.validator;
@@ -109,6 +111,10 @@ async function buildMock() {
         case 'saveStatement':state.statements[args.lang]={...state.statements[args.lang],...args};return {};
         case 'saveFile':source.set(args.type+':'+args.name,args.file);return {};
         case 'saveSolution':solutions.set(args.name,args.file);return {};
+        case 'deleteStatementResource':
+          if(state.failDeletionName===args.name)throw Error('simulated statement resource deletion failure');
+          state.statementResources=state.statementResources.filter(f=>f.name!==args.name);
+          return {};
         case 'enableGroups':case 'enablePoints':case 'setChecker':case 'setValidator':
           return {};
         default:throw Error('Unexpected API call: '+method);
@@ -144,3 +150,71 @@ c.state.entry.accessType='READ';
 await assert.rejects(()=>executeImport({job,api:c.api}),/쓰기 권한/);
 assert(!c.calls.some(x=>x.startsWith('problem.save')||x.startsWith('problem.delete')));
 console.log('PASS: read-only target is rejected before modification');
+
+
+// The ZIP has no statement image attachments. Those from the old Polygon
+// problem are independent of problem.files and must be removed on overwrite.
+const images=await buildMock();
+images.state.statementResources=[
+  {name:'old-figure.png',length:1234},
+  {name:'unused-diagram.svg',length:567}
+];
+const imageResult=await executeImport({job,api:images.api});
+assert.equal(imageResult.mutations,2);
+assert.equal(images.state.statementResources.length,0);
+assert.equal(images.state.commit,1);
+assert.equal(images.calls.filter(c=>c==='problem.deleteStatementResource').length,2);
+assert(!images.calls.includes('problem.deleteFile'));
+assert(!images.calls.includes('problem.saveStatement'));
+assert(images.calls.indexOf('problem.deleteStatementResource')<
+       images.calls.indexOf('problem.commitChanges'));
+console.log('PASS: overwrite clears stale statement images without altering ordinary files');
+
+const beforeRetry=images.calls.length;
+const imageRetry=await executeImport({job,api:images.api});
+assert.equal(imageRetry.mutations,0);
+assert.equal(imageRetry.committed,false);
+assert(!images.calls.slice(beforeRetry).includes('problem.deleteStatementResource'));
+console.log('PASS: another overwrite does not re-delete statement images');
+
+// Partial failures leave the surviving resources for the next re-read.
+const interrupted=await buildMock();
+interrupted.state.statementResources=[{name:'first.png'},{name:'second.jpg'}];
+interrupted.state.failDeletionName='second.jpg';
+await assert.rejects(()=>executeImport({job,api:interrupted.api}),
+  /simulated statement resource deletion failure/);
+assert.deepEqual(interrupted.state.statementResources.map(f=>f.name),['second.jpg']);
+assert.equal(interrupted.state.commit,0);
+interrupted.state.failDeletionName=null;
+const resumed=await executeImport({job,api:interrupted.api});
+assert.equal(resumed.mutations,1);
+assert.equal(resumed.committed,true);
+assert.deepEqual(interrupted.state.statementResources,[]);
+console.log('PASS: failed image cleanup resumes using Polygon remote state');
+
+// A malformed response must block destructive changes before any writes.
+const unreadable=await buildMock();
+unreadable.state.statementResources=null;
+await assert.rejects(()=>executeImport({job,api:unreadable.api}),
+  /지문 첨부 리소스를 포함한 정보를 완전히 읽지/);
+assert(!unreadable.calls.some(c=>/^problem\.(?:save|delete|updateInfo|commitChanges)/.test(c)));
+console.log('PASS: unreadable statement resources fail closed before mutations');
+
+
+const changedStatement=await buildMock();
+changedStatement.state.statements.english.legend='old legend';
+changedStatement.state.statementResources=[{name:'old-illustration.png'}];
+await executeImport({job,api:changedStatement.api});
+assert(changedStatement.calls.indexOf('problem.saveStatement')>=0);
+assert(changedStatement.calls.indexOf('problem.saveStatement')<
+       changedStatement.calls.indexOf('problem.deleteStatementResource'));
+console.log('PASS: old images are deleted after replacement statement is saved');
+
+const created=await buildMock();
+const newProblem=await executeImport({
+  job:{...job,mode:'create',problemId:null},api:created.api
+});
+assert.equal(newProblem.id,42);
+assert(!created.calls.includes('problem.statementResources'));
+assert(!created.calls.includes('problem.deleteStatementResource'));
+console.log('PASS: creating a fresh problem never queries or deletes old images');

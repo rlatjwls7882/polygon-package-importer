@@ -95,6 +95,7 @@ const api = {
 function snapshot() {
   return {tests:remoteTests.map(x=>({...x})), files:remoteFiles,
     solutions:remoteSolutions,statements:Object.fromEntries(plan.statements.map(s=>[s.lang,s])),
+    statementResources:[],
     resources:[],validatorTests:[],checkerTests:[],groups:[]};
 }
 async function run() {
