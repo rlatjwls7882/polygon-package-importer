@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Polygon ZIP Uploader",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Upload local Polygon problem-package ZIP files to Codeforces Polygon. Create new problems or update existing ones.",
   "minimum_chrome_version": "118",
   "action": {

@@ -23,6 +23,7 @@ jobs:
       - name: Run tests
         run: |
           python tests/run_logic.py
+          node tests/test_main_solution.mjs
           node tests/test_job_store.mjs
           node tests/test_background.mjs
           node tests/test_api_rate.mjs
