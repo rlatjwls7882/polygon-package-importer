@@ -170,8 +170,12 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     // are removed only after the new main has been uploaded successfully.
     const retained = plan.solutions.find(s => s.name === previousMain.name);
     const tag = retained?.tag ?? 'OK';
+    const original = await read('기존 메인 솔루션 내용 확인: ' + previousMain.name,
+      () => api.problem('viewSolution', id, {name:previousMain.name}, {raw:true}));
+    if (typeof original !== 'string' || !original.length)
+      throw Error('기존 메인 솔루션 내용을 읽지 못해 태그 변경을 중단했습니다: ' + previousMain.name);
     await apply('기존 메인 솔루션 태그 변경: ' + previousMain.name,
-      () => api.problem('saveSolution', id, {name:previousMain.name, tag}));
+      () => api.problem('saveSolution', id, {name:previousMain.name, tag, file:original}));
     remoteSolutions.set(previousMain.name, {...previousMain, tag});
   }
   for (const solution of plan.solutions) {
@@ -189,7 +193,7 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     const tagDiff = !old || old.tag !== solution.tag;
     if (same && !tagDiff) unchanged('솔루션: ' + solution.name);
     else await apply('솔루션 저장: ' + solution.name, () => api.problem('saveSolution', id, {
-      name:solution.name, ...(!same ? {file:localContent} : {}), ...(tagDiff ? {tag:solution.tag} : {})
+      name:solution.name, file:localContent, ...(tagDiff ? {tag:solution.tag} : {})
     }));
   }
 
