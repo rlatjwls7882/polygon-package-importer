@@ -90,6 +90,13 @@ function indexMap(values) {
 }
 
 export async function syncPackage({api, id, plan, archive, target = null, read, write, skip}) {
+  // Polygon permits only one MA solution. Reject ambiguous packages before
+  // any writes, rather than leaving a partially updated working copy.
+  if (plan.solutions.filter(s => s.tag === 'MA').length > 1)
+    throw Error('ZIP에 메인 솔루션이 여러 개 있습니다.');
+  if (new Set(plan.solutions.map(s => s.name)).size !== plan.solutions.length)
+    throw Error('ZIP에 이름이 중복된 솔루션이 있습니다.');
+
   let mutations = 0, testMutations = 0, skipped = 0;
   const apply = async (label, fn, isTest = false) => {
     // Mark mutation before sending; timeouts/unknown server errors may have committed.
@@ -153,6 +160,18 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   }
 
   const remoteSolutions = new Map((target?.solutions || []).map(s => [s.name, s]));
+  const wantedMain = plan.solutions.find(s => s.tag === 'MA');
+  const previousMain = (target?.solutions || []).find(s => s.tag === 'MA');
+  if (wantedMain && previousMain && previousMain.name !== wantedMain.name) {
+    // saveSolution(tag=MA) is rejected while another solution has that tag.
+    // Demote the old main without deleting its content; obsolete solutions
+    // are removed only after the new main has been uploaded successfully.
+    const retained = plan.solutions.find(s => s.name === previousMain.name);
+    const tag = retained?.tag ?? 'OK';
+    await apply('기존 메인 솔루션 태그 변경: ' + previousMain.name,
+      () => api.problem('saveSolution', id, {name:previousMain.name, tag}));
+    remoteSolutions.set(previousMain.name, {...previousMain, tag});
+  }
   for (const solution of plan.solutions) {
     const old = remoteSolutions.get(solution.name);
     const localContent = await archive.text(solution.path);

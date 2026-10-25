@@ -3,6 +3,7 @@
 컴퓨터에 저장된 Polygon 문제 패키지 ZIP을 Codeforces Polygon에 직접 업로드하는 Chrome 확장 프로그램입니다. 새 문제를 생성하거나 기존 문제의 파일·지문·테스트를 갱신할 수 있습니다.
 
 - ZIP의 지문, 소스, 솔루션, Checker, Validator 및 테스트 복원
+- 기존 메인 솔루션과 이름이 다른 새 MCS도 태그 충돌 없이 교체
 - 기존 내용과 비교해 변경된 항목만 전송
 - 팝업을 닫아도 업로드 진행, 중단된 작업 재시도
 - HTTP 429 요청 제한에 대한 대기 및 재시도
@@ -48,6 +49,7 @@ Node.js 22 이상과 Python 3이 필요합니다.
 
 ```bash
 python tests/run_logic.py
+node tests/test_main_solution.mjs
 node tests/test_background.mjs
 node tests/test_api_rate.mjs
 node tests/test_credential_store.mjs
