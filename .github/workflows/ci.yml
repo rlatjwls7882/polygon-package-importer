@@ -27,6 +27,7 @@ jobs:
           node tests/test_job_store.mjs
           node tests/test_background.mjs
           node tests/test_api_rate.mjs
+          node tests/test_batch_deletion.mjs
           node tests/test_credential_store.mjs
           node tests/test_credential_ui.mjs
           node tests/test_storage_errors.mjs

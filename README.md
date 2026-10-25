@@ -6,6 +6,8 @@
 - 기존 메인 솔루션과 이름이 다른 새 MCS도 태그 충돌 없이 교체
 - 기존 내용과 비교해 변경된 항목만 전송
 - 팝업을 닫아도 업로드 진행, 중단된 작업 재시도
+- 기본 API 요청 간격을 3.2초에서 1.2초로 단축하고 요청 제한이 발생하면 자동으로 감속
+- 불필요한 기존 테스트는 일괄 삭제해 API 호출 수 절약
 - HTTP 429 요청 제한에 대한 대기 및 재시도
 
 ## 설치
@@ -52,6 +54,7 @@ python tests/run_logic.py
 node tests/test_main_solution.mjs
 node tests/test_background.mjs
 node tests/test_api_rate.mjs
+node tests/test_batch_deletion.mjs
 node tests/test_credential_store.mjs
 node tests/test_credential_ui.mjs
 node tests/test_storage_errors.mjs

@@ -42,7 +42,7 @@ globalThis.fetch=async()=>{
 };
 assert.equal((await api.call('problem.info',{problemId:42})).value,1);
 assert.equal(requests.length,2);
-assert(waits.some(x=>x>=19000 && x<=20000),'fallback backoff should not retry immediately');
+assert(waits.some(x=>x>=3900),'JSON rate-limit fallback should not retry immediately');
 console.log('PASS: Polygon JSON rate-limit error also backs off');
 
 requests=[];
@@ -78,7 +78,7 @@ console.log('PASS: application/json file is returned verbatim, not mistaken for 
 const realDateNow=Date.now;
 let virtualNow=1800000000000;
 Date.now=()=>virtualNow;
-PolygonAPI.minimumIntervalMs=3200;
+PolygonAPI.minimumIntervalMs=1200;
 PolygonAPI.sleep=async ms=>{virtualNow+=ms;};
 const paced=new PolygonAPI('TESTKEY','TESTSECRET');
 const sentAt=[];
@@ -94,8 +94,57 @@ await Promise.all([
   paced.call('problem.solutions',{problemId:42})
 ]);
 assert.equal(sentAt.length,3);
-assert(sentAt[1]-sentAt[0]>=3200 && sentAt[2]-sentAt[1]>=3200,
+assert(sentAt[1]-sentAt[0]>=1200 && sentAt[2]-sentAt[1]>=1200,
   'Parallel read requests must be spaced out');
+console.log('PASS: fast default request cadence stays serialized');
+
+const throttled=new PolygonAPI('TESTKEY','TESTSECRET');
+const throttledAt=[];
+globalThis.fetch=async()=>{
+  throttledAt.push(Date.now());
+  if(throttledAt.length===1) return new Response(
+    JSON.stringify({status:'FAILED',comment:'Call limit exceeded'}),
+    {status:200,headers:{'content-type':'application/json'}});
+  return new Response(JSON.stringify({status:'OK',result:1}),
+    {status:200,headers:{'content-type':'application/json'}});
+};
+await throttled.call('problem.info',{problemId:42});
+await throttled.call('problem.viewTags',{problemId:42});
+assert.equal(throttledAt.length,3);
+assert.equal(throttled.minimumIntervalMs,2200);
+assert(throttledAt[1]-throttledAt[0]>=4000,'rate-limit cooldown must be honored');
+assert(throttledAt[2]-throttledAt[1]>=2200,'later requests must use a slower cadence');
+console.log('PASS: successful-HTTP rate limit slows the remaining import');
+
+const repeatedlyThrottled=new PolygonAPI('TESTKEY','TESTSECRET');
+let repeatedCalls=0;
+globalThis.fetch=async()=>{
+  repeatedCalls++;
+  return new Response(JSON.stringify(repeatedCalls<=2
+    ? {status:'FAILED',comment:'Call limit exceeded'} : {status:'OK',result:1}),
+  {status:repeatedCalls<=2?400:200,
+    headers:{'content-type':'application/json'}});
+};
+await repeatedlyThrottled.call('problem.info',{problemId:42});
+assert.equal(repeatedCalls,3);
+assert.equal(repeatedlyThrottled.minimumIntervalMs,3960);
+console.log('PASS: repeated rate limits increase inter-request spacing');
+
+const rawThrottled=new PolygonAPI('TESTKEY','TESTSECRET');
+let rawCalls=0;
+globalThis.fetch=async()=>{
+  rawCalls++;
+  if(rawCalls===1) return new Response(
+    JSON.stringify({status:'FAILED',comment:'Call limit exceeded'}),
+    {status:200,headers:{'content-type':'application/json'}});
+  return new Response('{"file":"original source"}',
+    {status:200,headers:{'content-type':'application/json'}});
+};
+assert.equal(await rawThrottled.problem('viewFile',42,{type:'resource',name:'metadata.json'},{raw:true}),
+  '{"file":"original source"}');
+assert.equal(rawCalls,2);
+assert.equal(rawThrottled.minimumIntervalMs,2200);
+console.log('PASS: raw file reads retry explicit 200-status Polygon throttling');
+
 Date.now=realDateNow;
 PolygonAPI.sleep=originalSleep;
-console.log('PASS: concurrent API requests are paced to avoid bursts');

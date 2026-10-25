@@ -10,9 +10,12 @@ function retryAfterMs(value, now = Date.now()) {
 }
 
 export class PolygonAPI {
-  // A conservative per-tab request cadence. Serializing the ENTIRE request
-  // (including signing and fetch) avoids bursts from Promise.all callers.
-  static minimumIntervalMs = 3200;
+  // Polygon does not document a fixed per-request interval. Start faster,
+  // but slow down for the remainder of the job if the server throttles us.
+  // Requests remain serialized, including signing and fetch.
+  static minimumIntervalMs = 1200;
+  static throttledIntervalMs = 2200;
+  static maximumIntervalMs = 12000;
   static sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   constructor(key, secret) {
@@ -102,33 +105,38 @@ export class PolygonAPI {
               try {
                 const parsed = JSON.parse(text);
                 if (parsed && parsed.status === 'FAILED' && typeof parsed.comment === 'string')
-                  throw Error(method + ': ' + this.safeDetail(parsed.comment));
+                  json = parsed; // A Polygon error, not the requested raw file.
               } catch (e) {
                 if (!(e instanceof SyntaxError)) throw e;
               }
             }
-            return text;
-          }
-          payload = text;
+            if (!json) return text;
+          } else payload = text;
         } else {
           payload = await response.text();
         }
-        try { json = JSON.parse(payload); }
+        try { if (!json) json = JSON.parse(payload); }
         catch {
           throw Error(method + ': 예상하지 못한 응답 (HTTP ' + response.status +
             ', ' + this.safeDetail(String(payload).slice(0, 120)) + ')');
         }
       }
       const message = String(json?.comment || '');
-      const jsonRateLimit = !response.ok &&
+      const jsonRateLimit = json?.status === 'FAILED' &&
         /(?:rate\s*limit|too many requests|call limit exceeded)/i.test(message);
       if (rateLimited || jsonRateLimit) {
+        // Gradually slow the remaining requests if the server rejects our pace.
+        // Use a longer default pause for gateway HTTP 429 responses than for
+        // API-level limit responses; honor Retry-After whenever provided.
+        this.minimumIntervalMs = Math.min(PolygonAPI.maximumIntervalMs,
+          Math.max(Math.ceil(this.minimumIntervalMs * 1.8),
+            rateLimited ? 3200 : PolygonAPI.throttledIntervalMs));
         const serverWait = retryAfterMs(response.headers.get('retry-after'));
-        const fallback = 20000 * (2 ** Math.min(attempt, 3));
+        const fallback = (rateLimited ? 20000 : 4000) * (2 ** Math.min(attempt, 3));
         const wait = Math.min(240000, Math.max(this.minimumIntervalMs, serverWait ?? fallback));
         this._cooldownUntil = Math.max(this._cooldownUntil, Date.now() + wait);
         if (attempt >= 4)
-          throw Error(method + ': HTTP 429 요청 제한이 반복됐습니다. 제한이 풀린 후 다시 실행하면 이미 저장한 항목은 건너뜁니다.');
+          throw Error(method + ': Polygon API 요청 제한이 반복됐습니다. 제한이 풀린 후 다시 실행하면 이미 저장한 항목은 건너뜁니다.');
         this.onRateLimit?.({method, attempt:attempt+1, waitMs:wait});
         continue;
       }
