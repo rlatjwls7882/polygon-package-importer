@@ -19,9 +19,9 @@ Chrome 웹스토어에 붙여넣을 설명은 아래 일반 텍스트 파일을 
 - 개인정보 처리방침: https://github.com/rlatjwls7882/polygon-package-importer/blob/main/PRIVACY.md
 - 아이콘: [store-icon-128.png](store-icon-128.png)
 - 스크린샷: [screenshots/01-popup.png](screenshots/01-popup.png)
-- 확장 프로그램 배포 ZIP: https://github.com/rlatjwls7882/polygon-package-importer/releases/tag/v0.6.0
+- 확장 프로그램 배포 ZIP: 로컬에서 빌드한 `dist/polygon-zip-uploader-v0.6.5.zip` (스토어 업로드 시 사용)
 
-현재 확장 프로그램 v0.6.0의 팝업과 설정 화면은 한국어입니다. 영어 텍스트는 추후 영어 로케일을 지원할 때 사용할 번역본으로 준비했습니다. Chrome 웹스토어에서 언어별 상세 설명을 별도로 노출하려면 확장 프로그램의 로케일 설정(`_locales/en`, `_locales/ko` 및 `default_locale`)과 스토어 등록 언어가 일치해야 합니다. 현재 v0.6.0에 다국어 UI가 구현되어 있다고 표시하지 마세요.
+현재 확장 프로그램 v0.6.5는 API 키 등록·관리와 업로드를 하나의 한국어 팝업에서 제공합니다. 영어 텍스트는 추후 영어 로케일 지원을 위한 초안입니다. Chrome 웹스토어에서 언어별 상세 설명을 별도로 노출하려면 확장 프로그램의 로케일 설정(`_locales/en`, `_locales/ko` 및 `default_locale`)과 스토어 등록 언어가 일치해야 합니다. 현재 버전에 다국어 UI가 구현되어 있다고 표시하지 마세요.
 
 ## 문구 검수 기준
 
@@ -49,7 +49,8 @@ polygon.codeforces.com 호스트: 사용자가 요청한 문제의 조회·생�
 
 ## 제출 전 확인
 
-- [ ] v0.6.0 ZIP을 Chrome에 설치해 실제 Polygon 테스트 계정으로 가져오기 확인
+- [ ] v0.6.5 ZIP을 Chrome에 설치해 실제 Polygon 테스트 계정으로 가져오기 확인
+- [ ] 변경된 단일 팝업 화면으로 스토어 스크린샷 갱신
 - [ ] 설명과 실제 기능 및 컴파일러 제약이 일치하는지 확인
 - [ ] 개인정보 처리방침과 지원 URL을 공개 접근 가능한 상태로 유지
 - [ ] 개발자 계정 연락처, 심사 정보, 사용자 데이터 및 권한 사용 근거 입력

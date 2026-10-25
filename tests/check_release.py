@@ -38,23 +38,22 @@ def png_dimensions(path):
     return struct.unpack('>II', data[16:24])
 
 popup = parse_html('popup.html')
-options = parse_html('index.html')
 offscreen = parse_html('offscreen.html')
 assert not (used_ids('popup.js') - popup.names), 'Missing popup elements'
-assert not (used_ids('credentials-ui.js') - options.names), 'Missing settings elements'
+assert not (used_ids('credentials-ui.js') - popup.names), 'Missing API-key popup elements'
 
 assert manifest['name'] == 'Polygon ZIP Uploader'
 assert 1 <= len(manifest['description']) <= 132
 assert 'local' in manifest['description'].lower()
 assert manifest['manifest_version'] == 3
 assert manifest['action']['default_popup'] == 'popup.html'
-assert manifest['options_ui']['page'] == 'index.html'
+assert 'options_ui' not in manifest, 'No separate settings page should open'
 assert manifest['background']['type'] == 'module'
 assert set(['storage', 'offscreen']) == set(manifest['permissions'])
 assert manifest['host_permissions'] == ['https://polygon.codeforces.com/*']
-assert 'id="pin"' not in (root / 'index.html').read_text(encoding='utf-8')
+assert 'id="pin"' not in (root / 'popup.html').read_text(encoding='utf-8')
 assert 'popup.js' in popup.sources
-assert 'settings.js' in options.sources
+assert 'settings.js' not in popup.sources
 assert 'offscreen.js' in offscreen.sources
 assert (root / 'LICENSE').read_text(encoding='utf-8').startswith('MIT License')
 assert png_dimensions(root / 'icons' / 'icon128.png') == (128, 128)
@@ -71,11 +70,12 @@ with ZipFile(package) as archive:
     packed = json.loads(archive.read('manifest.json'))
     assert packed['version'] == version
     assert archive.testzip() is None
-    assert {'popup.html', 'index.html', 'offscreen.html', 'job-store.js',
+    assert {'popup.html', 'offscreen.html', 'job-store.js',
             'polygon-import.js', 'credential-store.js', 'status.js',
             'LICENSE', 'icons/icon128.png'}.issubset(paths)
     assert not any(path.startswith(('tests/', '.github/', 'store-assets/')) for path in paths)
     assert 'importer.html' not in paths and 'importer.js' not in paths
+    assert not {'index.html', 'settings.js', 'style.css'} & paths
     for name in paths:
         if name.endswith('.js'):
             contents = archive.read(name).decode('utf-8')
@@ -83,5 +83,5 @@ with ZipFile(package) as archive:
                 assert imported in paths, f'{name} imports missing file: {imported}'
 
 print('RELEASE_OK', version, len(paths), 'files,', package.stat().st_size, 'bytes')
-print('UI_OK popup', len(popup.names), 'settings', len(options.names))
+print('UI_OK unified popup', len(popup.names), 'elements')
 print('STORE_ASSETS_OK', len(screenshots), 'screenshots')

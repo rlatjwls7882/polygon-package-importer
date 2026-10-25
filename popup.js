@@ -1,6 +1,6 @@
 import { ZipArchive } from './zip.js';
 import { loadPolygonPackage } from './model.js';
-import { loadCredentials } from './credential-store.js';
+import { CredentialsUI } from './credentials-ui.js';
 import { stageJob, readJob } from './job-store.js';
 import { STATUS_KEY } from './status.js';
 
@@ -8,7 +8,8 @@ const $ = id => document.getElementById(id);
 const MAX_ZIP_SIZE = 100 * 1024 * 1024;
 let file = null;
 let validPackage = false;
-let authorized = false;
+let credentialsUI = null;
+let showCredentials = false;
 let pending = false;
 let status = null;
 let savedJob = null;
@@ -22,12 +23,21 @@ function errorText(message = '') {
 }
 
 function render() {
+  const authorized = credentialsUI?.state === 'ready';
+  const showingCredentials = !authorized || showCredentials || !!credentialsUI?.editing;
+  $('credentialPanel').hidden = !showingCredentials;
+  $('importForm').hidden = showingCredentials;
+  $('settings').hidden = !authorized || showingCredentials;
+  $('closeCredentials').hidden = !authorized || !showingCredentials;
+  $('credentialTitle').textContent = credentialsUI?.editing ? 'API 키 변경' :
+    authorized ? 'API 키 관리' : credentialsUI?.state === 'legacy' ? '기존 API 키 이전' : 'API 키 등록';
+
   $('problemIdField').hidden = mode() !== 'replace';
   const validId = mode() === 'create' || /^[1-9]\d{0,11}$/.test(problemId());
   $('start').disabled = !authorized || !file || !validPackage || !validId ||
     pending || status?.phase === 'running';
 
-  $('progressSection').hidden = !status;
+  $('progressSection').hidden = !status || showingCredentials;
   if (!status) return;
 
   const labels = {running:'진행 중', done:'완료', error:'실패'};
@@ -52,9 +62,19 @@ async function refresh() {
   render();
 }
 
-async function openOptions() {
-  await chrome.runtime.openOptionsPage();
-  window.close();
+function openCredentials() {
+  showCredentials = true;
+  errorText();
+  render();
+}
+
+async function closeCredentials() {
+  if (credentialsUI?.pending) return;
+  if (credentialsUI?.editing) await credentialsUI.cancel();
+  if (credentialsUI?.state !== 'ready') return;
+  showCredentials = false;
+  errorText();
+  render();
 }
 
 async function analyze() {
@@ -119,8 +139,8 @@ async function start(retry = false) {
 }
 
 async function initialize() {
-  $('settings').addEventListener('click', openOptions);
-  $('openSetup').addEventListener('click', openOptions);
+  $('settings').addEventListener('click', openCredentials);
+  $('closeCredentials').addEventListener('click', closeCredentials);
   $('zipFile').addEventListener('change', analyze);
   for (const input of document.querySelectorAll('input[name="mode"]'))
     input.addEventListener('change', render);
@@ -141,14 +161,16 @@ async function initialize() {
   });
 
   try {
-    authorized = !!(await loadCredentials()).credentials;
-    $('importForm').hidden = !authorized;
-    $('needSetup').hidden = authorized;
-    if (authorized) await refresh();
-    else await openOptions();
+    credentialsUI = new CredentialsUI();
+    credentialsUI.onChange = render;
+    credentialsUI.onAccepted = () => {
+      showCredentials = false;
+      errorText();
+      render();
+    };
+    await credentialsUI.init();
+    await refresh();
   } catch (error) {
-    $('importForm').hidden = true;
-    $('needSetup').hidden = false;
     errorText(error?.message || error);
   }
   render();

@@ -10,7 +10,7 @@ output.parent.mkdir(exist_ok=True)
 
 files = [
     'manifest.json', 'background.js', 'popup.html', 'popup.js', 'popup.css',
-    'index.html', 'settings.js', 'style.css', 'offscreen.html', 'offscreen.js',
+    'offscreen.html', 'offscreen.js',
     'polygon-import.js', 'job-store.js', 'status.js',
     'api.js', 'sync.js', 'zip.js', 'model.js',
     'credential-store.js', 'credential-vault.js', 'credentials-ui.js',

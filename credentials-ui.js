@@ -13,6 +13,8 @@ export class CredentialsUI {
     this.pending = false;
     this.saving = false;
     this.listening = false;
+    this.onChange = null;
+    this.onAccepted = null;
     this.$ = id => document.getElementById(id);
 
     for (const [id, action] of [
@@ -64,7 +66,7 @@ export class CredentialsUI {
     this.render();
     try {
       if (typeof location !== 'undefined' && location.protocol !== 'chrome-extension:')
-        throw Error('확장 프로그램 설정 페이지에서 열어 주세요.');
+        throw Error('Chrome 확장 프로그램 팝업에서 열어 주세요.');
       await initializeCredentials();
       await this.reload();
       if (!this.listening) {
@@ -108,6 +110,7 @@ export class CredentialsUI {
     for (const id of ['saveCredentials', 'migrateCredentials', 'replaceCredentials',
       'cancelReplace', 'deleteCredentials', 'retryCredentials', 'key', 'secret',
       'legacyPassword']) this.$(id).disabled = this.pending;
+    this.onChange?.(this);
   }
 
   async run(action) {
@@ -131,6 +134,7 @@ export class CredentialsUI {
     this.clearFields();
     this.notice(message);
     this.render();
+    this.onAccepted?.();
   }
 
   save() {
@@ -173,7 +177,7 @@ export class CredentialsUI {
     if (this.pending) return;
     this.editing = false;
     this.clearFields();
-    this.reload().catch(error => this.fail(error));
+    return this.reload().catch(error => this.fail(error));
   }
 
   remove() {
@@ -182,7 +186,7 @@ export class CredentialsUI {
       this.saving = true;
       try {
         await deleteCredentials();
-            this.record = null;
+        this.record = null;
         this.state = 'empty';
         this.editing = false;
         this.clearFields();
