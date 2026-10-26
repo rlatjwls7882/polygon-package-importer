@@ -1,5 +1,7 @@
 # Polygon ZIP Uploader
 
+**[Chrome 웹스토어에서 설치](https://chromewebstore.google.com/detail/polygon-zip-uploader/fhlocfeafcanblbeppffhdilbkblmdcn)**
+
 컴퓨터에 저장된 Polygon 문제 패키지 ZIP을 Codeforces Polygon에 직접 업로드하는 Chrome 확장 프로그램입니다. 새 문제를 생성하거나 기존 문제의 파일·지문·테스트를 갱신할 수 있습니다.
 
 - 별도 설정 페이지 없이 팝업에서 API 키 등록·변경·삭제 및 ZIP 업로드
@@ -14,12 +16,13 @@
 
 ## 설치
 
-1. 저장소를 다운로드하거나 복제합니다.
-2. Chrome에서 `chrome://extensions`를 열고 **개발자 모드**를 켭니다.
-3. **압축해제된 확장 프로그램을 로드합니다**를 누릅니다.
-4. `manifest.json`이 있는 폴더를 선택합니다.
+1. [Chrome 웹스토어의 Polygon ZIP Uploader](https://chromewebstore.google.com/detail/polygon-zip-uploader/fhlocfeafcanblbeppffhdilbkblmdcn) 페이지를 엽니다.
+2. **Chrome에 추가**를 눌러 설치합니다.
+3. Chrome 도구 모음의 확장 프로그램 메뉴에서 **Polygon ZIP Uploader**를 선택합니다. 자주 쓴다면 아이콘을 고정해 두세요.
 
-업데이트 후에는 확장 프로그램을 새로고침하세요.
+웹스토어에서 설치한 확장 프로그램은 Chrome을 통해 자동으로 업데이트됩니다. 별도의 ZIP 다운로드나 개발자 모드 설정은 필요하지 않습니다.
+
+기존에 개발자 모드로 설치한 버전에서 전환한다면 **진행 중인 업로드를 먼저 완료**하세요. 웹스토어 버전은 별도 확장 프로그램으로 설치되므로 기존 확장 프로그램의 API 키와 업로드 작업 상태가 자동 이전되지 않습니다. 웹스토어 버전에 API 키를 다시 등록하고 정상 동작을 확인한 뒤 기존 버전을 제거하세요.
 
 ## 사용법
 
@@ -30,7 +33,7 @@
 
 업로드 상태는 팝업을 다시 열어 확인할 수 있습니다. 중단된 작업은 **다시 시도**로 이어서 동기화합니다.
 
-등록된 키는 팝업 오른쪽 위 **API 키**에서 변경하거나 삭제합니다. v0.3.x에서 저장한 API 키가 있다면 같은 팝업에서 기존 보관함 암호를 한 번 입력해 이전할 수 있습니다.
+등록된 키는 팝업 오른쪽 위 **API 키**에서 변경하거나 삭제합니다. 같은 확장 프로그램 설치에서 v0.3.x의 보관함을 계속 사용 중이라면 기존 암호를 한 번 입력해 API 키를 이전할 수 있습니다.
 
 ## 지원 범위 및 주의 사항
 
@@ -50,7 +53,14 @@ API Key와 Secret은 AES-256-GCM으로 암호화해 Chrome 로컬 저장소에 �
 
 ## 개발
 
-Node.js 22 이상과 Python 3이 필요합니다.
+소스 코드를 수정하거나 테스트할 때만 다음 방법으로 수동 설치합니다.
+
+1. 저장소를 다운로드하거나 복제합니다.
+2. Chrome에서 `chrome://extensions`를 열고 **개발자 모드**를 켭니다.
+3. **압축해제된 확장 프로그램을 로드합니다**를 누릅니다.
+4. `manifest.json`이 있는 폴더를 선택합니다. 소스 코드를 변경한 뒤에는 확장 프로그램을 새로고침합니다.
+
+개발·테스트에는 Node.js 22 이상과 Python 3이 필요합니다.
 
 ```bash
 python tests/run_logic.py
@@ -78,7 +88,7 @@ python tests/check_release.py
 
 결과물은 `dist/`에 생성됩니다. 테스트는 실제 Polygon 문제를 수정하지 않습니다.
 
-스토어 등록용 설명과 이미지 파일은 [store-assets/LISTING.md](store-assets/LISTING.md)에 정리해 뒀습니다.
+웹스토어 등록·업데이트용 설명과 이미지 파일은 [store-assets/LISTING.md](store-assets/LISTING.md)에 정리해 뒀습니다.
 
 ## 권한
 

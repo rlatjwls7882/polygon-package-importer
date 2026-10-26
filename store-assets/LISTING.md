@@ -1,6 +1,10 @@
-# Chrome Web Store 등록 문구
+# Chrome Web Store 등록·운영 정보
 
-Chrome 웹스토어에 붙여넣을 설명은 아래 일반 텍스트 파일을 사용합니다. 이 Markdown 문서의 제목이나 강조 기호를 복사하지 마세요.
+**[Polygon ZIP Uploader — Chrome 웹스토어](https://chromewebstore.google.com/detail/polygon-zip-uploader/fhlocfeafcanblbeppffhdilbkblmdcn)**
+
+2026년 10월 26일 확인 기준으로 **공개 배포 중**이며, 웹스토어에 표시된 버전은 **v0.6.5**입니다. 일반 사용자에게는 웹스토어 설치 링크를 안내하고, 소스 코드 수동 설치는 개발·테스트용으로만 사용합니다.
+
+스토어 설명을 등록하거나 업데이트할 때는 아래 일반 텍스트 파일을 사용합니다. 이 Markdown 문서의 제목이나 강조 기호를 복사하지 마세요.
 
 | 항목 | 한국어 | 영어 |
 | --- | --- | --- |
@@ -12,6 +16,7 @@ Chrome 웹스토어에 붙여넣을 설명은 아래 일반 텍스트 파일을 
 ## 등록 정보
 
 - 이름: Polygon ZIP Uploader
+- 공개 페이지: https://chromewebstore.google.com/detail/polygon-zip-uploader/fhlocfeafcanblbeppffhdilbkblmdcn
 - 카테고리: 개발자 도구(Developer Tools)
 - 가격: 무료
 - GitHub: https://github.com/rlatjwls7882/polygon-package-importer
@@ -19,7 +24,7 @@ Chrome 웹스토어에 붙여넣을 설명은 아래 일반 텍스트 파일을 
 - 개인정보 처리방침: https://github.com/rlatjwls7882/polygon-package-importer/blob/main/PRIVACY.md
 - 아이콘: [store-icon-128.png](store-icon-128.png)
 - 스크린샷: [screenshots/01-popup.png](screenshots/01-popup.png)
-- 확장 프로그램 배포 ZIP: 로컬에서 빌드한 `dist/polygon-zip-uploader-v0.6.5.zip` (스토어 업로드 시 사용)
+- 확장 프로그램 배포 ZIP: `python tests/build_release.py`로 생성한 `dist/polygon-zip-uploader-v<version>.zip` (업데이트할 버전으로 빌드)
 
 현재 확장 프로그램 v0.6.5는 API 키 등록·관리와 업로드를 하나의 한국어 팝업에서 제공합니다. 영어 텍스트는 추후 영어 로케일 지원을 위한 초안입니다. Chrome 웹스토어에서 언어별 상세 설명을 별도로 노출하려면 확장 프로그램의 로케일 설정(`_locales/en`, `_locales/ko` 및 `default_locale`)과 스토어 등록 언어가 일치해야 합니다. 현재 버전에 다국어 UI가 구현되어 있다고 표시하지 마세요.
 
@@ -31,7 +36,7 @@ Chrome 웹스토어에 붙여넣을 설명은 아래 일반 텍스트 파일을 
 - 기존 문제 갱신 시 ZIP에 없는 항목이 삭제될 수 있고 자동 백업 및 롤백은 없습니다.
 - Polygon 계정과 API Key·Secret이 필요합니다.
 - Codeforces의 공식 확장 프로그램이 아니며, 제휴·후원을 받았다는 인상을 주지 않습니다.
-- 심사 전 실제 Chrome과 Polygon 테스트 계정에서 ZIP 업로드를 종단 간 검증해야 합니다.
+- 새 버전 제출 전 실제 Chrome과 Polygon 테스트 계정에서 ZIP 업로드를 종단 간 검증해야 합니다.
 
 ## 심사 항목에 사용할 목적과 권한 설명
 
@@ -47,14 +52,14 @@ polygon.codeforces.com 호스트: 사용자가 요청한 문제의 조회·생�
 
 사용자 데이터: Polygon API Key·Secret을 로컬에 암호화해 저장하고, 사용자가 선택한 ZIP 내용과 필요한 문제 정보를 Polygon API로 전송합니다. 개발자 자체 서버나 광고·추적 서비스로는 전송하지 않습니다. 개인정보 처리방침과 실제 구현을 기준으로 대시보드의 데이터 범주를 신고하세요.
 
-## 제출 전 확인
+## 다음 버전 업데이트 확인
 
-- [ ] v0.6.5 ZIP을 Chrome에 설치해 실제 Polygon 테스트 계정으로 가져오기 확인
-- [ ] 변경된 단일 팝업 화면으로 스토어 스크린샷 갱신
-- [ ] 설명과 실제 기능 및 컴파일러 제약이 일치하는지 확인
-- [ ] 개인정보 처리방침과 지원 URL을 공개 접근 가능한 상태로 유지
-- [ ] 개발자 계정 연락처, 심사 정보, 사용자 데이터 및 권한 사용 근거 입력
-- [ ] 기능을 설명하는 실제 확장 프로그램 스크린샷과 아이콘 업로드
-- [ ] 필요 시 심사용 계정과 테스트 문제 준비(운영 API Key는 공개 저장소에 올리지 않기)
+- [ ] `manifest.json` 버전을 높이고 CI 및 배포 검사(`python tests/check_listing.py`, `python tests/build_release.py`, `python tests/check_release.py`) 통과
+- [ ] Chrome에서 실제 Polygon 테스트 계정으로 새 문제 생성·기존 문제 갱신 검증
+- [ ] UI가 바뀌었다면 스토어 스크린샷을 갱신하고, 설명·지원 범위가 실제 기능과 일치하는지 확인
+- [ ] 개인정보 처리방침·지원 URL·개발자 연락처·데이터 사용 및 권한 설명 최신 상태 유지
+- [ ] Chrome 웹스토어 개발자 대시보드에서 새 배포 ZIP 제출
+- [ ] 게시 완료 후 공개 페이지의 버전과 설치 동작 확인
+- [ ] 테스트용 API Key·Secret 또는 운영 인증 정보를 저장소·심사 자료에 포함하지 않기
 
 관련 정책: https://developer.chrome.com/docs/webstore/program-policies/listing-requirements
