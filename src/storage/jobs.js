@@ -19,35 +19,26 @@ function openDatabase() {
   });
 }
 
-async function operation(mode, callback) {
-  const db = await openDatabase();
-  try {
-    return await new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE, mode);
-      const request = callback(transaction.objectStore(STORE));
-      transaction.oncomplete = () => resolve(request?.result);
-      transaction.onabort = () => reject(transaction.error || Error(t('jobStoreFailedToSaveJob')));
-      transaction.onerror = () => reject(transaction.error || Error(t('jobStoreFailedToSaveJob')));
-    });
-  } finally {
-    db.close();
-  }
-}
+const ZIP = 'activeZip';
+const info = record => {
+  if (!record) return undefined;
+  const {file, storageVersion, ...metadata} = record;
+  return metadata;
+};
 
-// Keep compare/write/delete inside one readwrite transaction across all extension pages.
-async function mutateJob(update) {
+// Both records live in the existing store. Lock/checkpoint updates only touch
+// small metadata; replacing/deleting a job updates metadata + ZIP atomically.
+async function transaction(mode, action) {
   const db = await openDatabase();
   try {
     return await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readwrite'), store = tx.objectStore(STORE);
+      const tx = db.transaction(STORE, mode), store = tx.objectStore(STORE);
       let result, failure;
+      const fail = error => { failure = error; tx.abort(); };
       const request = store.get(ACTIVE);
       request.onsuccess = () => {
-        try {
-          result = update(request.result);
-          if (result === null) store.delete(ACTIVE);
-          else if (result !== undefined) store.put(result, ACTIVE);
-        } catch (error) { failure = error; tx.abort(); }
+        try { action(request.result, store, value => {result = value;}, fail); }
+        catch (error) { fail(error); }
       };
       tx.oncomplete = () => resolve(result);
       tx.onabort = tx.onerror = () => reject(failure || tx.error || Error(t('jobStoreFailedToSaveJob')));
@@ -55,22 +46,57 @@ async function mutateJob(update) {
   } finally { db.close(); }
 }
 
-// File/Blob stays in IndexedDB rather than being copied into runtime messages.
-export async function stageJob(job, expectedId) {
-  if (!job?.file || !job?.id) throw Error(t('jobStoreNoZipFileSelected'));
-  return mutateJob(current => {
+export function stageJob(job, expectedId) {
+  if (!job?.file || !job?.id) return Promise.reject(Error(t('jobStoreNoZipFileSelected')));
+  return transaction('readwrite', (current, store, done) => {
     if (expectedId !== undefined && current?.id !== expectedId) throw Error(t('jobReplaced'));
-    if (current?.locked && current.id !== job.id) throw Error(t('jobBusy'));
-    return {...job, ...(current?.id === job.id && current.locked ? {locked:true} : {})};
+    if (current?.locked && (current.id !== job.id || expectedId === undefined)) throw Error(t('jobBusy'));
+    const metadata = {...info(job), ...(current?.id === job.id && current.locked ? {locked:true} : {})};
+    store.put({id:job.id, file:job.file}, ZIP);
+    store.put({...metadata, storageVersion:2}, ACTIVE);
+    done(metadata);
   });
 }
 
+export function readJobInfo() {
+  return transaction('readonly', (current, store, done) => done(info(current)));
+}
+
 export function readJob() {
-  return operation('readonly', store => store.get(ACTIVE));
+  return transaction('readonly', (current, store, done, fail) => {
+    if (!current || current.file) {done(current);return;} // Legacy inline-Blob record.
+    const request = store.get(ZIP);
+    request.onsuccess = () => {
+      if (request.result?.id !== current.id || !request.result.file) {fail(Error(t('jobReplaced')));return;}
+      done({...info(current), file:request.result.file});
+    };
+  });
+}
+
+function mutateInfo(update) {
+  return transaction('readwrite', (current, store, done) => {
+    const metadata = info(current), next = update(metadata);
+    // Migrate old inline-Blob records lazily and atomically without a database
+    // version bump. Existing encrypted credentials are in another database.
+    if (next !== undefined) {
+      if (current?.file) store.put({id:current.id, file:current.file}, ZIP);
+      store.put({...next, storageVersion:2}, ACTIVE);
+    }
+    done(next);
+  });
+}
+
+export function patchJob(id, changes) {
+  if (Object.keys(changes).some(key => !['mode','problemId','verification'].includes(key)))
+    return Promise.reject(Error(t('jobReplaced')));
+  return mutateInfo(current => {
+    if (current?.id !== id) throw Error(t('jobReplaced'));
+    return {...current, ...changes};
+  });
 }
 
 export function claimJob(id) {
-  return mutateJob(current => {
+  return mutateInfo(current => {
     if (current?.id !== id) throw Error(t('jobReplaced'));
     if (current.locked) throw Error(t('jobBusy'));
     return {...current, locked:true};
@@ -78,9 +104,12 @@ export function claimJob(id) {
 }
 
 export function releaseJob(id) {
-  return mutateJob(current => current?.id === id && current.locked ? {...current, locked:false} : undefined);
+  return mutateInfo(current => current?.id === id && current.locked ? {...current, locked:false} : undefined);
 }
 
 export function clearJob(id) {
-  return mutateJob(current => current && (!id || current.id === id) ? null : undefined);
+  return transaction('readwrite', (current, store, done) => {
+    if (!id || current?.id === id) {store.delete(ACTIVE);store.delete(ZIP);}
+    done(undefined);
+  });
 }

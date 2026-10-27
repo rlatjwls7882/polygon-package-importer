@@ -18,8 +18,10 @@ function plan(salt){
   solutions:[{name:'main.cpp',path:'main.cpp',tag:'MA'}],checker:'std::wcmp',validator:'val.cpp',interactor:interactive?'int.cpp':'',tests,groups,validatorTests:[],checkerTests:[],tags:[]};
  return p;
 }
+const cases=Number(process.env.POLYGON_RANDOM_CASES || 200);
+assert(Number.isSafeInteger(cases) && cases>=1 && cases<=10000);
 const failures=[];let transitions=0,noops=0;
-for(let iteration=0;iteration<200;iteration++){
+for(let iteration=0;iteration<cases;iteration++){
  const mock=createPolygon();
  const original=plan(iteration*2),next=plan(iteration*2+1);
  const archive={text:async path=>path.startsWith('input/')?path.split('/')[1]+'\n':'int main(){return 0;}'};
@@ -36,6 +38,6 @@ for(let iteration=0;iteration<200;iteration++){
   const same=await apply(next);assert.equal(same.mutations,0);noops++;
  }catch(e){failures.push({iteration,error:e.message,original,next});}
 }
-const result={seed:initialSeed,cases:200,transitionsPassed:transitions,noopsPassed:noops,failures};
+const result={seed:initialSeed,cases,transitionsPassed:transitions,noopsPassed:noops,failures};
 console.log('RANDOM_FORMAT_REGRESSION',JSON.stringify({...result,failures:failures.map(f=>({iteration:f.iteration,error:f.error}))}));
 if(failures.length)process.exitCode=1;

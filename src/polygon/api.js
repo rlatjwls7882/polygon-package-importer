@@ -1,3 +1,5 @@
+import { discardResponse, readBinary } from './response.js';
+import { MAX_ZIP_SIZE } from '../package/zip.js';
 import { t } from '../i18n.js';
 const BASE = 'https://polygon.codeforces.com/api/';
 const encoder = new TextEncoder();
@@ -28,7 +30,22 @@ export class PolygonAPI {
     this._gate = Promise.resolve();
     this._nextRequestAt = 0;
     this._cooldownUntil = 0;
+    this._closed = false;
+    this._responses = new Map();
+    this._controllers = new Set();
   }
+
+  dispose() {
+    this._closed = true;
+    for (const controller of this._controllers) controller.abort();
+    this._controllers.clear();
+    for (const cleanup of this._responses.values()) cleanup();
+    this._responses.clear();
+    this.onRateLimit = null; this.sessionActive = null;
+    this.key = ''; this.secret = '';
+  }
+
+  checkOpen() { if (this._closed) throw new DOMException('API session closed', 'AbortError'); }
 
   safeDetail(detail) {
     let result = String(detail ?? '');
@@ -42,8 +59,10 @@ export class PolygonAPI {
   }
 
   async pacedRequest(run) {
+    this.checkOpen();
     const wait = Math.max(0, this._nextRequestAt - Date.now(), this._cooldownUntil - Date.now());
     if (wait > 0) await PolygonAPI.sleep(wait);
+    this.checkOpen();
     this._nextRequestAt = Date.now() + this.minimumIntervalMs;
     return run();
   }
@@ -53,7 +72,7 @@ export class PolygonAPI {
     // next fetch can start before a slow 429 body has set the shared cooldown.
     const invoke = () => this.callSerial(method, args, options);
     const turn = this._gate.then(invoke, invoke);
-    this._gate = turn.catch(() => {});
+    this._gate = turn.then(() => undefined, () => undefined);
     return turn;
   }
 
@@ -77,12 +96,22 @@ export class PolygonAPI {
       if (this.sessionActive && !this.sessionActive())
         throw Error(t('apiApiVaultLockedBeforeTheRequestUpload', method));
 
+      this.checkOpen();
+      const controller = new AbortController();
+      this._controllers.add(controller);
+      const timer = setTimeout(() => controller.abort(), 120000);
+      const cleanup = () => {clearTimeout(timer);this._controllers.delete(controller);};
       try {
-        return await fetch(BASE + method, {
+        const response = await fetch(BASE + method, {
           method:'POST', body:form, credentials:'omit', redirect:'error', cache:'no-store',
-          signal:AbortSignal.timeout(120000)
+          signal:controller.signal
         });
+        if (this._closed) {await discardResponse(response);cleanup();this.checkOpen();}
+        this._responses.set(response, cleanup);
+        return response;
       } catch (e) {
+        cleanup();
+        this.checkOpen();
         // The request could have reached Polygon; do not repeat uncertain mutations.
         throw Error(t('apiNetworkErrorPolygonMayHaveProcessedThe', method, this.safeDetail(e?.message)));
       }
@@ -92,58 +121,65 @@ export class PolygonAPI {
   async callSerial(method, args, { binary = false, raw = false } = {}) {
     for (let attempt = 0; attempt <= 4; attempt++) {
       const response = await this.requestOnce(method, args);
-      const rateLimited = response.status === 429;
-      let payload = null;
-      let json = null;
-      if (!rateLimited) {
-        if ((binary || raw) && response.ok) {
-          const mediaType = response.headers.get('content-type') || '';
-          if (binary && !mediaType.includes('json')) return response.blob();
-          const text = await response.text();
-          // A .json resource itself may be served as application/json.
-          // Treat only an explicit Polygon FAILED envelope as an API error.
-          if (raw) {
-            if (mediaType.includes('json')) {
-              try {
-                const parsed = JSON.parse(text);
-                if (parsed && parsed.status === 'FAILED' && typeof parsed.comment === 'string')
-                  json = parsed; // A Polygon error, not the requested raw file.
-              } catch (e) {
-                if (!(e instanceof SyntaxError)) throw e;
+      try {
+        const rateLimited = response.status === 429;
+        if (rateLimited) await discardResponse(response);
+        let payload = null;
+        let json = null;
+        if (!rateLimited) {
+          if ((binary || raw) && response.ok) {
+            const mediaType = response.headers.get('content-type') || '';
+            if (binary && !mediaType.includes('json')) return await readBinary(response, MAX_ZIP_SIZE, t('zipArchiveTooLarge'));
+            const text = await response.text();
+            // A .json resource itself may be served as application/json.
+            // Treat only an explicit Polygon FAILED envelope as an API error.
+            if (raw) {
+              if (mediaType.includes('json')) {
+                try {
+                  const parsed = JSON.parse(text);
+                  if (parsed && parsed.status === 'FAILED' && typeof parsed.comment === 'string')
+                    json = parsed; // A Polygon error, not the requested raw file.
+                } catch (e) {
+                  if (!(e instanceof SyntaxError)) throw e;
+                }
               }
-            }
-            if (!json) return text;
-          } else payload = text;
-        } else {
-          payload = await response.text();
+              if (!json) return text;
+            } else payload = text;
+          } else {
+            payload = await response.text();
+          }
+          try { if (!json) json = JSON.parse(payload); }
+          catch {
+            throw Error(t('apiUnexpectedResponseHttp', method, response.status, this.safeDetail(String(payload).slice(0, 120))));
+          }
         }
-        try { if (!json) json = JSON.parse(payload); }
-        catch {
-          throw Error(t('apiUnexpectedResponseHttp', method, response.status, this.safeDetail(String(payload).slice(0, 120))));
+        const message = String(json?.comment || '');
+        const jsonRateLimit = json?.status === 'FAILED' &&
+          /(?:rate\s*limit|too many requests|call limit exceeded)/i.test(message);
+        if (rateLimited || jsonRateLimit) {
+          // Gradually slow the remaining requests if the server rejects our pace.
+          // Use a longer default pause for gateway HTTP 429 responses than for
+          // API-level limit responses; honor Retry-After whenever provided.
+          this.minimumIntervalMs = Math.min(PolygonAPI.maximumIntervalMs,
+            Math.max(Math.ceil(this.minimumIntervalMs * 1.8),
+              rateLimited ? 3200 : PolygonAPI.throttledIntervalMs));
+          const serverWait = retryAfterMs(response.headers.get('retry-after'));
+          const fallback = (rateLimited ? 20000 : 4000) * (2 ** Math.min(attempt, 3));
+          const wait = Math.min(240000, Math.max(this.minimumIntervalMs, serverWait ?? fallback));
+          this._cooldownUntil = Math.max(this._cooldownUntil, Date.now() + wait);
+          if (attempt >= 4)
+            throw Error(t('apiPolygonRateLimitReachedRepeatedlyRetryLater', method));
+          this.onRateLimit?.({method, attempt:attempt+1, waitMs:wait});
+          continue;
         }
+        if (!response.ok || json?.status !== 'OK')
+          throw Error(method + ': ' + this.safeDetail(json?.comment || ('HTTP ' + response.status)));
+        return json.result;
+      } finally {
+        await discardResponse(response);
+        this._responses.get(response)?.();
+        this._responses.delete(response);
       }
-      const message = String(json?.comment || '');
-      const jsonRateLimit = json?.status === 'FAILED' &&
-        /(?:rate\s*limit|too many requests|call limit exceeded)/i.test(message);
-      if (rateLimited || jsonRateLimit) {
-        // Gradually slow the remaining requests if the server rejects our pace.
-        // Use a longer default pause for gateway HTTP 429 responses than for
-        // API-level limit responses; honor Retry-After whenever provided.
-        this.minimumIntervalMs = Math.min(PolygonAPI.maximumIntervalMs,
-          Math.max(Math.ceil(this.minimumIntervalMs * 1.8),
-            rateLimited ? 3200 : PolygonAPI.throttledIntervalMs));
-        const serverWait = retryAfterMs(response.headers.get('retry-after'));
-        const fallback = (rateLimited ? 20000 : 4000) * (2 ** Math.min(attempt, 3));
-        const wait = Math.min(240000, Math.max(this.minimumIntervalMs, serverWait ?? fallback));
-        this._cooldownUntil = Math.max(this._cooldownUntil, Date.now() + wait);
-        if (attempt >= 4)
-          throw Error(t('apiPolygonRateLimitReachedRepeatedlyRetryLater', method));
-        this.onRateLimit?.({method, attempt:attempt+1, waitMs:wait});
-        continue;
-      }
-      if (!response.ok || json?.status !== 'OK')
-        throw Error(method + ': ' + this.safeDetail(json?.comment || ('HTTP ' + response.status)));
-      return json.result;
     }
     throw Error(t('apiStoppedDueToRateLimits', method));
   }

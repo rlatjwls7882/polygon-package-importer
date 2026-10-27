@@ -7,9 +7,10 @@ export async function validatePackage(archive, plan) {
   if (!plan.tests.length || !plan.checker) throw Error(t('formatIncompletePackage'));
   if (plan.checkerPercent && !plan.tests.some(test => test.points != null))
     throw Error(t('formatPercentageNeedsPoints'));
+  const groupNames = new Set(plan.groups.map(group => group.name));
   for (const solution of plan.solutions) for (const extra of solution.extraTags || []) {
     if ((extra.testset && extra.testset !== 'tests') ||
-        (extra.testGroup && !plan.groups.some(group => group.name === extra.testGroup)))
+        (extra.testGroup && !groupNames.has(extra.testGroup)))
       throw Error(t('formatInvalidExtraTag', solution.name));
   }
   if (new Set(plan.solutions.map(solution => solution.name)).size !== plan.solutions.length)
@@ -22,7 +23,7 @@ export async function validatePackage(archive, plan) {
   for (const {path} of [...plan.sources, ...plan.solutions, ...plan.resources, ...plan.aux]) {
     try {
       if ((await archive.text(path)).includes('\0')) binaryPaths.add(path);
-    } catch { binaryPaths.add(path); }
+    } catch (error) { if (error?.name === 'AbortError') throw error; binaryPaths.add(path); }
   }
   const sectionsExtras = archive.names().filter(p => /^statement-sections\/[^/]+\//.test(p) &&
     !/\/(?:name|legend|input|output|notes|scoring|interaction|tutorial|example\.\d+(?:\.a|\.mu)?)\.tex?$/.test(p) &&
@@ -31,12 +32,12 @@ export async function validatePackage(archive, plan) {
   if (sectionsExtras.length) plan.unsupported.push(t('modelCannotUploadStatementImagesOrExtraResources', sectionsExtras.slice(0,12).join(', ')));
   for (const test of plan.tests) {
     for (const path of [test.path, test.outputPath, test.sampleInputPath, test.sampleOutputPath, test.interactionLogPath].filter(Boolean)) {
-      try { await archive.text(path); } catch { plan.unsupported.push(t('modelTestIsNotUtf8Text', test.index, path)); }
+      try { await archive.text(path); } catch (error) { if (error?.name === 'AbortError') throw error; plan.unsupported.push(t('modelTestIsNotUtf8Text', test.index, path)); }
     }
   }
   for (const test of [...plan.validatorTests, ...plan.checkerTests]) {
     for (const path of [test.inputPath, test.outputPath, test.answerPath].filter(Boolean)) {
-      try { await archive.text(path); } catch { plan.unsupported.push(t('modelSelfTestIsNotUtf8Text', test.index, path)); }
+      try { await archive.text(path); } catch (error) { if (error?.name === 'AbortError') throw error; plan.unsupported.push(t('modelSelfTestIsNotUtf8Text', test.index, path)); }
     }
   }
   if (plan.tests.some(test => test.method === 'generated')) {

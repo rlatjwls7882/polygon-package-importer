@@ -6,7 +6,7 @@ import { stageJob, readJob, clearJob, claimJob, STATUS_KEY } from '../src/storag
 import { saveCredentials } from '../src/storage/credentials.js';
 let instance=0;
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-async function environment() {
+async function environment({failStart = false} = {}) {
   globalThis.indexedDB=createFakeIndexedDB();
   const storage=createFakeChromeStorage(),handlers=[],timers=new Map();
   const originalSet=globalThis.setTimeout,originalClear=globalThis.clearTimeout;
@@ -18,7 +18,7 @@ async function environment() {
     runtime:{getURL:path=>root+path,getContexts:async()=>opened?[{}]:[],
       onMessage:{addListener:handler=>handlers.push(handler)},
       async sendMessage(message) {
-        if(message.type==='IMPORT_EXECUTE'){attempt=message.attempt;return {ok:true};}
+        if(message.type==='IMPORT_EXECUTE'){attempt=message.attempt;return failStart?{ok:false,reason:'start failed'}:{ok:true};}
         if(message.type==='IMPORT_PROGRESS'||message.type==='IMPORT_COMPLETE')message={attempt,...message};
         const url=root+(message.type==='IMPORT_PROGRESS'||message.type==='IMPORT_COMPLETE'?'offscreen.html':'popup.html');
         for(const handler of handlers) {
@@ -121,5 +121,32 @@ test('late messages from an old attempt cannot complete the retry of the same jo
     const result=await e.send({type:'IMPORT_COMPLETE',jobId:'retry',attempt:oldAttempt,phase:'done',message:'old'});
     assert.equal(result.ok,false);
     assert.equal(e.storage.data.get(STATUS_KEY).phase,'running');
+  } finally {e.restore();}
+});
+
+
+test('unchanged progress does not repeatedly write storage or duplicate log entries',async()=>{
+  const e=await environment();
+  try {
+    await e.start('status');let writes=0;
+    const original=e.storage.chrome.storage.local.set;
+    e.storage.chrome.storage.local.set=async values=>{if(values[STATUS_KEY])writes++;return original(values);};
+    for(let i=0;i<20;i++)await e.send({type:'IMPORT_PROGRESS',jobId:'status',stage:'verifying',message:'Waiting',committed:true});
+    assert.equal(writes,1);
+    assert.equal(e.storage.data.get(STATUS_KEY).log.filter(message=>message==='Waiting').length,1);
+    await e.send({type:'IMPORT_COMPLETE',jobId:'status',phase:'done',stage:'verified',message:'Waiting'});
+    assert.equal(writes,2,'Terminal state must always be persisted');
+    assert.equal(e.storage.data.get(STATUS_KEY).phase,'done');
+  } finally {e.restore();}
+});
+
+
+test('failed start closes the offscreen page while retaining the retryable ZIP',async()=>{
+  const e=await environment({failStart:true});
+  try {
+    await stageJob({id:'start-failed',file:new Blob(['zip']),mode:'replace',problemId:'42'});
+    const result=await e.send({type:'IMPORT_START',jobId:'start-failed'});
+    assert.equal(result.ok,false);assert.equal(e.opened,false);
+    const job=await readJob();assert(job.file);assert.equal(job.locked,false);
   } finally {e.restore();}
 });

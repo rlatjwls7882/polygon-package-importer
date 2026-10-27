@@ -1,5 +1,5 @@
 import { t, loadMessages } from '../i18n.js';
-import { readJob, stageJob, clearJob } from '../storage/jobs.js';
+import { readJob, patchJob, clearJob } from '../storage/jobs.js';
 import { decryptCredentialRecord } from '../storage/credentials.js';
 import { PolygonAPI } from '../polygon/api.js';
 import { executeImport } from '../polygon/import.js';
@@ -36,11 +36,11 @@ async function processJob(jobId, encryptedRecord, locale, attempt) {
       // closes mid-upload, the stored job resumes against the same problem.
       onCreated:async id => {
         job = {...job, mode:'replace', problemId:String(id)};
-        await stageJob(job, jobId);
+        await patchJob(jobId, {mode:job.mode, problemId:job.problemId});
       },
       onCheckpoint:async verification => {
         job = {...job, verification};
-        await stageJob(job, jobId);
+        await patchJob(jobId, {verification});
       },
       onProgress:({message,progress,stage,committed}) =>
         publish('IMPORT_PROGRESS', {
@@ -68,6 +68,9 @@ async function processJob(jobId, encryptedRecord, locale, attempt) {
       partial:!!error?.partial, committed:!!error?.committed,
       stage:error?.committed ? 'verification-failed' : 'upload-failed'
     }).catch(() => {});
+  } finally {
+    api?.dispose();
+    job = null;
   }
 }
 

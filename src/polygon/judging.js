@@ -53,13 +53,10 @@ export async function syncJudges({api, id, plan, target, apply, unchanged}, {cur
   }
 }
 
-async function desiredJudgeTests(plan, archive, kind) {
-  const source = kind === 'validator' ? plan.validatorTests : plan.checkerTests;
-  return Promise.all(source.map(async test => ({testIndex:test.index, testVerdict:test.verdict,
-    testInput:await archive.text(test.inputPath),
+async function desiredJudgeTest(test, archive, kind) {
+  return {testIndex:test.index, testVerdict:test.verdict, testInput:await archive.text(test.inputPath),
     ...(kind === 'checker' ? {testOutput:await archive.text(test.outputPath), testAnswer:await archive.text(test.answerPath)} :
-      {testset:test.testset || 'tests', ...(test.group ? {testGroup:test.group} : {})})
-  })));
+      {testset:test.testset || 'tests', ...(test.group ? {testGroup:test.group} : {})})};
 }
 
 function sameJudgeTest(old, props, kind) {
@@ -72,18 +69,19 @@ export async function prepareJudgeTests(context) {
   const {api, id, plan, archive, target, apply} = context;
   context.judgeTests = [];
   for (const kind of ['validator', 'checker']) {
-    const wanted = await desiredJudgeTests(plan, archive, kind);
+    const wanted = plan[kind + 'Tests'];
     const previous = target?.[kind + 'Tests'] || [];
     if (previous.some(test => !Number.isInteger(test.index) || test.index < 1 || typeof test.input !== 'string') ||
         new Set(previous.map(test => test.index)).size !== previous.length)
       throw Error(t('formatInvalidJudgeTests'));
-    const desired = new Map(wanted.map(props => [props.testIndex, props]));
-    const retained = new Map();
+    const desired = new Map(wanted.map(test => [test.index, test]));
+    const retained = new Set();
     // Deleting changed self-tests first handles swapped/duplicate inputs and
     // removes old group context before groups are disabled or deleted.
     for (const old of previous) {
-      const props = desired.get(old.index);
-      if (props && sameJudgeTest(old, props, kind)) retained.set(old.index, old);
+      const test = desired.get(old.index);
+      const props = test ? await desiredJudgeTest(test, archive, kind) : null;
+      if (props && sameJudgeTest(old, props, kind)) retained.add(old.index);
       else await apply(t('formatDeleteJudgeTest', kind, old.index),
         () => api.problem(kind === 'validator' ? 'deleteValidatorTest' : 'deleteCheckerTest', id, {testIndex:old.index}));
     }
@@ -92,19 +90,25 @@ export async function prepareJudgeTests(context) {
 }
 
 export async function syncJudgeTests(context) {
-  const {api, id, apply, unchanged, read} = context;
+  const {api, id, archive, apply, unchanged, read} = context;
   if (!context.judgeTests) await prepareJudgeTests(context);
   for (const {kind, wanted, retained, dirty} of context.judgeTests) {
-    for (const props of wanted) {
-      if (retained.has(props.testIndex)) unchanged(t('syncSelfTest', kind, props.testIndex));
-      else await apply(t('syncSelfTest', kind, props.testIndex),
-        () => api.problem(kind === 'validator' ? 'saveValidatorTest' : 'saveCheckerTest', id, props));
+    for (const test of wanted) {
+      if (retained.has(test.index)) unchanged(t('syncSelfTest', kind, test.index));
+      else {
+        const props = await desiredJudgeTest(test, archive, kind);
+        await apply(t('syncSelfTest', kind, test.index),
+          () => api.problem(kind === 'validator' ? 'saveValidatorTest' : 'saveCheckerTest', id, props));
+      }
     }
     if (!dirty) continue;
     const saved = await read(t('formatVerifyJudgeTests', kind), () => api.problem(kind + 'Tests', id));
     if (!Array.isArray(saved) || saved.length !== wanted.length ||
-        new Set(saved.map(test => test.index)).size !== saved.length ||
-        wanted.some(props => !sameJudgeTest(saved.find(test => test.index === props.testIndex), props, kind)))
+        new Set(saved.map(test => test.index)).size !== saved.length)
       throw Error(t('formatJudgeTestsMismatch', kind));
+    const byIndex = new Map(saved.map(test => [test.index, test]));
+    for (const test of wanted)
+      if (!sameJudgeTest(byIndex.get(test.index), await desiredJudgeTest(test, archive, kind), kind))
+        throw Error(t('formatJudgeTestsMismatch', kind));
   }
 }

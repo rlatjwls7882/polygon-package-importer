@@ -6,6 +6,8 @@ const validPolygonFileName = name => /^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(name);
 const textDecoder = new TextDecoder('utf-8', {fatal:true});
 
 export async function readAssets(root, archive, plan) {
+  const sourceByName = new Map(plan.sources.map(file => [file.name, file]));
+  const resourceByName = new Map(plan.resources.map(file => [file.name, file]));
   const validators = CHILDREN(CHILD(CHILD(root, 'assets'), 'validators'), 'validator');
   if (validators.length > 1) throw Error(t('formatMultipleValidators'));
   function addSource(src) {
@@ -14,9 +16,12 @@ export async function readAssets(root, archive, plan) {
     const name = basename(path);
     if (!path || !archive.has(path)) throw Error(t('modelMissingSourceFile', path || t('modelNoPath')));
     const sourceType = readSourceType(src);
-    const existing = plan.sources.find(x => x.name === name);
+    const existing = sourceByName.get(name);
     if (existing && (existing.path !== path || existing.sourceType !== sourceType)) throw Error(t('modelDifferentSourceFilesShareTheSameName', name));
-    if (!existing) plan.sources.push({ name, path, sourceType });
+    if (!existing) {
+      const file = {name, path, sourceType};
+      plan.sources.push(file); sourceByName.set(name, file);
+    }
     return name;
   }
   const assets = CHILD(root, 'assets');
@@ -55,7 +60,7 @@ export async function readAssets(root, archive, plan) {
       continue;
     }
     const resourceAdvancedProperties = readResourceProperties(f);
-    const previous = plan.resources.find(x => x.name === name);
+    const previous = resourceByName.get(name);
     if (previous) {
       const [before, after] = await Promise.all([archive.bytes(previous.path), archive.bytes(path)]);
       let equal = before.length === after.length && before.every((byte, i) => byte === after[i]);
@@ -72,7 +77,8 @@ export async function readAssets(root, archive, plan) {
         plan.unsupported.push(t('modelResourceNameConflict', name, previous.path, path));
       continue;
     }
-    plan.resources.push({ name, path, resourceAdvancedProperties });
+    const resource = { name, path, resourceAdvancedProperties };
+    plan.resources.push(resource); resourceByName.set(name, resource);
   }
   for (const f of CHILDREN(CHILD(files, 'auxiliary-files'), 'file')) {
     const path = ATTR(f, 'path');

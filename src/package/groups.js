@@ -51,12 +51,15 @@ export function readGroups(ts, plan) {
   }));
   orderGroups(plan.groups);
   const byName = new Map(plan.groups.map(group => [group.name, group]));
-  for (const test of plan.tests)
+  const membersByGroup = new Map(plan.groups.map(group => [group.name, []]));
+  for (const test of plan.tests) {
     if (test.group && !byName.has(test.group)) throw Error(t('modelATestReferencesAGroupNotDefined'));
+    membersByGroup.get(test.group)?.push(test);
+  }
 
   for (let i = 0; i < elements.length; i++) {
     const group = plan.groups[i], element = elements[i];
-    const members = plan.tests.filter(test => test.group === group.name);
+    const members = membersByGroup.get(group.name);
     // The API creates a group by assigning a test; it cannot create empty groups.
     if (!members.length) throw Error(t('packageEmptyGroup', group.name));
     if (!element.hasAttribute('points')) continue;
