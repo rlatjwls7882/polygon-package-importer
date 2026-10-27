@@ -51,3 +51,50 @@ test('invalid stress response must not allow overwriting a problem', async () =>
   mock.api.problem=(method,...args)=>method==='stresses'?Promise.resolve(null):original(method,...args);
   await assert.rejects(()=>readTarget(mock.api,42,makePlan()));
 });
+
+
+test('strict file validation falls back without replacing the original source', async () => {
+  const mock=createPolygon(),plan=makePlan(),original=mock.api.problem;
+  plan.solutions=[{name:'same.cpp',path:'same.cpp',tag:'WA'}];
+  mock.state.solutions.set('same.cpp',{name:'same.cpp',file:'original\r\n',tag:'OK'});
+  let rejected=0;
+  mock.api.problem=async(method,id,args,options)=>{
+    if(method==='saveSolution' && !Object.hasOwn(args,'file')) {
+      rejected++;throw Error('problem.saveSolution: file: Field should not be empty');
+    }
+    return original(method,id,args,options);
+  };
+  await sync(mock,plan,{'same.cpp':'original\n'});
+  assert.equal(rejected,1);
+  assert.equal(mock.state.solutions.get('same.cpp').file,'original\r\n');
+  assert.equal(mock.state.solutions.get('same.cpp').tag,'WA');
+});
+
+test('strict old-main demotion leaves its source intact when the new main fails', async () => {
+  const mock=createPolygon(),plan=makePlan(),original=mock.api.problem;
+  plan.solutions=[{name:'new.cpp',path:'new.cpp',tag:'MA'}];
+  mock.state.solutions.set('old.cpp',{name:'old.cpp',file:'preserve this source',tag:'MA'});
+  mock.api.problem=async(method,id,args,options)=>{
+    if(method==='saveSolution' && !Object.hasOwn(args,'file'))
+      throw Error('problem.saveSolution: file: Field should not be empty');
+    if(method==='saveSolution' && args.name==='new.cpp')throw Error('Network interrupted');
+    return original(method,id,args,options);
+  };
+  await assert.rejects(()=>sync(mock,plan,{'new.cpp':'new source'}),/Network interrupted/);
+  assert.equal(mock.state.solutions.get('old.cpp').file,'preserve this source');
+  assert.equal(mock.state.solutions.get('old.cpp').tag,'OK');
+  assert(!mock.calls.some(call=>call.method==='deleteSolution'));
+});
+
+test('unknown failures of tag-only edits are not blindly retried with source', async () => {
+  const mock=createPolygon(),plan=makePlan(),original=mock.api.problem;
+  plan.solutions=[{name:'same.cpp',path:'same.cpp',tag:'WA'}];
+  mock.state.solutions.set('same.cpp',{name:'same.cpp',file:'original',tag:'OK'});
+  let saves=0;
+  mock.api.problem=async(method,id,args,options)=>{
+    if(method==='saveSolution'){saves++;throw Error('Connection lost after response');}
+    return original(method,id,args,options);
+  };
+  await assert.rejects(()=>sync(mock,plan,{'same.cpp':'original'}),/Connection lost/);
+  assert.equal(saves,1);
+});

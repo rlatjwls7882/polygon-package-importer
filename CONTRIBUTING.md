@@ -76,7 +76,9 @@ The 100 MiB ZIP limit is checked again by the uploader, not only by the popup.
 
 File comparisons account for LF/CRLF-equivalent lengths. Tag-only solution updates
 use the API's optional `file` parameter rather than downloading and re-uploading the
-old main solution. API response parsing and backoff stay in the serialized request
+old main solution. An explicit `file: Field should not be empty` validation error
+falls back to the original source; network errors do not trigger this fallback.
+API response parsing and backoff stay in the serialized request
 queue; network errors on mutations are still not retried automatically.
 
 Offline comparison with an older checkout:

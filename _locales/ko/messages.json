@@ -650,6 +650,9 @@
   "syncSolution": {
     "message": "솔루션: $1"
   },
+  "syncSolutionSourceUnavailable": {
+    "message": "태그를 변경하기 전에 기존 솔루션 소스를 읽지 못했습니다: $1"
+  },
   "syncStatement": {
     "message": "지문: $1"
   },

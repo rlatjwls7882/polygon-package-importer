@@ -650,6 +650,9 @@
   "syncSolution": {
     "message": "Solution: $1"
   },
+  "syncSolutionSourceUnavailable": {
+    "message": "Cannot read the existing solution source before changing its tag: $1"
+  },
   "syncStatement": {
     "message": "Statement: $1"
   },

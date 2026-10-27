@@ -42,6 +42,24 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
     }
   }
 
+  let requiresSolutionFile = false;
+  async function saveSolution(props, original) {
+    if (Object.hasOwn(props, 'file')) return api.problem('saveSolution', id, props);
+    if (!requiresSolutionFile) {
+      try { return await api.problem('saveSolution', id, props); }
+      catch (error) {
+        // Some Polygon deployments reject the documented tag-only edit. Fall
+        // back only on this explicit pre-write validation, never on timeouts.
+        if (!/^(?:problem\.saveSolution:\s*)?file:\s*Field should not be empty\.?$/i.test(String(error?.message).trim()))
+          throw error;
+        requiresSolutionFile = true;
+      }
+    }
+    const file = await original();
+    if (typeof file !== 'string' || !file.length) throw Error(t('syncSolutionSourceUnavailable', props.name));
+    return api.problem('saveSolution', id, {...props, file});
+  }
+
   const remoteSolutions = new Map((target?.solutions || []).map(s => [s.name, s]));
   const wantedMain = plan.solutions.find(s => s.tag === 'MA');
   const previousMain = (target?.solutions || []).find(s => s.tag === 'MA');
@@ -52,25 +70,27 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
     const retained = plan.solutions.find(s => s.name === previousMain.name);
     const tag = retained?.tag ?? 'OK';
     await apply(t('syncUpdatingPreviousMainSolutionTag', previousMain.name),
-      () => api.problem('saveSolution', id, {name:previousMain.name, tag}));
+      () => saveSolution({name:previousMain.name, tag}, () =>
+        read(t('syncComparingSolution', previousMain.name),
+          () => api.problem('viewSolution', id, {name:previousMain.name}, {raw:true}))));
     remoteSolutions.set(previousMain.name, {...previousMain, tag});
   }
   for (const solution of plan.solutions) {
     const old = remoteSolutions.get(solution.name);
     const localContent = await archive.text(solution.path);
-    let same = false;
+    let same = false, remoteContent;
     if (old) {
       if (mayMatchLength(old.length, localContent)) {
-        const content = await read(t('syncComparingSolution', solution.name),
+        remoteContent = await read(t('syncComparingSolution', solution.name),
           () => api.problem('viewSolution', id, {name:solution.name}, {raw:true}));
-        same = sameText(content, localContent);
+        same = sameText(remoteContent, localContent);
       }
     }
     const tagDiff = !old || old.tag !== solution.tag;
     if (same && !tagDiff) unchanged(t('syncSolution', solution.name));
-    else await apply(t('syncSavingSolution', solution.name), () => api.problem('saveSolution', id, {
+    else await apply(t('syncSavingSolution', solution.name), () => saveSolution({
       name:solution.name, ...(!same ? {file:localContent} : {}), ...(tagDiff ? {tag:solution.tag} : {})
-    }));
+    }, () => remoteContent));
   }
 }
 
