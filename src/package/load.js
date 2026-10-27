@@ -2,6 +2,7 @@ import { ATTR, CHILD, CHILDREN, resolveXmlText } from './xml.js';
 import { readJudging } from './judging.js';
 import { readStatements } from './statements.js';
 import { readAssets } from './assets.js';
+import { readExamples } from './examples.js';
 import { readTests } from './tests.js';
 import { validatePackage } from './validate.js';
 
@@ -17,6 +18,7 @@ export async function loadPolygonPackage(archive) {
   await readAssets(root, archive, plan);
   plan.tags = CHILDREN(CHILD(root, 'tags'), 'tag').map(x => ATTR(x, 'value')).filter(Boolean);
   await readTests(root, testset, archive, plan);
+  await readExamples(archive, plan);
   await validatePackage(archive, plan);
   return plan;
 }

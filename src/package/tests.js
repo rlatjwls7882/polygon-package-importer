@@ -1,3 +1,4 @@
+import { readGroups, readPoints } from './groups.js';
 import { t } from '../i18n.js';
 import { CHILD, CHILDREN, TEXT, ATTR, KIND_DESC } from './xml.js';
 const mapVerdict = s => s.replaceAll('-', '_').toUpperCase();
@@ -30,7 +31,7 @@ export async function readTests(root, ts, archive, plan) {
     const method = ATTR(el, 'method');
     if (!['manual', 'generated'].includes(method)) throw Error(t('modelUnsupportedTestMethodTest', method, i+1));
     const test = { index: i + 1, method, description: ATTR(el, 'description'), sample: ATTR(el, 'sample') === 'true',
-      group: ATTR(el, 'group'), points: el.hasAttribute('points') ? Number(ATTR(el,'points')) : null, cmd: ATTR(el, 'cmd') };
+      group: ATTR(el, 'group'), points: el.hasAttribute('points') ? readPoints(ATTR(el,'points'), String(i + 1)) : null, cmd: ATTR(el, 'cmd') };
     const inputCandidate = asIndexPath(pattern, i + 1);
     const inputPath = [inputCandidate, 'files/' + inputCandidate, 'files/tests/' + inputCandidate].find(p => archive.has(p));
     if (method === 'manual') test.path = await testPath(archive, pattern, i + 1);
@@ -48,18 +49,9 @@ export async function readTests(root, ts, archive, plan) {
       const answer = asIndexPath(answerPattern, i + 1);
       test.outputPath = [answer, 'files/' + answer, 'files/tests/' + answer].find(p => archive.has(p));
     }
-    if (test.points != null && (!Number.isFinite(test.points) || test.points < 0 || test.points >= 1e9))
-      throw Error(t('modelTestInvalidScore', i+1));
     plan.tests.push(test);
   }
-  plan.groups = CHILDREN(CHILD(ts, 'groups'), 'group').map(el => ({
-    name: ATTR(el, 'name'), feedbackPolicy: mapVerdict(ATTR(el, 'feedback-policy') || 'complete'),
-    pointsPolicy: mapVerdict(ATTR(el, 'points-policy') || 'complete-group'),
-    dependencies: CHILDREN(CHILD(el, 'dependencies'), 'dependency').map(d => ATTR(d, 'group')).filter(Boolean)
-  }));
-  if (plan.groups.some(g => !g.name)) throw Error(t('modelTestGroupWithoutAName'));
-  if (plan.tests.some(t => t.group && !plan.groups.some(g => g.name === t.group)))
-    plan.unsupported.push(t('modelATestReferencesAGroupNotDefined'));
+  readGroups(ts, plan);
 
   // Polygon ZIPs may contain separate validator/checker testsets.
   async function parseSpecialTests(desc, kind) {

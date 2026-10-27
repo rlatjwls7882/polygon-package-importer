@@ -24,6 +24,8 @@ with tempfile.TemporaryDirectory() as d:
     META:MARKER,
     'tests/01':'1\n',
     'tests/01.a':'1\n',
+    'tests/03':'3\n',
+    'tests/04':'4\n',
     'files/interactor.cpp':'int main(){return 0;}',
     'validator/01':'1\n',
     'checker/01':'1\n',
@@ -50,7 +52,15 @@ with tempfile.TemporaryDirectory() as d:
  cases={}
  for fixture in sorted((ROOT/'fixtures').glob('*.xml')):
   xml=fixture.read_text(encoding='utf-8')
-  make_zip(fixture.stem+'.zip',{'problem.xml':xml})
+  extra={}
+  if fixture.stem.startswith('two-step-interactive'):
+   extra={'statement-sections/english/example.1':'public input\n',
+          'statement-sections/english/example.1.a':'public output\n',
+          'statement-sections/english/example.1.mu':'? 1\n> 2\n! 2\n',
+          'statement-sections/english/example.2':'second input\n',
+          'statement-sections/english/example.2.a':'second output\n',
+          'statement-sections/english/example.2.mu':'? 2\n> 3\n! 3\n'}
+  make_zip(fixture.stem+'.zip',{'problem.xml':xml, **extra})
   cases[fixture.stem]=tree(ET.fromstring(xml))
  make_zip('bad-input.zip', {'tests/01':b'\xff'})
  make_zip('missing-generator.zip', {'problem.xml':XML.replace('gen 99','absent 99')})
@@ -60,3 +70,5 @@ with tempfile.TemporaryDirectory() as d:
  cases['bad-self-test']=cases['self-tests']
  (d/'cases.json').write_text(json.dumps(cases),encoding='utf-8')
  subprocess.run(['node',str(ROOT/'test_package.mjs'),str(d),str(d/'cases.json')],check=True)
+
+ subprocess.run(['node',str(ROOT/'test_formats.mjs'),str(d),str(d/'cases.json')],check=True)

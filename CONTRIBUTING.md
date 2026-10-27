@@ -28,16 +28,36 @@ python3 scripts/check_release.py
 Source files are uploaded before judge selection; obsolete attachments are removed last.
 The popup and offscreen HTML URLs, credential keys, and IndexedDB names stay stable.
 
-## Extending problem support
+## Problem formats
 
-The current import plan and default `tests` testset restriction are unchanged.
-This refactor does not claim full two-step, interactive, or subtask compatibility.
+`judging/@run-count` maps to `runTwice` (1 or 2 only). The interactor asset enables
+interactive judging; its `runs/run` text nodes select the interactive invocations.
+Run 1 is required, and run 2 maps to `interactiveSecondRun`. The API's interactive-only
+options are set after enabling interaction and reset before disabling it.
 
-- Judging modes: extend `package/judging.js`, `polygon/judging.js`, and `polygon/compare.js` together. Judge sources are read in `package/assets.js`.
-- Tests and subtask dependencies: extend `package/tests.js`, `polygon/tests.js`, and `polygon/groups.js` together. Do not infer dependency edges from declaration order.
-- Add a descriptor in `tests/fixtures` and test both parsing and the API write sequence before enabling a new format. The current fixtures cover batch, interactor sources, independent/dependent groups, and checker/validator tests.
+Subtask policies and dependency edges are read from `testset/groups`. Unknown groups,
+duplicate names, cycles, invalid policies, empty groups, and inconsistent scores fail
+before creating a Polygon problem. Group totals without per-test scores are supported
+for `COMPLETE_GROUP`; `EACH_TEST` requires explicit per-test scores. Scores are validated
+to hundredths. Changed dependency edges are cleared before replacing tests and restored
+in topological order afterwards. Ungrouped tests and zero scores explicitly replace
+old metadata. Group and judging settings are read back before committing.
 
-Check the [Polygon API documentation](https://codeforces.github.io/polygon-misc/API) when adding fields. `runTwice` and `interactiveSecondRun` are API fields, not yet mapped by this importer. Do not guess their XML representation.
+Statement sample files (`example.N`, `.a`, `.mu`) take precedence over judge input/output.
+A `.mu` sample enables interaction-log display. Different sample content for different
+statement languages is rejected because the API stores one shared preview per test.
+
+Only the default `tests` testset is supported; multiple testsets are not flattened.
+Binary-only interactors and statement images remain unsupported. No compiler or judge
+runs locally: this extension uploads the package to Polygon.
+
+Format contracts: [Polygon API](https://codeforces.github.io/polygon-misc/API)
+(`runTwice`, `interactiveSecondRun`, `saveTest`, `saveTestGroup`), native
+[run-count descriptor](https://github.com/noisg/sg_noi_archive/blob/d44b1d5964f609ccc13ac76f935e700fb9b794fb/2022_qualification/lboard/problem.xml),
+and [interactor run parsing](https://github.com/Niobium-41-nb/p2h/blob/72a3335158d51b8e056b9324fc5569d9bc7afd81/polygon_tests.py).
+The synthetic fixtures exercise the formats and their combinations; the stateful API
+double rejects wrong request ordering and injects failures before/after writes.
+These tests do not replace a live upload smoke test.
 
 Keep UI messages in both `_locales/en/messages.json` and `_locales/ko/messages.json`.
 Offscreen documents load the bundled catalog through `chrome.runtime.getURL` because they do not expose `chrome.i18n`.

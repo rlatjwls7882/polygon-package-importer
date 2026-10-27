@@ -10,7 +10,14 @@ const plan = {
   tests:[], groups:[], validatorTests:[], checkerTests:[], tags:[]
 };
 const calls = [];
-const api = {problem:async (method,id,args) => {calls.push({method,id,args}); return {};}};
+const info = {...plan.info};
+const api = {problem:async (method,id,args) => {
+  calls.push({method,id,args});
+  if (method==='info') return info;
+  if (method==='interactor') return 'interactor.cpp';
+  if (method==='updateInfo') Object.assign(info,args);
+  return {};
+}};
 const run = (_, task) => task();
 await syncPackage({api,id:42,plan,archive:{text:async () => 'int main(){}'},read:run,write:run});
 const methods = calls.map(call => call.method);
@@ -24,11 +31,15 @@ const groups = [
   {name:'small',dependencies:[],pointsPolicy:'COMPLETE_GROUP',feedbackPolicy:'COMPLETE'}
 ];
 const groupCalls = [], skipped = [];
-let existing = [];
+let existing = groups.map(group=>({...group,pointsPolicy:'EACH_TEST',dependencies:[]}));
 const context = {
   api:{problem:async (method,id,args) => {
     if (method === 'viewTestGroup') return existing;
     groupCalls.push({method,id,args});
+    if (method==='saveTestGroup') {
+      const group=existing.find(group=>group.name===args.group);
+      Object.assign(group,{pointsPolicy:args.pointsPolicy,feedbackPolicy:args.feedbackPolicy,dependencies:args.dependencies?args.dependencies.split(','):[]});
+    }
     return {};
   }}, id:42,
   plan:{groups,tests:[{group:'small',points:30},{group:'large',points:70}]},
@@ -37,8 +48,8 @@ const context = {
 await configureScoring(context);
 await syncGroups(context);
 assert.deepEqual(groupCalls.map(call => call.method), ['enableGroups','enablePoints','saveTestGroup','saveTestGroup']);
-assert.equal(groupCalls[2].args.dependencies,'small');
-assert.equal(groupCalls[3].args.dependencies,'');
+assert.equal(groupCalls[2].args.dependencies,'');
+assert.equal(groupCalls[3].args.dependencies,'small');
 assert(groupCalls.filter(call => call.method !== 'enablePoints').every(call => call.args.testset === 'tests'));
 existing = structuredClone(groups);
 context.target = {tests:[{group:'small',points:30},{group:'large',points:70}]};

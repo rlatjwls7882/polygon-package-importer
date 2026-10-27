@@ -15,7 +15,7 @@ run(sys.executable, TESTS / 'test_structure.py')
 run(sys.executable, TESTS / 'run_logic.py')
 # These are run with generated fixtures, or require an explicitly supplied real ZIP.
 with_arguments = {'test_logic.mjs', 'test_import_engine.mjs', 'test_popup.mjs',
-                  'test_package.mjs', 'test_real_package.mjs', 'test_delta_real.mjs'}
+                  'test_package.mjs', 'test_formats.mjs', 'test_real_package.mjs', 'test_delta_real.mjs'}
 for path in sorted(TESTS.glob('test_*.mjs')):
     if path.name not in with_arguments:
         run('node', path)

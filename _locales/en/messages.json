@@ -299,12 +299,6 @@
   "modelTestGeneratorSourceIsMissingFromThe": {
     "message": "Test $1: Generator source $2 is missing from the executable list."
   },
-  "modelTestGroupWithoutAName": {
-    "message": "Test group without a name."
-  },
-  "modelTestInvalidScore": {
-    "message": "Test $1: Invalid score."
-  },
   "modelTestIsNotUtf8Text": {
     "message": "Test $1: $2 is not UTF-8 text."
   },
@@ -346,6 +340,63 @@
   },
   "offscreenSavedZipNotFoundSelectItAgain": {
     "message": "Saved ZIP not found. Select it again."
+  },
+  "packageAmbiguousGroupPoints": {
+    "message": "Group $1 uses EACH_TEST but has only a group score. Specify points on each test."
+  },
+  "packageConflictingSamples": {
+    "message": "Sample $1 differs between statement languages. Polygon API has one shared sample per test."
+  },
+  "packageCyclicGroups": {
+    "message": "Cyclic group dependency involving $1."
+  },
+  "packageEmptyGroup": {
+    "message": "Group $1 has no tests. Polygon API cannot create an empty group."
+  },
+  "packageGroupCount": {
+    "message": "$1 subtasks"
+  },
+  "packageGroupPointsMismatch": {
+    "message": "Group $1 points do not match the sum of its test points."
+  },
+  "packageInvalidGroupDependencies": {
+    "message": "Invalid or duplicate dependencies for group $1."
+  },
+  "packageInvalidGroupName": {
+    "message": "Empty, duplicate, or invalid group name: $1"
+  },
+  "packageInvalidGroupPolicy": {
+    "message": "Unsupported points or feedback policy for group $1."
+  },
+  "packageInvalidInteractorRuns": {
+    "message": "Interactor runs must include run 1, and may include run 2 only for a two-step problem."
+  },
+  "packageInvalidPoints": {
+    "message": "Invalid points for $1: $2. Use a non-negative value below 1e9 with at most two decimal places."
+  },
+  "packageMissingGroupDependency": {
+    "message": "Group $1 depends on missing group $2."
+  },
+  "packageMissingInteractorSource": {
+    "message": "Interactive package is missing the interactor source. A precompiled binary alone is not sufficient."
+  },
+  "packageModeInteractive": {
+    "message": "Interactive"
+  },
+  "packageModeInteractiveBoth": {
+    "message": "Both runs interactive"
+  },
+  "packageModeInteractiveFirst": {
+    "message": "Interactive first run"
+  },
+  "packageModeTwoStep": {
+    "message": "Two-step"
+  },
+  "packageUnexpectedInteractionLog": {
+    "message": "Test $1 has an interaction log but the problem has no interactor."
+  },
+  "packageUnsupportedRunCount": {
+    "message": "Unsupported run-count: $1. Only one or two runs are supported."
   },
   "packageZip": {
     "message": "Polygon package ZIP"
@@ -494,6 +545,9 @@
   "syncCheckingTestsAfterDeletion": {
     "message": "Checking tests after deletion"
   },
+  "syncClearGroupDependencies": {
+    "message": "Clearing previous dependencies for $1"
+  },
   "syncComparing": {
     "message": "Comparing $1: $2"
   },
@@ -554,11 +608,26 @@
   "syncGeneratedTestScript": {
     "message": "Generated test script"
   },
+  "syncGroupMismatch": {
+    "message": "Saved group policies or dependencies do not match the ZIP."
+  },
+  "syncInvalidGroupResponse": {
+    "message": "Could not read valid test group settings."
+  },
   "syncInvalidResponseWhenReloadingTests": {
     "message": "Invalid response when reloading tests."
   },
+  "syncJudgingMismatch": {
+    "message": "Saved judging settings or interactor do not match the ZIP. Changes were not committed."
+  },
+  "syncJudgingSettings": {
+    "message": "Updating judging options"
+  },
   "syncManualTest": {
     "message": "Manual test $1/$2"
+  },
+  "syncMissingCreatedGroup": {
+    "message": "Group $1 was not created by its tests."
   },
   "syncOverwriteStoppedCouldNotReadExistingStatement": {
     "message": "Overwrite stopped: could not read existing statement attachment resources."
@@ -593,11 +662,11 @@
   "syncTags": {
     "message": "Tags"
   },
-  "syncTestCountNumberingOrGenerationModeDiffers": {
-    "message": "Test count, numbering, or generation mode differs from the ZIP after upload."
-  },
   "syncTestGroup": {
     "message": "Test group: $1"
+  },
+  "syncTestMetadataMismatch": {
+    "message": "Uploaded tests differ from the ZIP in numbering, generation mode, samples, groups, or points."
   },
   "syncTimeMemoryAndIOSettings": {
     "message": "Time, memory, and I/O settings"
@@ -607,6 +676,9 @@
   },
   "syncUploadingGeneratedTestScript": {
     "message": "Uploading generated test script"
+  },
+  "syncVerifyJudging": {
+    "message": "Verifying judging options"
   },
   "syncVerifyingChangedTestNumbering": {
     "message": "Verifying changed test numbering"

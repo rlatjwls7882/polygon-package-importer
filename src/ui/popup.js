@@ -93,8 +93,13 @@ async function analyze() {
       const archive = await ZipArchive.fromFile(file);
       const plan = await loadPolygonPackage(archive);
       if (plan.unsupported.length) throw Error(plan.unsupported.join('; '));
-      $('packageInfo').textContent =
-        t('popupTestsSolutions', plan.name, plan.tests.length, plan.solutions.length);
+      const details = [t('popupTestsSolutions', plan.name, plan.tests.length, plan.solutions.length)];
+      if (plan.info.runTwice) details.push(t('packageModeTwoStep'));
+      if (plan.info.interactive) details.push(plan.info.runTwice ?
+        (plan.info.interactiveSecondRun ? t('packageModeInteractiveBoth') : t('packageModeInteractiveFirst')) :
+        t('packageModeInteractive'));
+      if (plan.groups.length) details.push(t('packageGroupCount', plan.groups.length));
+      $('packageInfo').textContent = details.join(' · ');
       validPackage = true;
     } catch (error) {
       $('packageInfo').textContent = t('popupInvalidPackage');
