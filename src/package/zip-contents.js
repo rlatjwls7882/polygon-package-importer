@@ -79,9 +79,9 @@ export class ZipContents {
     } else {
       const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
       const reader = stream.getReader(); this.readers.add(reader);
-      bytes = new Uint8Array(entry.size);
       let offset = 0;
       try {
+        bytes = new Uint8Array(entry.size);
         for (;;) {
           this.checkOpen();
           const {done, value} = await reader.read();

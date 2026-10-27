@@ -8,9 +8,9 @@ export const MAX_ZIP_SIZE = 100 * 1024 * 1024;
 export class ZipArchive {
   static async fromFile(file, options = {}) {
     options.signal?.throwIfAborted();
-    if (!file || !Number.isFinite(file.size) || file.size < 0 || file.size > MAX_ZIP_SIZE)
+    if (!file || !Number.isSafeInteger(file.size) || file.size < 0 || file.size > MAX_ZIP_SIZE)
       throw Error(t('zipArchiveTooLarge'));
-    const buffer = await file.arrayBuffer();
+    const buffer = await readFileBuffer(file, options.signal);
     options.signal?.throwIfAborted();
     return new ZipArchive(buffer, options);
   }
@@ -62,4 +62,34 @@ export class ZipArchive {
     }
     return value.text;
   }
+}
+
+// File.arrayBuffer() cannot be interrupted. A native File/Blob stream can be
+// cancelled immediately when a popup selects another file or closes.
+async function readFileBuffer(file, signal) {
+  if (typeof file.stream !== 'function') {
+    const buffer = await file.arrayBuffer();
+    signal?.throwIfAborted();
+    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength !== file.size)
+      throw Error(t('zipFileSizeMismatch'));
+    return buffer;
+  }
+  const reader = file.stream().getReader();
+  const abort = () => {reader.cancel(signal.reason).catch(() => {});};
+  signal?.addEventListener('abort', abort, {once:true});
+  try {
+    signal?.throwIfAborted();
+    const bytes = new Uint8Array(file.size);
+    let offset = 0;
+    for (;;) {
+      const {done, value} = await reader.read();
+      signal?.throwIfAborted();
+      if (done) break;
+      if (offset + value.byteLength > bytes.length) throw Error(t('zipFileSizeMismatch'));
+      bytes.set(value, offset); offset += value.byteLength;
+    }
+    if (offset !== bytes.length) throw Error(t('zipFileSizeMismatch'));
+    return bytes.buffer;
+  } catch (error) {await reader.cancel().catch(() => {}); throw error;}
+  finally {signal?.removeEventListener('abort', abort); reader.releaseLock();}
 }

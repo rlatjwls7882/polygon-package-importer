@@ -44,7 +44,7 @@ def png_dimensions(path):
 
 popup = parse_html('popup.html')
 offscreen = parse_html('offscreen.html')
-assert not (used_ids('src/ui/popup.js') - popup.names), 'Missing popup elements'
+assert not (used_ids('src/ui/popup-controller.js') - popup.names), 'Missing popup elements'
 assert not (used_ids('src/ui/credentials.js') - popup.names), 'Missing API-key popup elements'
 
 assert manifest['name'] == '__MSG_extensionName__'

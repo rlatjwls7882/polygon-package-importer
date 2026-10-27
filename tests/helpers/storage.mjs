@@ -100,7 +100,7 @@ export function createFakeChromeStorage() {
         getManifest:()=>({permissions:['storage']})
       },
       storage: {
-        onChanged: {addListener(fn){listeners.add(fn);}},
+        onChanged: {addListener(fn){listeners.add(fn);},removeListener(fn){listeners.delete(fn);},hasListener(fn){return listeners.has(fn);}},
         local: {
           accessLevel:null,
           async setAccessLevel({accessLevel}){this.accessLevel=accessLevel;},

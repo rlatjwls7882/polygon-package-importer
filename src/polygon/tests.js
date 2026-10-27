@@ -20,7 +20,8 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
 
   const wantedTests = new Map(plan.tests.map(t => [t.index, t]));
   let oldTests = target?.tests || [];
-  const oldGenerated = oldTests.some(t => !t.manual);
+  const originalByIndex = indexMap(oldTests);
+  const oldGenerated = oldTests.some(t => !boolean(t.manual));
   const generated = plan.tests.filter(t => t.method === 'generated');
   // Assign groups explicitly afterwards. A script's @group annotation can leak
   // from one generated test into the next ungrouped test.
@@ -31,7 +32,7 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
       () => api.problem('script', id, {testset:'tests'}, {raw:true}));
   let scriptDiffers = oldGenerated ? !sameText(currentScript, wantedScript) : generated.length > 0;
   if (oldGenerated && plan.tests.some(t =>
-      t.method === 'manual' && oldTests.some(x => Number(x.index) === t.index && !x.manual)))
+      t.method === 'manual' && originalByIndex.has(t.index) && !boolean(originalByIndex.get(t.index).manual)))
     scriptDiffers = true;
 
   if ((oldGenerated && scriptDiffers) || oldTests.some(remote => {
@@ -58,7 +59,7 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
   }
   if (toDelete.length) {
     const snapshot = await read(t('syncCheckingTestsAfterDeletion'),
-      () => api.problem('tests', id, {testset:'tests', noInputs:'false'}));
+      () => api.problem('tests', id, {testset:'tests', noInputs:String(!plan.tests.some(test => test.method === 'manual'))}));
     if (!Array.isArray(snapshot)) throw Error(t('syncInvalidResponseWhenReloadingTests'));
     remoteByIndex = indexMap(snapshot);
   }

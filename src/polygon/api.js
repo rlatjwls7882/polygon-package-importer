@@ -1,4 +1,5 @@
-import { discardResponse, readBinary } from './response.js';
+import { discardResponse, readBinary, readText, RESPONSE_LIMITS } from './response.js';
+import { RequestSession, abortableDelay } from './request-session.js';
 import { MAX_ZIP_SIZE } from '../package/zip.js';
 import { t } from '../i18n.js';
 const BASE = 'https://polygon.codeforces.com/api/';
@@ -19,33 +20,29 @@ export class PolygonAPI {
   static minimumIntervalMs = 1200;
   static throttledIntervalMs = 2200;
   static maximumIntervalMs = 12000;
-  static sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  static sleep = abortableDelay;
 
-  constructor(key, secret) {
+  constructor(key, secret, limits = {}) {
     this.key = key.trim();
     this.secret = secret.trim();
     if (!this.key || !this.secret) throw Error(t('apiMissingCredentials'));
     this.minimumIntervalMs = PolygonAPI.minimumIntervalMs;
     this.onRateLimit = null;
-    this._gate = Promise.resolve();
+    this.session = new RequestSession();
+    this.limits = {...RESPONSE_LIMITS, ...limits};
+    if (Object.values(this.limits).some(value => !Number.isSafeInteger(value) || value < 1))
+      throw new RangeError('Invalid response limit');
     this._nextRequestAt = 0;
     this._cooldownUntil = 0;
-    this._closed = false;
-    this._responses = new Map();
-    this._controllers = new Set();
   }
 
   dispose() {
-    this._closed = true;
-    for (const controller of this._controllers) controller.abort();
-    this._controllers.clear();
-    for (const cleanup of this._responses.values()) cleanup();
-    this._responses.clear();
+    this.session.dispose();
     this.onRateLimit = null; this.sessionActive = null;
     this.key = ''; this.secret = '';
   }
 
-  checkOpen() { if (this._closed) throw new DOMException('API session closed', 'AbortError'); }
+  checkOpen() { this.session.checkOpen(); }
 
   safeDetail(detail) {
     let result = String(detail ?? '');
@@ -61,7 +58,7 @@ export class PolygonAPI {
   async pacedRequest(run) {
     this.checkOpen();
     const wait = Math.max(0, this._nextRequestAt - Date.now(), this._cooldownUntil - Date.now());
-    if (wait > 0) await PolygonAPI.sleep(wait);
+    if (wait > 0) await this.session.wait(wait, PolygonAPI.sleep);
     this.checkOpen();
     this._nextRequestAt = Date.now() + this.minimumIntervalMs;
     return run();
@@ -70,10 +67,7 @@ export class PolygonAPI {
   call(method, args = {}, options = {}) {
     // Keep response parsing and retries in the same queue slot. Otherwise the
     // next fetch can start before a slow 429 body has set the shared cooldown.
-    const invoke = () => this.callSerial(method, args, options);
-    const turn = this._gate.then(invoke, invoke);
-    this._gate = turn.then(() => undefined, () => undefined);
-    return turn;
+    return this.session.enqueue(() => this.callSerial(method, args, options));
   }
 
   async requestOnce(method, args) {
@@ -97,23 +91,15 @@ export class PolygonAPI {
         throw Error(t('apiApiVaultLockedBeforeTheRequestUpload', method));
 
       this.checkOpen();
-      const controller = new AbortController();
-      this._controllers.add(controller);
-      const timer = setTimeout(() => controller.abort(), 120000);
-      const cleanup = () => {clearTimeout(timer);this._controllers.delete(controller);};
       try {
-        const response = await fetch(BASE + method, {
-          method:'POST', body:form, credentials:'omit', redirect:'error', cache:'no-store',
-          signal:controller.signal
+        return await this.session.fetch(BASE + method, {
+          method:'POST', body:form, credentials:'omit', redirect:'error', cache:'no-store'
         });
-        if (this._closed) {await discardResponse(response);cleanup();this.checkOpen();}
-        this._responses.set(response, cleanup);
-        return response;
-      } catch (e) {
-        cleanup();
+      } catch (error) {
+        // Closed sessions expose no late transport detail that could contain
+        // credentials already removed by dispose(). Uncertain writes are not retried.
         this.checkOpen();
-        // The request could have reached Polygon; do not repeat uncertain mutations.
-        throw Error(t('apiNetworkErrorPolygonMayHaveProcessedThe', method, this.safeDetail(e?.message)));
+        throw Error(t('apiNetworkErrorPolygonMayHaveProcessedThe', method, this.safeDetail(error?.message)));
       }
     });
   }
@@ -122,6 +108,8 @@ export class PolygonAPI {
     for (let attempt = 0; attempt <= 4; attempt++) {
       const response = await this.requestOnce(method, args);
       try {
+        const limit = response.ok ? (raw ? this.limits.rawBytes : this.limits.jsonBytes) : this.limits.errorBytes;
+        const textBody = () => readText(response, limit, t('apiResponseTooLarge', method, limit));
         const rateLimited = response.status === 429;
         if (rateLimited) await discardResponse(response);
         let payload = null;
@@ -130,7 +118,7 @@ export class PolygonAPI {
           if ((binary || raw) && response.ok) {
             const mediaType = response.headers.get('content-type') || '';
             if (binary && !mediaType.includes('json')) return await readBinary(response, MAX_ZIP_SIZE, t('zipArchiveTooLarge'));
-            const text = await response.text();
+            const text = await textBody();
             // A .json resource itself may be served as application/json.
             // Treat only an explicit Polygon FAILED envelope as an API error.
             if (raw) {
@@ -146,7 +134,7 @@ export class PolygonAPI {
               if (!json) return text;
             } else payload = text;
           } else {
-            payload = await response.text();
+            payload = await textBody();
           }
           try { if (!json) json = JSON.parse(payload); }
           catch {
@@ -176,9 +164,7 @@ export class PolygonAPI {
           throw Error(method + ': ' + this.safeDetail(json?.comment || ('HTTP ' + response.status)));
         return json.result;
       } finally {
-        await discardResponse(response);
-        this._responses.get(response)?.();
-        this._responses.delete(response);
+        await this.session.release(response);
       }
     }
     throw Error(t('apiStoppedDueToRateLimits', method));

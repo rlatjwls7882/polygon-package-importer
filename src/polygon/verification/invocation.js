@@ -40,22 +40,32 @@ export function checkInvocation(detail, pkg, plan) {
         JSON.stringify(canonicalExtraTags(solution.extraTags || [])))
       throw Error(t('verifySolutionTagsMismatch', solution.name));
   }
-  const seen = new Set(), testIndices = new Set(invocation.tests.map(Number));
+  const solutionIndices = new Map(expectedSolutions.map((name, index) => [name, index]));
+  const testIndices = new Map(plan.tests.map((test, index) => [test.index, index]));
+  const pairCount = expectedSolutions.length * plan.tests.length;
+  // The importer allows at most 5,000 ZIP entries and 1,000 tests. Guard
+  // malformed responses/plans before allocating a dense coverage bitmap.
+  if (!Number.isSafeInteger(pairCount) || pairCount > 5_000_000)
+    throw Error(t('verifyInvocationCoverage'));
+  const seen = new Uint8Array(Math.ceil(pairCount / 8));
   const mainNames = new Set(plan.solutions.filter(solution => solution.tag === 'MA').map(solution => solution.name));
+  let count = 0, unfinished = false;
   for (const run of detail.runs) {
-    if (!solutionNames.has(run.solution) || !testIndices.has(Number(run.test)))
+    const solutionIndex = solutionIndices.get(run.solution), testIndex = testIndices.get(Number(run.test));
+    if (solutionIndex === undefined || testIndex === undefined)
       throw Error(t('verifyInvocationCoverage'));
-    const key = JSON.stringify([run.solution, Number(run.test)]);
-    if (seen.has(key)) throw Error(t('verifyInvocationCoverage'));
-    seen.add(key);
+    const position = solutionIndex * plan.tests.length + testIndex;
+    const byte = position >>> 3, bit = 1 << (position & 7);
+    if (seen[byte] & bit) throw Error(t('verifyInvocationCoverage'));
+    seen[byte] |= bit; count++;
     if (run.violateTag === true || ['CE','FL'].includes(run.verdict) ||
         (mainNames.has(run.solution) &&
           terminalVerdicts.has(run.verdict) && run.verdict !== 'OK'))
       throw Error(t('verifyRunFailed', run.solution, run.test, run.verdict, run.comment || ''));
     if (run.violateTag !== false) throw Error(t('verifyInvalidResponse'));
-    if (['NO','TS'].includes(run.verdict)) return null;
-    if (!terminalVerdicts.has(run.verdict)) throw Error(t('verifyInvalidResponse'));
+    if (['NO','TS'].includes(run.verdict)) unfinished = true;
+    else if (!terminalVerdicts.has(run.verdict)) throw Error(t('verifyInvalidResponse'));
   }
-  if (seen.size !== expectedSolutions.length * plan.tests.length) return null;
-  return {invocationId:invocation.id, solutions:expectedSolutions.length, tests:plan.tests.length, runs:seen.size};
+  if (unfinished || count !== pairCount) return null;
+  return {invocationId:invocation.id, solutions:expectedSolutions.length, tests:plan.tests.length, runs:count};
 }
