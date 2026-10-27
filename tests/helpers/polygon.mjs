@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 const copy = value => structuredClone(value);
 const flag = value => value === true || value === 'true';
-const writes = /^(?:save|set|delete|clear|enable|updateInfo|commitChanges)/;
+const writes = /^(?:save|set|delete|clear|enable|edit|updateInfo|commitChanges)/;
 
 // Stateful API double: reject invalid request ordering instead of accepting all writes.
 export function createPolygon() {
@@ -10,6 +10,8 @@ export function createPolygon() {
     info:{timeLimit:1000,memoryLimit:256,inputFile:'stdin',outputFile:'stdout',interactive:false,
       runTwice:false,interactiveSecondRun:false,useInteractionLogInExampleTests:false},
     entry:{id:42,revision:1,workingCopyRevision:1,modified:false,deleted:false,accessType:'OWNER',name:'test'},
+    fileMetadata:{source:new Map(),resource:new Map(),aux:new Map()},
+    solutionExtraTags:new Map(), checkerPercent:false, extraValidators:[],
     files:{source:new Map(),resource:new Map(),aux:new Map()}, solutions:new Map(), statements:{},
     tests:new Map(), groups:new Map(), groupsEnabled:false, pointsEnabled:false,
     checker:'', validator:'', interactor:'', tags:[], script:'', statementResources:[],
@@ -68,20 +70,47 @@ export function createPolygon() {
         return {};
       case 'files': return Object.fromEntries(Object.entries(state.files).map(([type,files]) => [
         type==='source'?'sourceFiles':type==='resource'?'resourceFiles':'auxFiles',
-        [...files].map(([name,body])=>({name,length:Buffer.byteLength(body)}))
+        [...files].map(([name,body])=>({name,length:Buffer.byteLength(body),...copy(state.fileMetadata[type].get(name)||{})}))
       ]));
-      case 'saveFile': state.files[args.type].set(args.name,args.file);return {};
+      case 'saveFile': {
+        if ('file' in args) state.files[args.type].set(args.name,args.file);
+        else assert(state.files[args.type].has(args.name),'New files require content');
+        const metadata=state.fileMetadata[args.type].get(args.name)||{};
+        if ('sourceType' in args) metadata.sourceType=args.sourceType;
+        if ('forTypes' in args) {
+          assert.equal(args.type,'resource');
+          if (!args.forTypes) delete metadata.resourceAdvancedProperties;
+          else {
+            assert.equal(args.stages,'COMPILE');assert.equal(args.assets,'SOLUTION');
+            metadata.resourceAdvancedProperties={forTypes:args.forTypes,stages:args.stages.split(';'),assets:args.assets.split(';'),main:false};
+          }
+        }
+        state.fileMetadata[args.type].set(args.name,metadata);return {};
+      }
       case 'viewFile': return state.files[args.type].get(args.name);
       case 'deleteFile':
         if (args.type==='source') assert(![...state.tests.values()].some(test =>
           !test.manual && test.scriptLine?.split(/\s+/)[0]===args.name.replace(/\.[^.]+$/,'')),
           'Cannot delete a generator still used by the script');
         state.files[args.type].delete(args.name);return {};
+      case 'extraValidators':return copy(state.extraValidators);
       case 'solutions': return [...state.solutions.values()].map(({file,...value})=>({...copy(value),length:Buffer.byteLength(file)}));
       case 'saveSolution': {
         const previous=state.solutions.get(args.name)||{};
         if (args.tag==='MA') assert(![...state.solutions.values()].some(solution=>solution.tag==='MA' && solution.name!==args.name));
         state.solutions.set(args.name,{...previous,...args});return {};
+      }
+      case 'editSolutionExtraTags': {
+        assert(state.solutions.has(args.name));
+        assert.equal(Boolean(args.testset)===Boolean(args.testGroup),false);
+        if (args.testset) assert.equal(args.testset,'tests');
+        if (args.testGroup) assert(state.groups.has(args.testGroup),'Create groups before setting their tags');
+        const key=args.testGroup?'testGroup':'testset';
+        const previous=state.solutionExtraTags.get(args.name)||[];
+        const next=previous.filter(tag=>tag[key]!==args[key]);
+        if (args.remove==='false') next.push({[key]:args[key],tag:args.tag});
+        else assert.equal(args.remove,'true');
+        state.solutionExtraTags.set(args.name,next);return {};
       }
       case 'viewSolution': return state.solutions.get(args.name)?.file;
       case 'deleteSolution': state.solutions.delete(args.name);return {};
@@ -100,6 +129,9 @@ export function createPolygon() {
       }
       case 'enableGroups': state.groupsEnabled=flag(args.enable);return {};
       case 'enablePoints': state.pointsEnabled=flag(args.enable);return {};
+      case 'enableTreatPointsFromCheckerAsPercent':
+        if(flag(args.enable))assert(state.pointsEnabled);
+        state.checkerPercent=flag(args.enable);return {};
       case 'tests': return listedTests(args.noInputs);
       case 'script': return state.script;
       case 'clearScript':
@@ -180,9 +212,15 @@ export function createPolygon() {
       case 'saveValidatorTest':case 'saveCheckerTest': {
         const tests=method==='saveValidatorTest'?state.validatorTests:state.checkerTests;
         const test={index:args.testIndex,expectedVerdict:args.testVerdict,input:args.testInput,
+          ...(method==='saveValidatorTest'?{testset:args.testset||'tests',group:args.testGroup||''}:{}),
           ...(args.testOutput!=null?{output:args.testOutput,answer:args.testAnswer}:{})};
         const index=tests.findIndex(test=>test.index===args.testIndex);
         if (index<0) tests.push(test);else tests[index]=test;return {};
+      }
+      case 'deleteValidatorTest':case 'deleteCheckerTest': {
+        const key=method==='deleteValidatorTest'?'validatorTests':'checkerTests';
+        assert(state[key].some(test=>test.index===args.testIndex));
+        state[key]=state[key].filter(test=>test.index!==args.testIndex);return {};
       }
       case 'commitChanges':state.commits++;state.entry.modified=false;return {committed:true};
       default:throw Error('Unexpected API call: '+method);

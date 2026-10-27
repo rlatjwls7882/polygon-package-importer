@@ -1,3 +1,4 @@
+import { assertNoDataWrites } from './helpers/noop.mjs';
 import { installDOMParser } from './helpers/xml.mjs';
 import './helpers/i18n.mjs';
 // Integration test of the new importer engine using a mock Polygon API.
@@ -30,13 +31,13 @@ async function buildMock() {
   ]) for(const f of list){
     const body=await archive.text(f.path);
     source.set(kind+':'+f.name,body);
-    files[key].push({name:f.name,length:new TextEncoder().encode(body).length});
+    files[key].push({name:f.name,length:new TextEncoder().encode(body).length,sourceType:f.sourceType,resourceAdvancedProperties:f.resourceAdvancedProperties});
   }
   const sols=[];
   for(const solution of plan.solutions){
     const body=await archive.text(solution.path);
     solutions.set(solution.name,body);
-    sols.push({name:solution.name,length:new TextEncoder().encode(body).length,tag:solution.tag});
+    sols.push({name:solution.name,length:new TextEncoder().encode(body).length,tag:solution.tag,sourceType:solution.sourceType});
   }
   const tests=[];
   for(const test of plan.tests){
@@ -77,7 +78,8 @@ async function buildMock() {
       calls.push('problem.'+method);
       switch(method) {
         case 'info':return clone(state.info);
-        case 'stresses':return [];
+        case 'stresses':case 'extraValidators':case 'validatorTests':case 'checkerTests':return [];
+        case 'editSolutionExtraTags':case 'enableTreatPointsFromCheckerAsPercent':return {};
         case 'files':return clone(state.files);
         case 'solutions':return clone(state.solutions);
         case 'statements':return clone(state.statements);
@@ -99,7 +101,12 @@ async function buildMock() {
         case 'saveTags':state.tags=args.tags.split(',');return {};
         case 'updateInfo':Object.assign(state.info,args);return {};
         case 'saveStatement':state.statements[args.lang]={...state.statements[args.lang],...args};return {};
-        case 'saveFile':source.set(args.type+':'+args.name,args.file);return {};
+        case 'saveFile': {
+          if('file' in args)source.set(args.type+':'+args.name,args.file);
+          const key={source:'sourceFiles',resource:'resourceFiles',aux:'auxFiles'}[args.type];
+          const file=state.files[key].find(file=>file.name===args.name);
+          if(args.sourceType && file)file.sourceType=args.sourceType;return {};
+        }
         case 'saveSolution':solutions.set(args.name,args.file);return {};
         case 'deleteStatementResource':
           if(state.failDeletionName===args.name)throw Error('simulated statement resource deletion failure');
@@ -119,12 +126,12 @@ const a=await buildMock();
 const logs=[];
 const result=await executeImport({job,api:a.api,onProgress:async message=>logs.push(message)});
 assert.equal(result.id,42);
-assert.equal(result.mutations,0);
-assert.equal(result.committed,false);
-assert.equal(a.state.commit,0);
+assertNoDataWrites(result,a.calls);
+assert.equal(result.committed,true);
+assert.equal(a.state.commit,1);
 assert.equal(logs.at(-1).progress,100);
-assert(!a.calls.some(s=>/save|delete|updateInfo|commitChanges/.test(s)));
-console.log('PASS: existing identical Polygon problem is not modified');
+assert(!a.calls.some(s=>/save|delete|updateInfo/.test(s)));
+console.log('PASS: identical data is skipped; extra tags without a getter are reconciled explicitly');
 
 const b=await buildMock();
 b.state.tests=b.state.tests.filter(t=>t.index!==2);
@@ -150,7 +157,7 @@ images.state.statementResources=[
   {name:'unused-diagram.svg',length:567}
 ];
 const imageResult=await executeImport({job,api:images.api});
-assert.equal(imageResult.mutations,2);
+assert.equal(imageResult.mutations,3);
 assert.equal(images.state.statementResources.length,0);
 assert.equal(images.state.commit,1);
 assert.equal(images.calls.filter(c=>c==='problem.deleteStatementResource').length,2);
@@ -162,8 +169,8 @@ console.log('PASS: overwrite clears stale statement images without altering ordi
 
 const beforeRetry=images.calls.length;
 const imageRetry=await executeImport({job,api:images.api});
-assert.equal(imageRetry.mutations,0);
-assert.equal(imageRetry.committed,false);
+assertNoDataWrites(imageRetry,images.calls.slice(beforeRetry));
+assert.equal(imageRetry.committed,true);
 assert(!images.calls.slice(beforeRetry).includes('problem.deleteStatementResource'));
 console.log('PASS: another overwrite does not re-delete statement images');
 
@@ -177,7 +184,7 @@ assert.deepEqual(interrupted.state.statementResources.map(f=>f.name),['second.jp
 assert.equal(interrupted.state.commit,0);
 interrupted.state.failDeletionName=null;
 const resumed=await executeImport({job,api:interrupted.api});
-assert.equal(resumed.mutations,1);
+assert.equal(resumed.mutations,2);
 assert.equal(resumed.committed,true);
 assert.deepEqual(interrupted.state.statementResources,[]);
 console.log('PASS: failed image cleanup resumes using Polygon remote state');

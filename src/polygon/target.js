@@ -29,9 +29,14 @@ export async function readTarget(api, id, plan) {
   }
 
   const [validatorTests, checkerTests] = await Promise.all([
-    plan.validatorTests.length ? api.problem('validatorTests', id) : Promise.resolve([]),
-    plan.checkerTests.length ? api.problem('checkerTests', id) : Promise.resolve([])
+    api.problem('validatorTests', id),
+    api.problem('checkerTests', id)
   ]);
+  if (!Array.isArray(validatorTests) || !Array.isArray(checkerTests))
+    throw Error(t('formatInvalidJudgeTests'));
+  const extraValidators = await api.problem('extraValidators', id);
+  if (!Array.isArray(extraValidators) || extraValidators.length)
+    throw Error(t('formatTargetExtraValidators'));
   return {
     ...entry, tests, files, solutions, statements, statementResources, validatorTests, checkerTests
   };

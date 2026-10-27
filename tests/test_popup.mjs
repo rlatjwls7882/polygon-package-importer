@@ -24,7 +24,7 @@ const ids=(
   'credentialSetup credentialMigration credentialManage credentialInitHelp credentialFeedback '+
   'retryCredentials saveCredentials migrateCredentials replaceCredentials cancelReplace '+
   'deleteCredentials key secret legacyPassword '+
-  'importForm zipFile packageInfo problemIdField problemId commit start '+
+  'importForm zipFile packageInfo problemIdField problemId commit verify start '+
   'progressSection progressTitle stateLabel bar jobSummary jobActions retry clearStatus '+
   'logDetails log error'
 ).split(' ');
@@ -39,6 +39,7 @@ function buildDOM() {
     Object.assign(new Element('replace'),{value:'replace',checked:false})
   ];
   elements.commit.checked=true;
+  elements.verify.checked=true;
   elements.start.disabled=true;
   globalThis.document={
     documentElement:{lang:'en'},
@@ -118,6 +119,7 @@ assert(!el('start').disabled,'analyzed ZIP should enable upload');
 await click('start');
 assert.equal(started,1);
 assert.equal((await readJob()).filename,'fixture.zip');
+assert.equal((await readJob()).verify,true,'New uploads request build verification by default');
 assert.equal((await readJob()).file.size,buffer.length);
 assert(!el('progressSection').hidden);
 assert(el('start').disabled);
@@ -199,3 +201,11 @@ releaseSlow();await oldAnalysis;
 assert(el('start').disabled,'Late result from an old ZIP must not enable upload for an invalid ZIP');
 assert.equal(el('packageInfo').textContent,chrome.i18n.getMessage('popupInvalidPackage'));
 console.log('PASS: stale asynchronous ZIP analysis cannot override the current file selection');
+
+el('commit').checked=false;
+await el('commit').handlers.change();
+assert.equal(el('verify').checked,false);
+el('verify').checked=true;
+await el('verify').handlers.change();
+assert.equal(el('commit').checked,true);
+console.log('PASS: build verification requires commit and upload-only remains an explicit choice');

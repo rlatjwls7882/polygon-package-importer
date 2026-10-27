@@ -17,6 +17,8 @@ Uploads continue after the popup closes. Failed uploads can be retried from the 
 
 Supports two-step and interactive problems, including an interactive second run. Subtask scores, scoring policies, and dependencies are preserved.
 
+By default, the extension commits the upload, then asks Polygon to build and run the solutions. **Uploaded** and **build/execution verified** are separate results. A failed build does not undo the commit; verification can be turned off.
+
 ## Before uploading
 
 **Back up existing problems before updating them.** Files, tests, and statement attachments missing from the ZIP may be deleted. There is no automatic backup.

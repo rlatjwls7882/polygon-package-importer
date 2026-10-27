@@ -1,9 +1,10 @@
+import { clearObsoleteSolutionTags, syncSolutionTags } from './solution-tags.js';
 import { t } from '../i18n.js';
 import { orderGroups } from '../package/groups.js';
 import { sameTagList } from './compare.js';
 import { syncStatements, deleteStatementResources } from './statements.js';
-import { syncFiles, deleteObsoleteFiles } from './files.js';
-import { syncInfo, syncJudges, syncJudgeTests, verifyJudging } from './judging.js';
+import { syncFiles, deleteObsoleteFiles, verifyFileMetadata } from './files.js';
+import { syncInfo, syncJudges, syncJudgeTests, prepareJudgeTests, verifyJudging } from './judging.js';
 import { configureScoring, readRemoteGroups, prepareGroups, syncGroups } from './groups.js';
 import { syncTests, verifyTests } from './tests.js';
 
@@ -44,16 +45,40 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   await syncStatements(context);
   await syncFiles(context);
   await syncJudges(context, {currentChecker, currentValidator, currentInteractor});
+  await prepareJudgeTests(context);
+  await clearObsoleteSolutionTags(context, currentGroups);
   await prepareGroups(context, currentGroups);
-  await configureScoring(context);
+  const revealTests = await configureScoring(context);
+  if (revealTests) {
+    const tests = await read(t('formatReloadTests'), () => api.problem('tests', id,
+      {testset:'tests', noInputs:String(!plan.tests.some(test => test.method === 'manual'))}));
+    if (!Array.isArray(tests)) throw Error(t('syncInvalidResponseWhenReloadingTests'));
+    context.target = {...target, tests};
+  }
   if (target && plan.groups.length && !target.tests.some(test => test.group)) {
     // Enabling groups can reveal metadata hidden in the previous snapshot.
     currentGroups = await readRemoteGroups(context);
+    await clearObsoleteSolutionTags(context, currentGroups);
     await prepareGroups(context, currentGroups);
   }
-  context.beforeReplacingTests = () => prepareGroups(context, currentGroups, true);
+  context.beforeReplacingTests = async () => {
+    if (target && !plan.groups.length && !target.tests.some(test => test.group)) {
+      // A disabled group can still own tests and dependency edges. Probe only
+      // when tests/scripts will be replaced; an unchanged batch problem needs
+      // no enable/disable writes. Restore the requested disabled mode on error.
+      await apply(t('syncEnablingTestGroups'), () => api.problem('enableGroups', id, {testset:'tests', enable:'true'}));
+      try {
+        currentGroups = await readRemoteGroups(context);
+        await clearObsoleteSolutionTags(context, currentGroups);
+        await prepareGroups(context, currentGroups, true);
+      } finally {
+        await apply(t('syncDisablingUnusedTestGroups'), () => api.problem('enableGroups', id, {testset:'tests', enable:'false'}));
+      }
+    } else await prepareGroups(context, currentGroups, true);
+  };
   await syncTests(context);
   await syncGroups(context, testMutations === 0 ? currentGroups : null);
+  await syncSolutionTags(context);
   await syncJudgeTests(context);
   // Old generator files cannot be removed while the previous script uses them.
   await deleteObsoleteFiles(context);
@@ -62,7 +87,10 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   else unchanged(t('syncTags'));
 
   await verifyTests(context, testMutations);
-  if (mutations > 0) await verifyJudging(context);
+  if (mutations > 0) {
+    await verifyJudging(context);
+    await verifyFileMetadata(context);
+  }
   await deleteStatementResources(context);
   return {mutations, testMutations, skipped};
 }

@@ -23,7 +23,8 @@ function fixture({failDeletion = false} = {}) {
     async problem(method,id,args={}) {
       switch (method) {
         case 'info': return plan.info;
-        case 'viewTags': return [];
+        case 'viewTags':case 'viewTestGroup':return [];
+        case 'enableGroups':return {};
         case 'tests': return tests.map(t=>({...t}));
         case 'deleteTest':
           calls.push({method,...args});
@@ -50,7 +51,7 @@ function fixture({failDeletion = false} = {}) {
 
 const a=fixture();
 const result=await a.run();
-assert.equal(result.mutations,1);
+assert.equal(result.mutations,3); // one deletion plus probing/restoring hidden group mode
 assert.equal(result.testMutations,1);
 assert.equal(a.calls.length,1,'Two deletions must be sent as ONE API request');
 assert.deepEqual(a.tests().map(t=>t.index),[1,2,3]);

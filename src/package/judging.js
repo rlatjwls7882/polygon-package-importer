@@ -23,6 +23,8 @@ export function readJudging(root) {
       invocations.some(run => !['1', '2'].includes(run) || Number(run) > Number(count))))
     throw Error(t('packageInvalidInteractorRuns'));
 
+  const percentage = ATTR(judging, 'treat-points-from-checker-as-percent', 'false');
+  if (!['true','false'].includes(percentage)) throw Error(t('formatInvalidPercentage'));
   const info = {
     timeLimit:tl, memoryLimit:ml,
     inputFile:ATTR(judging, 'input-file') || 'stdin',
@@ -30,5 +32,5 @@ export function readJudging(root) {
     interactive:!!interactor, runTwice:count === '2',
     ...(interactor ? {interactiveSecondRun:invocations.includes('2'), useInteractionLogInExampleTests:false} : {})
   };
-  return {info, testset:ts};
+  return {info, testset:ts, checkerPercent:percentage === 'true'};
 }

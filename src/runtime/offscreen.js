@@ -34,17 +34,28 @@ async function processJob(jobId, encryptedRecord, locale, attempt) {
       job, api,
       // Persist the created ID before uploading any content. If the browser
       // closes mid-upload, the stored job resumes against the same problem.
-      onCreated:id => stageJob({...job, mode:'replace', problemId:String(id)}, jobId),
-      onProgress:({message,progress}) =>
+      onCreated:async id => {
+        job = {...job, mode:'replace', problemId:String(id)};
+        await stageJob(job, jobId);
+      },
+      onCheckpoint:async verification => {
+        job = {...job, verification};
+        await stageJob(job, jobId);
+      },
+      onProgress:({message,progress,stage,committed}) =>
         publish('IMPORT_PROGRESS', {
-          jobId, attempt, message:api.safeDetail(message),
+          jobId, attempt, message:api.safeDetail(message), stage, committed,
           ...(progress === null ? {} : {progress})
         })
     });
 
     await publish('IMPORT_COMPLETE', {
       jobId, attempt, phase:'done', progress:100, problemId:result.id,
-      message:t('offscreenDoneProblemChangesSkipped', result.id, result.mutations, result.skipped)
+      committed:result.committed, verification:result.verification,
+      stage:result.verification.state === 'verified' ? 'verified' : 'uploaded',
+      message:result.verification.state === 'verified' ?
+        t('verifySucceeded', result.verification.packageId, result.verification.runs) :
+        t('verifyUploadOnly', result.id)
     });
     // Keep the ZIP until the completion state is safely recorded.
     await clearJob(jobId).catch(() => {});
@@ -54,7 +65,8 @@ async function processJob(jobId, encryptedRecord, locale, attempt) {
       message:api ? api.safeDetail(error?.message || error) :
         String(error?.message || error).slice(0, 350),
       problemId:error?.problemId || (job?.mode === 'replace' ? job.problemId : null),
-      partial:!!error?.partial
+      partial:!!error?.partial, committed:!!error?.committed,
+      stage:error?.committed ? 'verification-failed' : 'upload-failed'
     }).catch(() => {});
   }
 }

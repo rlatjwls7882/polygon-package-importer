@@ -191,6 +191,81 @@
   "extensionName": {
     "message": "Polygon ZIP Uploader"
   },
+  "formatCheckerPercent": {
+    "message": "Checker 백분율 채점 설정"
+  },
+  "formatClearExtraTag": {
+    "message": "이전 추가 태그 해제: $1 / $2"
+  },
+  "formatDeleteJudgeTest": {
+    "message": "이전 $1 자체 테스트 $2 삭제"
+  },
+  "formatIncompletePackage": {
+    "message": "패키지에 Checker와 하나 이상의 테스트가 있어야 합니다."
+  },
+  "formatInvalidExtraTag": {
+    "message": "솔루션의 추가 태그가 올바르지 않거나 지원되지 않습니다: $1"
+  },
+  "formatInvalidJudgeTests": {
+    "message": "Checker 또는 Validator 자체 테스트 응답이 올바르지 않습니다."
+  },
+  "formatInvalidPercentage": {
+    "message": "Checker 백분율 채점 설정이 올바르지 않습니다."
+  },
+  "formatInvalidSourceType": {
+    "message": "컴파일러 식별자가 올바르지 않습니다: $1"
+  },
+  "formatInvalidValidatorContext": {
+    "message": "Validator 자체 테스트 $1이 없는 그룹 또는 지원하지 않는 테스트셋을 참조합니다."
+  },
+  "formatJudgeTestsMismatch": {
+    "message": "저장된 $1 자체 테스트가 ZIP과 다릅니다."
+  },
+  "formatMetadataMismatch": {
+    "message": "저장된 파일 메타데이터를 검증하지 못했습니다."
+  },
+  "formatMissingMain": {
+    "message": "패키지에는 메인 솔루션이 정확히 하나 있어야 합니다."
+  },
+  "formatMultipleValidators": {
+    "message": "Validator가 여러 개인 패키지입니다. API로 이 구성을 복원할 수 없어 업로드를 시작하지 않았습니다."
+  },
+  "formatOrphanSample": {
+    "message": "해당하는 예제 테스트가 없는 지문 예제 파일입니다: $1"
+  },
+  "formatPercentageNeedsPoints": {
+    "message": "Checker 백분율 채점에는 테스트 점수가 필요합니다."
+  },
+  "formatReloadTests": {
+    "message": "채점 옵션 활성화 후 테스트 다시 조회"
+  },
+  "formatResourceMismatch": {
+    "message": "리소스 연결 설정이 ZIP과 다릅니다: $1"
+  },
+  "formatSampleMismatch": {
+    "message": "테스트 $1의 저장된 예제 또는 메타데이터가 다릅니다. 변경 사항을 커밋하지 않았습니다."
+  },
+  "formatSaveExtraTag": {
+    "message": "추가 태그 저장: $1 / $2"
+  },
+  "formatSourceTypeMismatch": {
+    "message": "$1의 컴파일러 설정이 보존되지 않았습니다. 필요한 설정: $2"
+  },
+  "formatTargetExtraValidators": {
+    "message": "대상에 추가 Validator가 있거나 해당 설정을 읽지 못했습니다. 변경 전에 덮어쓰기를 중단했습니다."
+  },
+  "formatUnsupportedResourceProperties": {
+    "message": "$1의 리소스 연결 설정을 지원하지 않습니다. API로는 COMPILE/SOLUTION 연결만 복원할 수 있습니다."
+  },
+  "formatVerifyFiles": {
+    "message": "소스·리소스 설정 검증"
+  },
+  "formatVerifyJudgeTests": {
+    "message": "$1 자체 테스트 검증"
+  },
+  "formatVerifySolutions": {
+    "message": "솔루션 컴파일러 설정 검증"
+  },
   "getApiKeys": {
     "message": "Polygon API 설정에서 키 발급"
   },
@@ -331,9 +406,6 @@
   },
   "offscreenCouldNotUpdateJobStatus": {
     "message": "작업 상태를 업데이트하지 못했습니다."
-  },
-  "offscreenDoneProblemChangesSkipped": {
-    "message": "완료 · 문제 #$1 · 변경 $2개 · 생략 $3개"
   },
   "offscreenRateLimitedRetryInS": {
     "message": "$1: 요청 제한 · $2초 후 재시도"
@@ -697,6 +769,75 @@
   },
   "vaultPassword": {
     "message": "보관함 암호"
+  },
+  "verifyAfterCommit": {
+    "message": "커밋 후 빌드·실행 검증"
+  },
+  "verifyAmbiguousBuild": {
+    "message": "새 빌드가 여러 개 발견되어 이 업로드의 결과로 단정하지 않았습니다."
+  },
+  "verifyBuildComment": {
+    "message": "패키지 $1에서 검증 경고 또는 오류가 보고됐습니다: $2"
+  },
+  "verifyBuildFailed": {
+    "message": "업로드는 커밋됐지만 패키지 $1 빌드가 실패했습니다. $2"
+  },
+  "verifyBuildStarting": {
+    "message": "업로드 커밋 완료. 서버 빌드와 솔루션 실행 검증 시작."
+  },
+  "verifyBuiltDescriptor": {
+    "message": "빌드된 패키지와 원본 ZIP 비교"
+  },
+  "verifyCommitted": {
+    "message": "커밋됨"
+  },
+  "verifyDescriptorMismatch": {
+    "message": "빌드된 패키지가 업로드한 ZIP과 다릅니다: $1"
+  },
+  "verifyHelp": {
+    "message": "Polygon에서 모든 풀이를 실행합니다. 빌드가 실패해도 커밋은 되돌리지 않습니다."
+  },
+  "verifyIncomplete": {
+    "message": "패키지 #$1의 검증이 미완료입니다. 다시 시도하면 새 빌드 없이 같은 빌드의 결과를 확인합니다."
+  },
+  "verifyInvalidCheckpoint": {
+    "message": "저장된 검증 재개 정보가 올바르지 않습니다. ZIP을 다시 선택하세요."
+  },
+  "verifyInvalidResponse": {
+    "message": "빌드 검증 응답이 올바르지 않습니다. 업로드는 이미 커밋되었을 수 있으며 실행 검증은 미완료입니다."
+  },
+  "verifyInvocationCoverage": {
+    "message": "실행 결과가 필요한 솔루션·테스트 조합을 모두 포함하지 않습니다."
+  },
+  "verifyInvocationFailed": {
+    "message": "실행 $1이 중단되었거나 솔루션 기대 판정을 위반했습니다."
+  },
+  "verifyNeedsCleanRevision": {
+    "message": "빌드 검증에는 커밋된 최신 작업 사본이 필요합니다. 업로드는 이미 커밋되었을 수 있습니다."
+  },
+  "verifyPackageMissing": {
+    "message": "검증 중이던 패키지가 없거나 리비전이 다릅니다."
+  },
+  "verifyRequiresCommit": {
+    "message": "서버 빌드·실행 검증에는 업로드 커밋이 필요합니다."
+  },
+  "verifyRevisionChanged": {
+    "message": "검증 중 문제 리비전이 변경되었습니다. ZIP을 다시 선택해 새 업로드를 시작하세요."
+  },
+  "verifyRunFailed": {
+    "message": "실행 검증 실패: $1 / 테스트 $2 / $3. $4"
+  },
+  "verifySolutionTagsMismatch": {
+    "message": "실행 검증에서 사용한 $1의 기대 판정 태그가 ZIP과 다릅니다."
+  },
+  "verifySucceeded": {
+    "message": "빌드·실행 검증 완료 · 패키지 #$1 · 실행 $2건"
+  },
+  "verifyUploadOnly": {
+    "message": "문제 #$1 업로드 완료 · 실행 미검증"
+  },
+  "verifyWaiting": {
+    "message": "업로드 커밋 완료 · 패키지 #$1 검증 중 ($2)"
   },
   "zipArchiveTooLarge": {
     "message": "ZIP 크기 제한은 100MB입니다."
