@@ -1,5 +1,7 @@
 # Polygon ZIP Uploader
 
+[English](README.md) | [한국어](README.ko.md)
+
 Upload a Polygon problem-package ZIP to [Codeforces Polygon](https://polygon.codeforces.com).
 
 [Install from Chrome Web Store](https://chromewebstore.google.com/detail/polygon-zip-uploader/fhlocfeafcanblbeppffhdilbkblmdcn)
