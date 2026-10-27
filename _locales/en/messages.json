@@ -32,9 +32,6 @@
   "backgroundAnUploadIsAlreadyRunning": {
     "message": "An upload is already running."
   },
-  "backgroundAnotherUploadIsBeingPrepared": {
-    "message": "Another upload is being prepared."
-  },
   "backgroundCannotClearARunningUpload": {
     "message": "Cannot clear a running upload."
   },
@@ -46,9 +43,6 @@
   },
   "backgroundRegisterYourApiKeysFirst": {
     "message": "Register your API keys first."
-  },
-  "backgroundSelectedZipNotFound": {
-    "message": "Selected ZIP not found."
   },
   "backgroundUploadCouldNotStart": {
     "message": "Upload could not start."
@@ -199,6 +193,12 @@
   },
   "getApiKeys": {
     "message": "Get API keys from Polygon"
+  },
+  "jobBusy": {
+    "message": "Another upload is using the saved ZIP. Try again after it finishes."
+  },
+  "jobReplaced": {
+    "message": "The selected ZIP changed. Select it again."
   },
   "jobStoreCouldNotOpenJobStorage": {
     "message": "Could not open job storage."
@@ -533,14 +533,8 @@
   "syncAllTestsUnchanged": {
     "message": "All tests unchanged"
   },
-  "syncCannotReadPreviousMainSolutionBeforeChanging": {
-    "message": "Cannot read previous main solution before changing its tag: $1"
-  },
   "syncCheckingGeneratedTestList": {
     "message": "Checking generated test list"
-  },
-  "syncCheckingPreviousMainSolution": {
-    "message": "Checking previous main solution: $1"
   },
   "syncCheckingTestsAfterDeletion": {
     "message": "Checking tests after deletion"
@@ -656,6 +650,9 @@
   "syncSolution": {
     "message": "Solution: $1"
   },
+  "syncSolutionSourceUnavailable": {
+    "message": "Cannot read the existing solution source before changing its tag: $1"
+  },
   "syncStatement": {
     "message": "Statement: $1"
   },
@@ -697,6 +694,9 @@
   },
   "vaultPassword": {
     "message": "Vault password"
+  },
+  "zipArchiveTooLarge": {
+    "message": "ZIP size limit is 100 MB."
   },
   "zipCrc32CheckFailed": {
     "message": "CRC32 check failed: $1"
@@ -748,9 +748,6 @@
   },
   "zipZipEntryListIsOutOfBounds": {
     "message": "ZIP entry list is out of bounds."
-  },
-  "zipZipExceedsThe768MbSizeLimit": {
-    "message": "ZIP exceeds the 768 MB size limit."
   },
   "zipZipHasMoreThanEntries": {
     "message": "ZIP has more than $1 entries."

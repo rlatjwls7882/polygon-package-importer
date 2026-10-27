@@ -1,19 +1,19 @@
 import { t } from '../i18n.js';
-const textDecoder = new TextDecoder('utf-8', {fatal:true});
 
 export async function validatePackage(archive, plan) {
+  if (plan.solutions.filter(solution => solution.tag === 'MA').length > 1)
+    throw Error(t('syncZipContainsMultipleMainSolutions'));
+  if (new Set(plan.solutions.map(solution => solution.name)).size !== plan.solutions.length)
+    throw Error(t('syncZipContainsSolutionsWithDuplicateNames'));
   if (plan.info.interactive && !plan.interactor)
     throw Error(t('packageMissingInteractorSource'));
   const binaryPaths = new Set();
   // Sources and solutions must be textual. Binary statement resources cannot be safely
   // round-tripped through the current text-only API adapter.
   for (const {path} of [...plan.sources, ...plan.solutions, ...plan.resources, ...plan.aux]) {
-    const data = await archive.bytes(path);
-    if (data.includes(0)) binaryPaths.add(path);
-    else {
-      try { textDecoder.decode(data); }
-      catch { binaryPaths.add(path); }
-    }
+    try {
+      if ((await archive.text(path)).includes('\0')) binaryPaths.add(path);
+    } catch { binaryPaths.add(path); }
   }
   const sectionsExtras = archive.names().filter(p => /^statement-sections\/[^/]+\//.test(p) &&
     !/\/(?:name|legend|input|output|notes|scoring|interaction|tutorial|example\.\d+(?:\.a|\.mu)?)\.tex?$/.test(p) &&

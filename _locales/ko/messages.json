@@ -32,9 +32,6 @@
   "backgroundAnUploadIsAlreadyRunning": {
     "message": "이미 업로드 중입니다."
   },
-  "backgroundAnotherUploadIsBeingPrepared": {
-    "message": "다른 업로드를 준비 중입니다."
-  },
   "backgroundCannotClearARunningUpload": {
     "message": "업로드 중에는 지울 수 없습니다."
   },
@@ -46,9 +43,6 @@
   },
   "backgroundRegisterYourApiKeysFirst": {
     "message": "API 키를 등록하세요."
-  },
-  "backgroundSelectedZipNotFound": {
-    "message": "선택한 ZIP을 찾지 못했습니다."
   },
   "backgroundUploadCouldNotStart": {
     "message": "업로드 시작 실패"
@@ -199,6 +193,12 @@
   },
   "getApiKeys": {
     "message": "Polygon API 설정에서 키 발급"
+  },
+  "jobBusy": {
+    "message": "다른 업로드가 저장된 ZIP을 사용 중입니다. 완료 후 다시 시도하세요."
+  },
+  "jobReplaced": {
+    "message": "선택한 ZIP이 변경되었습니다. 파일을 다시 선택하세요."
   },
   "jobStoreCouldNotOpenJobStorage": {
     "message": "작업 저장소를 열 수 없습니다."
@@ -533,14 +533,8 @@
   "syncAllTestsUnchanged": {
     "message": "동일한 테스트 전체"
   },
-  "syncCannotReadPreviousMainSolutionBeforeChanging": {
-    "message": "기존 메인 솔루션 내용을 읽지 못해 태그 변경을 중단했습니다: $1"
-  },
   "syncCheckingGeneratedTestList": {
     "message": "생성 테스트 목록 검증"
-  },
-  "syncCheckingPreviousMainSolution": {
-    "message": "기존 메인 솔루션 내용 확인: $1"
   },
   "syncCheckingTestsAfterDeletion": {
     "message": "테스트 삭제 후 현재 상태 확인"
@@ -656,6 +650,9 @@
   "syncSolution": {
     "message": "솔루션: $1"
   },
+  "syncSolutionSourceUnavailable": {
+    "message": "태그를 변경하기 전에 기존 솔루션 소스를 읽지 못했습니다: $1"
+  },
   "syncStatement": {
     "message": "지문: $1"
   },
@@ -697,6 +694,9 @@
   },
   "vaultPassword": {
     "message": "보관함 암호"
+  },
+  "zipArchiveTooLarge": {
+    "message": "ZIP 크기 제한은 100MB입니다."
   },
   "zipCrc32CheckFailed": {
     "message": "CRC32 검증 실패: $1"
@@ -748,9 +748,6 @@
   },
   "zipZipEntryListIsOutOfBounds": {
     "message": "ZIP 파일 목록 범위 오류"
-  },
-  "zipZipExceedsThe768MbSizeLimit": {
-    "message": "ZIP 최대 크기는 768MB입니다."
   },
   "zipZipHasMoreThanEntries": {
     "message": "파일 수 제한 $1개 초과"

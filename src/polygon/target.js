@@ -9,7 +9,7 @@ export async function readTarget(api, id, plan) {
   }
 
   const [tests, files, solutions, statements, statementResources, stresses] = await Promise.all([
-    api.problem('tests', id, { testset:'tests', noInputs:'false' }),
+    api.problem('tests', id, { testset:'tests', noInputs:String(!plan.tests.some(test => test.method === 'manual')) }),
     api.problem('files', id),
     api.problem('solutions', id),
     api.problem('statements', id),
@@ -17,7 +17,9 @@ export async function readTarget(api, id, plan) {
     api.problem('stresses', id)
   ]);
 
-  if (!Array.isArray(tests) || !files || !Array.isArray(solutions) || !statements ||
+  if (!Array.isArray(tests) || !Array.isArray(stresses) || !files ||
+      !['sourceFiles','resourceFiles','auxFiles'].every(key => Array.isArray(files[key])) ||
+      !Array.isArray(solutions) || !statements ||
       !Array.isArray(statementResources) || statementResources.some(f =>
         !f || typeof f.name !== 'string' || !f.name)) {
     throw Error(t('polygonImportCouldNotReadAllExistingProblemData'));

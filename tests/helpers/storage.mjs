@@ -10,41 +10,53 @@ export function createFakeIndexedDB() {
     const db = {
       objectStoreNames: {contains(storeName) {return stores.has(storeName);}},
       createObjectStore(storeName) {stores.set(storeName, new Map());},
-      transaction(storeName) {
+      transaction(storeName, mode = 'readonly') {
         if (!stores.has(storeName)) throw Error('Unknown object store: ' + storeName);
-        const entries = stores.get(storeName);
-        const tx = {
-          oncomplete:null, onerror:null, onabort:null, error:null,
-          objectStore() {
-            return {
-              get(key) {
-                const request={result:undefined,onsuccess:null,onerror:null};
-                queueMicrotask(() => {
-                  request.result=entries.get(key);
-                  request.onsuccess?.();
-                  queueMicrotask(() => tx.oncomplete?.());
-                });
-                return request;
-              },
-              put(value,key) {
-                const request={result:key};
-                queueMicrotask(()=>{
-                  entries.set(key,value);
-                  tx.oncomplete?.();
-                });
-                return request;
-              },
-              delete(key) {
-                const request={result:undefined};
-                queueMicrotask(()=>{
-                  entries.delete(key);
-                  tx.oncomplete?.();
-                });
-                return request;
-              }
-            };
+        const entries = stores.get(storeName), operations = [];
+        let active = false, scheduled = false, finished = false, working, release;
+        const before = db.tail || Promise.resolve();
+        db.tail = new Promise(resolve => release = resolve);
+        function finish(aborted) {
+          if (finished) return;
+          finished = true;
+          if (!aborted && mode === 'readwrite') {
+            entries.clear();
+            for (const [key,value] of working) entries.set(key,value);
           }
+          if (aborted) tx.onabort?.(); else tx.oncomplete?.();
+          release();
+        }
+        function schedule() {
+          if (!active || scheduled || finished) return;
+          scheduled = true;
+          queueMicrotask(() => {
+            scheduled = false;
+            if (finished) return;
+            const operation = operations.shift();
+            if (!operation) { finish(false); return; }
+            try {
+              operation.request.result = operation.run();
+              operation.request.onsuccess?.();
+            } catch (error) {
+              tx.error = error;operation.request.onerror?.();finish(true);
+            }
+            schedule();
+          });
+        }
+        function request(run) {
+          const request={result:undefined,onsuccess:null,onerror:null};
+          operations.push({run,request});schedule();return request;
+        }
+        const tx = {
+          oncomplete:null,onerror:null,onabort:null,error:null,
+          abort(){finish(true);},
+          objectStore(){return {
+            get:key=>request(()=>working.get(key)),
+            put:(value,key)=>request(()=>{working.set(key,value);return key;}),
+            delete:key=>request(()=>working.delete(key))
+          };}
         };
+        before.then(()=>{active=true;working=new Map(entries);schedule();});
         return tx;
       },
       close() {}

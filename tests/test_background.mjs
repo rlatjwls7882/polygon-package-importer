@@ -10,12 +10,15 @@ const mock=createFakeChromeStorage();
 const listeners=[];
 let offscreenOpen=false;
 let created=0;
+let attempt;
 
 const extensionUrl='chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef/';
 function register(handler) {
   listeners.push(handler);
 }
 async function sendMessage(message) {
+  if(message.type==='IMPORT_EXECUTE')attempt=message.attempt;
+  if(message.type==='IMPORT_PROGRESS'||message.type==='IMPORT_COMPLETE')message={attempt,...message};
   const url=extensionUrl + (
     message.type==='IMPORT_PROGRESS'||message.type==='IMPORT_COMPLETE'
       ? 'offscreen.html' : 'popup.html');

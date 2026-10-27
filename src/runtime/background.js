@@ -1,10 +1,31 @@
 import { t } from '../i18n.js';
-import { readJob, stageJob, clearJob, STATUS_KEY } from '../storage/jobs.js';
+import { readJob, stageJob, clearJob, claimJob, releaseJob, STATUS_KEY } from '../storage/jobs.js';
 import { CREDENTIAL_KEY } from '../storage/credentials.js';
 
 const OFFSCREEN_PAGE = 'offscreen.html';
 let opening = null;
-let starting = false;
+let commands = Promise.resolve();
+let closeTimer = null;
+
+function serialize(action) {
+  const result = commands.then(action, action);
+  commands = result.catch(() => {});
+  return result;
+}
+
+function cancelClose() {
+  if (closeTimer !== null) clearTimeout(closeTimer);
+  closeTimer = null;
+}
+
+function closeWhenIdle(jobId, attempt) {
+  cancelClose();
+  closeTimer = setTimeout(() => serialize(async () => {
+    const status = await readStatus();
+    if (status?.id === jobId && status.attempt === attempt && status.phase !== 'running')
+      await chrome.offscreen.closeDocument().catch(() => {});
+  }).catch(() => {}), 800);
+}
 
 async function offscreenOpen() {
   const contexts = await chrome.runtime.getContexts({
@@ -35,24 +56,28 @@ async function saveStatus(status) {
 }
 
 async function getStatus() {
-  const status = await readStatus();
-  if (status?.phase === 'running' && !starting && !(await offscreenOpen())) {
-    return saveStatus({...status, phase:'error',
+  let status = await readStatus();
+  if (status?.phase === 'running' && !(await offscreenOpen())) {
+    status = await saveStatus({...status, phase:'error',
       message:t('backgroundUploadInterruptedYouCanRetry')});
   }
+  const job = await readJob();
+  // A worker may have stopped after claiming the ZIP but before saving status.
+  if (job?.locked && (status?.id !== job.id || status?.phase !== 'running'))
+    await releaseJob(job.id);
   return status;
 }
 
 async function startImport(jobId) {
-  if (starting) throw Error(t('backgroundAnotherUploadIsBeingPrepared'));
-  starting = true;
-  let prepared = false;
+  let prepared = false, claimed = false;
   try {
     const previous = await getStatus();
     if (previous?.phase === 'running') throw Error(t('backgroundAnUploadIsAlreadyRunning'));
 
-    let job = await readJob();
-    if (job?.id !== jobId) throw Error(t('backgroundSelectedZipNotFound'));
+    const credentials = (await chrome.storage.local.get(CREDENTIAL_KEY))[CREDENTIAL_KEY];
+    if (!credentials) throw Error(t('backgroundRegisterYourApiKeysFirst'));
+    let job = await claimJob(jobId);
+    claimed = true;
     // Migrate failed create jobs saved by older versions so Retry doesn't
     // create another Polygon problem when the original ID is already known.
     const resumeId = String(previous?.problemId ?? '');
@@ -60,14 +85,16 @@ async function startImport(jobId) {
         previous.phase === 'error' && previous.partial &&
         /^[1-9]\d{0,11}$/.test(resumeId)) {
       job = {...job, mode:'replace', problemId:resumeId};
-      await stageJob(job);
+      await stageJob(job, jobId);
     }
 
-    const credentials = (await chrome.storage.local.get(CREDENTIAL_KEY))[CREDENTIAL_KEY];
-    if (!credentials) throw Error(t('backgroundRegisterYourApiKeysFirst'));
-
+    cancelClose();
+    // Completion has been recorded, but the previous offscreen page may still
+    // be releasing its ZIP. Never run a new attempt in that old page.
+    if (await offscreenOpen()) await chrome.offscreen.closeDocument();
+    const attempt = crypto.randomUUID();
     await saveStatus({
-      id:job.id, phase:'running', progress:0,
+      id:job.id, attempt, phase:'running', progress:0,
       filename:job.filename, mode:job.mode,
       problemId:job.mode === 'replace' ? job.problemId : null,
       message:t('backgroundPreparingUpload'), log:[t('backgroundPreparingUpload')]
@@ -75,7 +102,7 @@ async function startImport(jobId) {
     prepared = true;
     await openOffscreen();
     const reply = await chrome.runtime.sendMessage({
-      type:'IMPORT_EXECUTE', jobId, encryptedRecord:credentials,
+      type:'IMPORT_EXECUTE', jobId, attempt, encryptedRecord:credentials,
       locale:chrome.i18n.getMessage('@@ui_locale')
     });
     if (!reply?.ok) throw Error(reply?.reason || t('backgroundFailedToStartUpload'));
@@ -85,18 +112,19 @@ async function startImport(jobId) {
       await saveStatus({...await readStatus(), phase:'error',
         message:error?.message || t('backgroundUploadCouldNotStart')});
     }
+    if (claimed) await releaseJob(jobId);
     throw error;
-  } finally {
-    starting = false;
   }
 }
 
 async function updateStatus(message) {
   const current = await readStatus();
-  if (!current || current.id !== message.jobId || current.phase !== 'running')
+  if (!current || current.id !== message.jobId || current.phase !== 'running' ||
+      current.attempt !== message.attempt)
     return {ok:false};
 
   const done = message.type === 'IMPORT_COMPLETE';
+  if (done && !['done','error'].includes(message.phase)) return {ok:false};
   const text = String(message.message || '').slice(0, 350);
   await saveStatus({
     ...current,
@@ -107,6 +135,7 @@ async function updateStatus(message) {
     ...(message.problemId ? {problemId:message.problemId} : {}),
     ...(message.partial ? {partial:true} : {})
   });
+  if (done) await releaseJob(current.id);
   return {ok:true};
 }
 
@@ -126,21 +155,21 @@ function respond(promise, callback) {
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   switch (message?.type) {
     case 'IMPORT_START':
-      return respond(startImport(message.jobId), reply);
+      return respond(serialize(() => startImport(message.jobId)), reply);
     case 'IMPORT_QUERY':
-      return respond(getStatus().then(status => ({ok:true, status})), reply);
+      return respond(serialize(async () => ({ok:true, status:await getStatus()})), reply);
     case 'IMPORT_CLEAR':
-      return respond(clearStatus(), reply);
+      return respond(serialize(clearStatus), reply);
     case 'IMPORT_PROGRESS':
     case 'IMPORT_COMPLETE':
-      if (!sender.url?.startsWith(chrome.runtime.getURL(OFFSCREEN_PAGE))) {
+      if (sender.url !== chrome.runtime.getURL(OFFSCREEN_PAGE)) {
         reply({ok:false});
         return;
       }
-      return respond(updateStatus(message).then(result => {
-        if (result.ok && message.type === 'IMPORT_COMPLETE') {
-          setTimeout(() => chrome.offscreen.closeDocument().catch(() => {}), 800);
-        }
+      return respond(serialize(async () => {
+        const result = await updateStatus(message);
+        if (result.ok && message.type === 'IMPORT_COMPLETE')
+          closeWhenIdle(message.jobId, message.attempt);
         return result;
       }), reply);
   }

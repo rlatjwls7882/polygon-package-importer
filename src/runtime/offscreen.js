@@ -11,7 +11,7 @@ async function publish(type, payload) {
   if (!reply?.ok) throw Error(t('offscreenCouldNotUpdateJobStatus'));
 }
 
-async function processJob(jobId, encryptedRecord, locale) {
+async function processJob(jobId, encryptedRecord, locale, attempt) {
   let job = null;
   let api = null;
   try {
@@ -25,7 +25,7 @@ async function processJob(jobId, encryptedRecord, locale) {
     api = new PolygonAPI(credentials.key, credentials.secret);
     api.onRateLimit = ({method,waitMs}) => {
       publish('IMPORT_PROGRESS', {
-        jobId,
+        jobId, attempt,
         message:t('offscreenRateLimitedRetryInS', method, Math.ceil(waitMs / 1000))
       }).catch(() => {});
     };
@@ -34,23 +34,23 @@ async function processJob(jobId, encryptedRecord, locale) {
       job, api,
       // Persist the created ID before uploading any content. If the browser
       // closes mid-upload, the stored job resumes against the same problem.
-      onCreated:id => stageJob({...job, mode:'replace', problemId:String(id)}),
+      onCreated:id => stageJob({...job, mode:'replace', problemId:String(id)}, jobId),
       onProgress:({message,progress}) =>
         publish('IMPORT_PROGRESS', {
-          jobId, message:api.safeDetail(message),
+          jobId, attempt, message:api.safeDetail(message),
           ...(progress === null ? {} : {progress})
         })
     });
 
     await publish('IMPORT_COMPLETE', {
-      jobId, phase:'done', progress:100, problemId:result.id,
+      jobId, attempt, phase:'done', progress:100, problemId:result.id,
       message:t('offscreenDoneProblemChangesSkipped', result.id, result.mutations, result.skipped)
     });
     // Keep the ZIP until the completion state is safely recorded.
     await clearJob(jobId).catch(() => {});
   } catch (error) {
     await publish('IMPORT_COMPLETE', {
-      jobId, phase:'error',
+      jobId, attempt, phase:'error',
       message:api ? api.safeDetail(error?.message || error) :
         String(error?.message || error).slice(0, 350),
       problemId:error?.problemId || (job?.mode === 'replace' ? job.problemId : null),
@@ -67,7 +67,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   }
   activeJob = message.jobId;
   respond({ok:true});
-  processJob(message.jobId, message.encryptedRecord, message.locale).finally(() => {
+  processJob(message.jobId, message.encryptedRecord, message.locale, message.attempt).finally(() => {
     activeJob = null;
   });
 });

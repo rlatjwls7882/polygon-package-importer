@@ -47,11 +47,11 @@ function sameGroup(actual, wanted) {
     actual.feedbackPolicy === wanted.feedbackPolicy && dependencies(actual) === dependencies(wanted);
 }
 
-export async function syncGroups(context) {
+export async function syncGroups(context, snapshot = null) {
   const {api, id, plan, apply, unchanged} = context;
   if (!plan.groups.length) return;
   // Tests create groups, so read again after uploading/recreating the tests.
-  const current = new Map((await readRemoteGroups(context)).map(group => [group.name, group]));
+  const current = new Map((snapshot ?? await readRemoteGroups(context)).map(group => [group.name, group]));
   let changed = false;
   for (const group of orderGroups(plan.groups)) {
     const previous = current.get(group.name);

@@ -34,20 +34,53 @@ async function operation(mode, callback) {
   }
 }
 
-// Store the original File using IndexedDB's structured clone rather than
-// encoding megabytes of ZIP data into Chrome runtime messages.
-export async function stageJob(job) {
+// Keep compare/write/delete inside one readwrite transaction across all extension pages.
+async function mutateJob(update) {
+  const db = await openDatabase();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite'), store = tx.objectStore(STORE);
+      let result, failure;
+      const request = store.get(ACTIVE);
+      request.onsuccess = () => {
+        try {
+          result = update(request.result);
+          if (result === null) store.delete(ACTIVE);
+          else if (result !== undefined) store.put(result, ACTIVE);
+        } catch (error) { failure = error; tx.abort(); }
+      };
+      tx.oncomplete = () => resolve(result);
+      tx.onabort = tx.onerror = () => reject(failure || tx.error || Error(t('jobStoreFailedToSaveJob')));
+    });
+  } finally { db.close(); }
+}
+
+// File/Blob stays in IndexedDB rather than being copied into runtime messages.
+export async function stageJob(job, expectedId) {
   if (!job?.file || !job?.id) throw Error(t('jobStoreNoZipFileSelected'));
-  return operation('readwrite', store => store.put(job, ACTIVE));
+  return mutateJob(current => {
+    if (expectedId !== undefined && current?.id !== expectedId) throw Error(t('jobReplaced'));
+    if (current?.locked && current.id !== job.id) throw Error(t('jobBusy'));
+    return {...job, ...(current?.id === job.id && current.locked ? {locked:true} : {})};
+  });
 }
 
 export function readJob() {
   return operation('readonly', store => store.get(ACTIVE));
 }
 
-export async function clearJob(jobId) {
-  const current = await readJob();
-  if (current && (!jobId || current.id === jobId)) {
-    await operation('readwrite', store => store.delete(ACTIVE));
-  }
+export function claimJob(id) {
+  return mutateJob(current => {
+    if (current?.id !== id) throw Error(t('jobReplaced'));
+    if (current.locked) throw Error(t('jobBusy'));
+    return {...current, locked:true};
+  });
+}
+
+export function releaseJob(id) {
+  return mutateJob(current => current?.id === id && current.locked ? {...current, locked:false} : undefined);
+}
+
+export function clearJob(id) {
+  return mutateJob(current => current && (!id || current.id === id) ? null : undefined);
 }

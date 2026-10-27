@@ -159,6 +159,7 @@ for (const [field,name] of [['ignoreRunTwice','two-step'],['ignorePoints','subta
 console.log('PASS: read-back verification blocks success and commit for unapplied judging flags or scores');
 
 const invalid=[
+  ['batch',root=>{const solutions=child(child(root,'assets'),'solutions');solutions.children.push(structuredClone(solutions.children[0]));}],
   ['batch',root=>{judging(root).attributes['run-count']='3';}],
   ['batch',root=>{judging(root).attributes['run-count']='false';}],
   ['interactive',root=>{interactor(root).children=[];}],

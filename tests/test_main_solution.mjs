@@ -29,12 +29,10 @@ function fixture(initial, wanted, files = {}) {
             fail.fired = true;
             throw Error('connection lost before request completed');
           }
-          // Polygon requires "file" even for tag-only updates to existing solutions.
-          if (typeof args.file !== 'string' || args.file.length === 0)
-            throw Error('problem.saveSolution: file: Field should not be empty');
           const previous = state.get(args.name);
+          if (!previous && typeof args.file !== 'string') throw Error('New solutions require source');
           const tag = args.tag ?? previous?.tag ?? 'OK';
-          const content = args.file;
+          const content = args.file ?? previous.content;
           if (tag === 'MA' && [...state.values()].some(s => s.tag === 'MA' && s.name !== args.name))
             throw Error('You already have Main correct solution');
           state.set(args.name, {name:args.name, tag, content});
@@ -78,7 +76,7 @@ assert.deepEqual(replaced.calls.map(c => [c.method, c.name, c.tag]), [
   ['saveSolution', 'MCS.cpp', 'MA'],
   ['deleteSolution', 'rlatjwls3333_sol.cpp', undefined]
 ]);
-assert.equal(replaced.calls[0].file, 'existing source', 'demotion must preserve source');
+assert(!Object.hasOwn(replaced.calls[0], 'file'), 'demotion must not re-upload source');
 assert.equal(replaced.calls[1].file, 'MCS.cpp-v1');
 replaced.calls.length = 0;
 assert.equal((await replaced.run()).mutations, 0);
@@ -96,7 +94,7 @@ assert.equal(retained.state.get('new.cpp').tag, 'MA');
 assert.deepEqual(retained.calls.filter(c => c.name === 'old.cpp').map(c => c.tag),
   ['WA', undefined], 'old tag should be demoted once; content may update separately');
 assert.deepEqual(retained.calls.filter(c => c.name === 'old.cpp').map(c => c.file),
-  ['old.cpp-v1', 'new content'], 'do not replace old source until uploading new MCS');
+  [undefined, 'new content'], 'do not replace old source until uploading new MCS');
 assert(!retained.calls.some(c => c.method === 'deleteSolution'));
 console.log('PASS: previous MCS retained under another tag with updated content');
 
@@ -124,15 +122,16 @@ assert.deepEqual(sameName.calls.map(c => [c.method, c.tag]), [['saveSolution', u
 assert.equal(sameName.calls[0].file, 'new content');
 console.log('PASS: same MCS filename updates content in place');
 
-// A tag-only update must still include the existing source in saveSolution.
+// Polygon permits tag-only edits without resending the source.
 const tagOnly = fixture([sol('unchanged.cpp', 'OK', 'same source')],
   [desired('unchanged.cpp', 'WA')], {'unchanged.cpp':'same source'});
 await tagOnly.run();
 assert.deepEqual(tagOnly.calls.map(c => [c.method, c.name, c.tag, c.file]), [
-  ['saveSolution', 'unchanged.cpp', 'WA', 'same source']
+  ['saveSolution', 'unchanged.cpp', 'WA', undefined]
 ]);
 assert.equal((await tagOnly.run()).mutations, 0);
-console.log('PASS: tag-only update includes required source and is idempotent');
+assert.equal(tagOnly.state.get('unchanged.cpp').content, 'same source');
+console.log('PASS: tag-only update preserves source without re-uploading it');
 
 // An invalid package must fail before any mutation.
 for (const invalid of [
