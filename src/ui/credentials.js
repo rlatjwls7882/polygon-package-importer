@@ -1,9 +1,9 @@
-import { t } from './i18n.js';
+import { t } from '../i18n.js';
 import {
   CREDENTIAL_KEY, initializeCredentials, loadCredentials,
   saveCredentials, migrateCredentials, deleteCredentials, sameRecord
-} from './credential-store.js';
-import { STORE_KEY as LEGACY_KEY } from './credential-vault.js';
+} from '../storage/credentials.js';
+import { STORE_KEY as LEGACY_KEY } from '../storage/legacy-vault.js';
 
 export class CredentialsUI {
   constructor() {

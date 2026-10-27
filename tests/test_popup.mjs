@@ -1,24 +1,15 @@
-import './mock-i18n.mjs';
+import { installDOMParser } from './helpers/xml.mjs';
+import './helpers/i18n.mjs';
 // Exercise first-run API setup, credential management and ZIP uploading in one popup.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
-import { loadCredentials } from '../credential-store.js';
-import { readJob, STATUS_KEY } from '../job-store.js';
+import { createFakeIndexedDB, createFakeChromeStorage } from './helpers/storage.mjs';
+import { loadCredentials } from '../src/storage/credentials.js';
+import { readJob, STATUS_KEY } from '../src/storage/jobs.js';
 
 const [zipPath, treePath]=process.argv.slice(2);
 const tree=JSON.parse(await fs.readFile(treePath,'utf8'));
-class FakeNode {
-  constructor(data) {
-    this.localName=data.tag;
-    this.attrs=data.attributes;
-    this.children=data.children.map(x=>new FakeNode(x));
-    this.textContent=data.text+this.children.map(x=>x.textContent).join('');
-  }
-  getAttribute(key){return Object.hasOwn(this.attrs,key)?this.attrs[key]:null;}
-  hasAttribute(key){return Object.hasOwn(this.attrs,key);}
-}
-globalThis.DOMParser=class{parseFromString(){return {querySelector:()=>null,documentElement:new FakeNode(tree)}}};
+installDOMParser(tree);
 
 class Element {
   constructor(name) {
@@ -87,7 +78,7 @@ chrome.runtime.sendMessage=async message=>{
 globalThis.window={confirm:()=>{confirmCount++;return true;}};
 
 buildDOM();
-await import('../popup.js?unified');
+await import('../src/ui/popup.js?unified');
 await new Promise(resolve=>setImmediate(resolve));
 assert.equal(optionsOpenCount,0);
 assert(el('importForm').hidden);
@@ -185,7 +176,7 @@ assert.equal(optionsOpenCount,0);
 console.log('PASS: re-registration returns to import without ever opening settings');
 
 buildDOM();
-await import('../popup.js?reopened');
+await import('../src/ui/popup.js?reopened');
 // Decrypting an already-saved key is asynchronous on a fresh popup.
 for(let attempt=0; attempt<40 && !el('credentialPanel').hidden; attempt++)
   await new Promise(resolve=>setTimeout(resolve,10));

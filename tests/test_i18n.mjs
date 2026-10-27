@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { createMockI18n } from './mock-i18n.mjs';
-import { localizePage, t } from '../i18n.js';
+import { createMockI18n } from './helpers/i18n.mjs';
+import { loadMessages, localizePage, t } from '../src/i18n.js';
 
 const root = new URL('../', import.meta.url);
 const read = file => readFileSync(new URL(file, root), 'utf8');
@@ -10,7 +10,8 @@ const ko = JSON.parse(read('_locales/ko/messages.json'));
 assert.deepEqual(Object.keys(en), Object.keys(ko));
 
 const used = new Set();
-const sourceFiles = readdirSync(root).filter(name => name.endsWith('.js'));
+const sourceFiles = readdirSync(new URL('src/', root), {recursive:true})
+  .filter(name => name.endsWith('.js')).map(name => 'src/' + name);
 for (const filename of sourceFiles) {
   const source = read(filename);
   assert(!/[가-힣]/.test(source), 'Unlocalized text in ' + filename);
@@ -64,3 +65,24 @@ assert.equal(t('offscreenDoneProblemChangesSkipped',42,3,2),'Done · problem #42
 globalThis.chrome={i18n:createMockI18n('ko')};
 assert(t('offscreenDoneProblemChangesSkipped',42,3,2).includes('문제 #42'));
 console.log('PASS: locales, manifest, HTML, runtime messages, substitutions and fallback language');
+
+// Match Chrome's offscreen restriction: runtime is available, i18n is not.
+globalThis.chrome = {runtime:{getURL:path => 'chrome-extension://fixture/' + path}};
+const originalFetch = globalThis.fetch;
+const fetched = [];
+globalThis.fetch = async url => {
+  fetched.push(url);
+  const path = url.replace('chrome-extension://fixture/', '');
+  assert(/^_locales\/(ko|en)\/messages.json$/.test(path));
+  return new Response(read(path), {status:200});
+};
+for (const [locale, language] of [['ko','ko'], ['ko-KR','ko'], ['en-US','en'], ['fr','en']]) {
+  await loadMessages(locale);
+  const message = t('offscreenDoneProblemChangesSkipped', 42, 3, 2);
+  assert.equal(message, createMockI18n(language).getMessage('offscreenDoneProblemChangesSkipped',['42','3','2']));
+  assert.equal(fetched.at(-1), 'chrome-extension://fixture/_locales/' + language + '/messages.json');
+}
+globalThis.fetch = async () => new Response('', {status:404});
+await assert.rejects(() => loadMessages('en'), /HTTP 404/);
+globalThis.fetch = originalFetch;
+console.log('PASS: offscreen messages load from bundled locales without chrome.i18n');

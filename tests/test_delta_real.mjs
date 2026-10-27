@@ -1,24 +1,17 @@
-import './mock-i18n.mjs';
+import { installDOMParser } from './helpers/xml.mjs';
+import './helpers/i18n.mjs';
 // Read-only test against a real Polygon package, with a fake API server.
 // Simulates 28/50 manual tests already uploaded, HTTP loss mid-run, and resumes.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { ZipArchive } from '../zip.js';
-import { loadPolygonPackage } from '../model.js';
-import { syncPackage } from '../sync.js';
+import { ZipArchive } from '../src/package/zip.js';
+import { loadPolygonPackage } from '../src/package/load.js';
+import { syncPackage } from '../src/polygon/sync.js';
 
 const [zipPath, treePath] = process.argv.slice(2);
 const tree = JSON.parse(await fs.readFile(treePath,'utf8'));
-class Node {
-  constructor(v) {
-    this.localName=v.tag;this.attrs=v.attributes;
-    this.children=v.children.map(x=>new Node(x));
-    this.textContent=v.text+this.children.map(x=>x.textContent).join('');
-  }
-  getAttribute(x){return Object.hasOwn(this.attrs,x)?this.attrs[x]:null;}
-  hasAttribute(x){return Object.hasOwn(this.attrs,x);}
-}
-globalThis.DOMParser=class {parseFromString(){return {querySelector:()=>null,documentElement:new Node(tree)}}};
+installDOMParser(tree);
+
 const buffer=await fs.readFile(zipPath);
 const archive=new ZipArchive(buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength));
 const plan=await loadPolygonPackage(archive);

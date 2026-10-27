@@ -1,28 +1,14 @@
-import './mock-i18n.mjs';
+import { installDOMParser } from './helpers/xml.mjs';
+import './helpers/i18n.mjs';
 // Read-only Polygon ZIP parser test (never calls the Polygon API).
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { ZipArchive } from '../zip.js';
-import { loadPolygonPackage } from '../model.js';
+import { ZipArchive } from '../src/package/zip.js';
+import { loadPolygonPackage } from '../src/package/load.js';
 
-class FakeNode {
-  constructor(v) {
-    this.localName=v.tag;
-    this.attrs=v.attributes;
-    this.children=v.children.map(c=>new FakeNode(c));
-    this.textContent=v.text+this.children.map(c=>c.textContent).join('');
-  }
-  getAttribute(name) {return Object.hasOwn(this.attrs,name)?this.attrs[name]:null;}
-  hasAttribute(name) {return Object.hasOwn(this.attrs,name);}
-}
 const [zipPath,treePath]=process.argv.slice(2);
 const tree=JSON.parse(await fs.readFile(treePath,'utf8'));
-globalThis.DOMParser=class {
-  parseFromString(xml) {
-    assert(xml.includes('<problem'), 'Invalid problem.xml');
-    return {querySelector:()=>null,documentElement:new FakeNode(tree)};
-  }
-};
+installDOMParser(tree);
 const buf=await fs.readFile(zipPath);
 const archive=new ZipArchive(buf.buffer.slice(buf.byteOffset,buf.byteOffset+buf.byteLength));
 const plan=await loadPolygonPackage(archive);

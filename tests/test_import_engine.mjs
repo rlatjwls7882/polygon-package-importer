@@ -1,27 +1,16 @@
-import './mock-i18n.mjs';
+import { installDOMParser } from './helpers/xml.mjs';
+import './helpers/i18n.mjs';
 // Integration test of the new importer engine using a mock Polygon API.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { loadPolygonPackage } from '../model.js';
-import { ZipArchive } from '../zip.js';
-import { executeImport } from '../polygon-import.js';
+import { loadPolygonPackage } from '../src/package/load.js';
+import { ZipArchive } from '../src/package/zip.js';
+import { executeImport } from '../src/polygon/import.js';
 
 const [zipPath, treePath] = process.argv.slice(2);
 const parsed=JSON.parse(await fs.readFile(treePath,'utf8'));
 
-class FakeNode {
-  constructor(data) {
-    this.localName=data.tag;
-    this.attrs=data.attributes;
-    this.children=data.children.map(c=>new FakeNode(c));
-    this.textContent=data.text+this.children.map(c=>c.textContent).join('');
-  }
-  getAttribute(key){return Object.hasOwn(this.attrs,key)?this.attrs[key]:null;}
-  hasAttribute(key){return Object.hasOwn(this.attrs,key);}
-}
-globalThis.DOMParser=class {
-  parseFromString(){return {querySelector:()=>null,documentElement:new FakeNode(parsed)};}
-};
+installDOMParser(parsed);
 
 const bytes=await fs.readFile(zipPath);
 const file={size:bytes.length,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.length)};

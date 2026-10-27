@@ -1,30 +1,16 @@
-import './mock-i18n.mjs';
+import { installDOMParser } from './helpers/xml.mjs';
+import './helpers/i18n.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
-import {ZipArchive} from '../zip.js';
-import {loadPolygonPackage} from '../model.js';
-import {PolygonAPI} from '../api.js';
+import {ZipArchive} from '../src/package/zip.js';
+import {loadPolygonPackage} from '../src/package/load.js';
+import {PolygonAPI} from '../src/polygon/api.js';
 
 const path=process.argv[2];
 let xmlTree=JSON.parse(await fs.readFile(process.argv[3], 'utf8'));
-class FakeNode {
-  constructor(data) {
-    this.localName=data.tag;
-    this.data=data;
-    this.children=data.children.map(x=>new FakeNode(x));
-    this.textContent=data.text + this.children.map(c=>c.textContent).join('');
-  }
-  getAttribute(k) {return Object.hasOwn(this.data.attributes,k) ? this.data.attributes[k] : null;}
-  hasAttribute(k) {return Object.hasOwn(this.data.attributes,k);}
-}
-globalThis.DOMParser = class {
-  parseFromString(xml, type) {
-    assert(xml.includes('<problem'), 'Invalid fixture xml');
-    assert.equal(type, 'application/xml');
-    return {querySelector:()=>null,documentElement:new FakeNode(xmlTree)};
-  }
-};
+installDOMParser(() => xmlTree);
+
 const filebytes=await fs.readFile(path);
 const zip=new ZipArchive(filebytes.buffer.slice(filebytes.byteOffset,filebytes.byteOffset+filebytes.byteLength));
 assert.deepEqual((await zip.text('tests/01')), '1\n');

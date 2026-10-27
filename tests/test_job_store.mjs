@@ -1,7 +1,7 @@
-import './mock-i18n.mjs';
+import './helpers/i18n.mjs';
 import assert from 'node:assert/strict';
-import { createFakeIndexedDB } from './mock-browser-storage.mjs';
-import { stageJob, readJob, clearJob } from '../job-store.js';
+import { createFakeIndexedDB } from './helpers/storage.mjs';
+import { stageJob, readJob, clearJob } from '../src/storage/jobs.js';
 
 globalThis.indexedDB = createFakeIndexedDB();
 const file = new Blob(['PK\x03\x04fake zip'], {type:'application/zip'});

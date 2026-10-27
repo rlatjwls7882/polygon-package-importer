@@ -1,9 +1,9 @@
-import './mock-i18n.mjs';
+import './helpers/i18n.mjs';
 // Exercise popup -> service worker -> offscreen -> status without network access.
 import assert from 'node:assert/strict';
-import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
-import { stageJob, readJob, STATUS_KEY } from '../job-store.js';
-import { saveCredentials } from '../credential-store.js';
+import { createFakeIndexedDB, createFakeChromeStorage } from './helpers/storage.mjs';
+import { stageJob, readJob, STATUS_KEY } from '../src/storage/jobs.js';
+import { saveCredentials } from '../src/storage/credentials.js';
 
 globalThis.indexedDB=createFakeIndexedDB();
 const mock=createFakeChromeStorage();
@@ -58,6 +58,7 @@ const chrome={
         }
         assert.equal(message.jobId,'job-42');
         assert.equal(message.encryptedRecord.version,2);
+        assert.equal(message.locale,'ko');
         respond({ok:true});
         // The simulated popup may close before the offscreen task completes.
         queueMicrotask(async()=>{
@@ -72,7 +73,7 @@ const chrome={
   }
 };
 globalThis.chrome=chrome;
-await import('../background.js');
+await import('../src/runtime/background.js');
 
 const file=new Blob(['zip'],{type:'application/zip'});
 const job={id:'job-42',file,filename:'problem.zip',mode:'replace',problemId:'42',commit:true};

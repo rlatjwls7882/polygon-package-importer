@@ -1,11 +1,11 @@
-import './mock-i18n.mjs';
+import './helpers/i18n.mjs';
 import assert from 'node:assert/strict';
-import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
-import { encryptCredentials, STORE_KEY as OLD_KEY } from '../credential-vault.js';
+import { createFakeIndexedDB, createFakeChromeStorage } from './helpers/storage.mjs';
+import { encryptCredentials, STORE_KEY as OLD_KEY } from '../src/storage/legacy-vault.js';
 import {
   CREDENTIAL_KEY, initializeCredentials, loadCredentials, saveCredentials,
   migrateCredentials, deleteCredentials
-} from '../credential-store.js';
+} from '../src/storage/credentials.js';
 
 globalThis.indexedDB=createFakeIndexedDB();
 const storage=createFakeChromeStorage();

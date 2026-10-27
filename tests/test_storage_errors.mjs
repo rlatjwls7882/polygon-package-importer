@@ -1,7 +1,7 @@
-import { createMockI18n } from './mock-i18n.mjs';
+import { createMockI18n } from './helpers/i18n.mjs';
 import assert from 'node:assert/strict';
-import { CredentialsUI } from '../credentials-ui.js';
-import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
+import { CredentialsUI } from '../src/ui/credentials.js';
+import { createFakeIndexedDB, createFakeChromeStorage } from './helpers/storage.mjs';
 
 class Element {
   constructor() {

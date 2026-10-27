@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<problem short-name="demo-import">
+<statements><statement language="english" charset="UTF-8"/></statements>
+<files><executables><executable><source type="cpp.g++20" path="files/gen.cpp"/></executable></executables>
+<resources><file path="files/testlib.h"/><file path="files/extra/testlib.h"/><file path="files/soj-checkers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/.checker-selection-v1"/></resources></files>
+<assets><interactor><source type="cpp.g++20" path="files/interactor.cpp"/></interactor><checker name="std::wcmp"/><validators><validator><source type="cpp.g++20" path="files/val.cpp"/></validator></validators>
+<solutions><solution tag="main"><source type="cpp.g++20" path="files/sol.cpp"/></solution></solutions></assets>
+<judging><testset name="tests"><time-limit>1000</time-limit><memory-limit>268435456</memory-limit>
+<test-count>2</test-count><input-path-pattern>tests/%02d</input-path-pattern><answer-path-pattern>tests/%02d.a</answer-path-pattern>
+<tests><test method="manual" sample="true"/><test method="generated" cmd="gen 99"/></tests>
+</testset></judging><tags><tag value="implementation"/></tags></problem>

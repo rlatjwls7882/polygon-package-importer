@@ -1,8 +1,8 @@
-import './mock-i18n.mjs';
+import './helpers/i18n.mjs';
 import assert from 'node:assert/strict';
 import {
   encryptCredentials, decryptCredentials, normalizeCredentials, sameVaultRecord
-} from '../credential-vault.js';
+} from '../src/storage/legacy-vault.js';
 
 const credentials = { key: 'SECRET_API_KEY_DO_NOT_STORE', secret: 'SECRET_API_SECRET_DO_NOT_STORE' };
 const passphrase = 'correct horse battery stable 2026';

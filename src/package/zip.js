@@ -1,4 +1,4 @@
-import { t } from './i18n.js';
+import { t } from '../i18n.js';
 // Dependency-free, read-only ZIP parser for Chrome 103+. No ZIP extraction to disk.
 // Deliberately rejects encrypted, ZIP64, split and suspicious archives.
 const dec = new TextDecoder('utf-8');
