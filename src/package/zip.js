@@ -4,14 +4,23 @@ import { t } from '../i18n.js';
 const dec = new TextDecoder('utf-8');
 const MAX_ENTRIES = 5000, MAX_TOTAL = 512 * 1024 * 1024, MAX_SINGLE = 128 * 1024 * 1024;
 const MAX_RATIO = 2500;
+export const MAX_ZIP_SIZE = 100 * 1024 * 1024;
+const MAX_CACHE_BYTES = 32 * 1024 * 1024;
 
 export class ZipArchive {
   static async fromFile(file) {
-    if (!file || file.size > 768 * 1024 * 1024) throw Error(t('zipZipExceedsThe768MbSizeLimit'));
+    if (!file || !Number.isFinite(file.size) || file.size < 0 || file.size > MAX_ZIP_SIZE)
+      throw Error(t('zipArchiveTooLarge'));
     return new ZipArchive(await file.arrayBuffer());
   }
 
-  constructor(buffer) {
+  constructor(buffer, {cacheLimit = MAX_CACHE_BYTES} = {}) {
+    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength > MAX_ZIP_SIZE)
+      throw Error(t('zipArchiveTooLarge'));
+    this.cacheLimit = Math.max(0, Math.min(MAX_CACHE_BYTES, cacheLimit));
+    this.cache = new Map();
+    this.pending = new Map();
+    this.cacheBytes = 0;
     this.buffer = buffer;
     this.dv = new DataView(buffer);
     const b = new Uint8Array(buffer);
@@ -31,7 +40,7 @@ export class ZipArchive {
     this.entries = new Map();
     let p = cdStart, total = 0;
     for (let i = 0; i < count; i++) {
-      if (this.u32(p) !== 0x02014b50) throw Error(t('zipZipEntryListIsCorrupted'));
+      if (p + 46 > cdStart + cdSize || this.u32(p) !== 0x02014b50) throw Error(t('zipZipEntryListIsCorrupted'));
       const flags = this.u16(p + 8), method = this.u16(p + 10);
       const crc = this.u32(p + 16), compressed = this.u32(p + 20), size = this.u32(p + 24);
       const nameLen = this.u16(p + 28), extra = this.u16(p + 30), comment = this.u16(p + 32);
@@ -48,10 +57,10 @@ export class ZipArchive {
           throw Error(t('zipSuspiciousDecompressedSize', name));
         total += size;
         if (total > MAX_TOTAL) throw Error(t('zipTotalDecompressedSizeExceeds512Mb'));
-        if (offset + 30 > b.length || this.u32(offset) !== 0x04034b50)
+        if (offset + 30 > cdStart || this.u32(offset) !== 0x04034b50)
           throw Error(t('zipInvalidZipLocalHeader', name));
         const dataStart = offset + 30 + this.u16(offset + 26) + this.u16(offset + 28);
-        if (dataStart + compressed > b.length) throw Error(t('zipZipDataIsOutOfBounds', name));
+        if (dataStart + compressed > cdStart) throw Error(t('zipZipDataIsOutOfBounds', name));
         this.entries.set(name, { name, method, compressed, size, crc, dataStart });
       }
       p += 46 + nameLen + extra + comment;
@@ -61,8 +70,12 @@ export class ZipArchive {
     this.root = roots[0].slice(0, -'problem.xml'.length);
   }
 
-  u16(i) { return this.dv.getUint16(i, true); }
-  u32(i) { return this.dv.getUint32(i, true); }
+  bounds(i, size) {
+    if (!Number.isSafeInteger(i) || i < 0 || i + size > this.dv.byteLength)
+      throw Error(t('zipZipEntryListIsOutOfBounds'));
+  }
+  u16(i) { this.bounds(i, 2); return this.dv.getUint16(i, true); }
+  u32(i) { this.bounds(i, 4); return this.dv.getUint32(i, true); }
   path(p) {
     if (typeof p !== 'string' || p.includes('\\') || p.startsWith('/') || p.split('/').includes('..'))
       throw Error(t('zipInvalidPackagePath', p));
@@ -70,21 +83,85 @@ export class ZipArchive {
   }
   has(p) { return this.entries.has(this.path(p)); }
   names() { return [...this.entries.keys()].filter(x => x.startsWith(this.root)).map(x => x.slice(this.root.length)); }
-  async bytes(p) {
-    const entry = this.entries.get(this.path(p));
-    if (!entry) throw Error(t('zipMissingFileInPackage', p));
+  remember(name, value) {
+    const previous = this.cache.get(name);
+    if (previous) this.cacheBytes -= previous.weight;
+    this.cache.delete(name);
+    value.weight = value.bytes.length + (value.text?.length || 0) * 2;
+    if (value.weight > this.cacheLimit) return;
+    this.cache.set(name, value);
+    this.cacheBytes += value.weight;
+    while (this.cacheBytes > this.cacheLimit) {
+      const oldest = this.cache.keys().next().value;
+      this.cacheBytes -= this.cache.get(oldest).weight;
+      this.cache.delete(oldest);
+    }
+  }
+
+  async inflate(entry, path) {
     const compressed = new Uint8Array(this.buffer, entry.dataStart, entry.compressed);
     let bytes;
-    if (entry.method === 0) bytes = new Uint8Array(compressed);
-    else {
+    if (entry.method === 0) {
+      if (compressed.length !== entry.size) throw Error(t('zipDecompressedSizeMismatch', path));
+      bytes = new Uint8Array(compressed);
+    } else {
       const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-      bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+      const reader = stream.getReader();
+      bytes = new Uint8Array(entry.size);
+      let offset = 0;
+      try {
+        for (;;) {
+          const {done, value} = await reader.read();
+          if (done) break;
+          if (offset + value.length > entry.size) throw Error(t('zipDecompressedSizeMismatch', path));
+          bytes.set(value, offset);
+          offset += value.length;
+        }
+        if (offset !== entry.size) throw Error(t('zipDecompressedSizeMismatch', path));
+      } catch (error) {
+        await reader.cancel().catch(() => {});
+        throw error;
+      } finally {
+        reader.releaseLock();
+      }
     }
-    if (bytes.length !== entry.size) throw Error(t('zipDecompressedSizeMismatch', p));
-    if (crc32(bytes) !== entry.crc) throw Error(t('zipCrc32CheckFailed', p));
-    return bytes;
+    if (crc32(bytes) !== entry.crc) throw Error(t('zipCrc32CheckFailed', path));
+    return {bytes, text:null, weight:0};
   }
-  async text(p) { return new TextDecoder('utf-8', { fatal: true }).decode(await this.bytes(p)).replace(/^\ufeff/, ''); }
+
+  async read(path) {
+    const name = this.path(path), entry = this.entries.get(name);
+    if (!entry) throw Error(t('zipMissingFileInPackage', path));
+    if (this.cache.has(name)) {
+      const value = this.cache.get(name);
+      this.cache.delete(name);
+      this.cache.set(name, value);
+      return value;
+    }
+    if (!this.pending.has(name)) {
+      const pending = this.inflate(entry, path).then(value => {
+        this.remember(name, value);
+        return value;
+      }).finally(() => this.pending.delete(name));
+      this.pending.set(name, pending);
+    }
+    return this.pending.get(name);
+  }
+
+  async bytes(path) {
+    // Callers must not be able to corrupt data already checked by CRC32.
+    return (await this.read(path)).bytes.slice();
+  }
+
+  async text(path) {
+    const value = await this.read(path);
+    if (value.text === null) {
+      value.text = new TextDecoder('utf-8', {fatal:true}).decode(value.bytes).replace(/^\ufeff/, '');
+      this.remember(this.path(path), value);
+    }
+    return value.text;
+  }
+
 }
 
 let crcTable;

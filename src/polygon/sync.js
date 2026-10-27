@@ -53,7 +53,7 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   }
   context.beforeReplacingTests = () => prepareGroups(context, currentGroups, true);
   await syncTests(context);
-  await syncGroups(context);
+  await syncGroups(context, testMutations === 0 ? currentGroups : null);
   await syncJudgeTests(context);
   // Old generator files cannot be removed while the previous script uses them.
   await deleteObsoleteFiles(context);

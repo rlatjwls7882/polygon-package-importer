@@ -1,12 +1,12 @@
 import { t, localizePage } from '../i18n.js';
-import { ZipArchive } from '../package/zip.js';
+import { ZipArchive, MAX_ZIP_SIZE } from '../package/zip.js';
 import { loadPolygonPackage } from '../package/load.js';
 import { CredentialsUI } from './credentials.js';
 import { stageJob, readJob, STATUS_KEY } from '../storage/jobs.js';
 
 const $ = id => document.getElementById(id);
-const MAX_ZIP_SIZE = 100 * 1024 * 1024;
 let file = null;
+let analysisId = 0;
 let validPackage = false;
 let credentialsUI = null;
 let showCredentials = false;
@@ -34,6 +34,9 @@ function render() {
 
   $('problemIdField').hidden = mode() !== 'replace';
   const validId = mode() === 'create' || /^[1-9]\d{0,11}$/.test(problemId());
+  const busy = pending || status?.phase === 'running';
+  for (const id of ['zipFile', 'problemId', 'commit', 'retry', 'clearStatus']) $(id).disabled = busy;
+  for (const input of document.querySelectorAll('input[name="mode"]')) input.disabled = busy;
   $('start').disabled = !authorized || !file || !validPackage || !validId ||
     pending || status?.phase === 'running';
 
@@ -78,6 +81,7 @@ async function closeCredentials() {
 }
 
 async function analyze() {
+  const requestId = ++analysisId;
   errorText();
   validPackage = false;
   file = $('zipFile').files?.[0] || null;
@@ -91,7 +95,9 @@ async function analyze() {
     render();
     try {
       const archive = await ZipArchive.fromFile(file);
+      if (requestId !== analysisId) return;
       const plan = await loadPolygonPackage(archive);
+      if (requestId !== analysisId) return;
       if (plan.unsupported.length) throw Error(plan.unsupported.join('; '));
       const details = [t('popupTestsSolutions', plan.name, plan.tests.length, plan.solutions.length)];
       if (plan.info.runTwice) details.push(t('packageModeTwoStep'));
@@ -102,6 +108,7 @@ async function analyze() {
       $('packageInfo').textContent = details.join(' · ');
       validPackage = true;
     } catch (error) {
+      if (requestId !== analysisId) return;
       $('packageInfo').textContent = t('popupInvalidPackage');
       errorText(error?.message || error);
     }
@@ -121,14 +128,15 @@ async function start(retry = false) {
       if (!job || job.id !== status?.id) throw Error(t('popupNoJobAvailableToRetry'));
     } else {
       if (!file || !validPackage) throw Error(t('popupSelectAZipFirst'));
-      const latest = await chrome.runtime.sendMessage({type:'IMPORT_QUERY'});
-      if (!latest?.ok) throw Error(latest?.error || t('popupCouldNotCheckJobStatus'));
-      if (latest.status?.phase === 'running') throw Error(t('popupAnotherUploadIsRunning'));
+      // Freeze the exact selection before the first asynchronous operation.
       job = {
         id:crypto.randomUUID(), file, filename:file.name,
         mode:mode(), problemId:mode() === 'replace' ? problemId() : null,
         commit:$('commit').checked
       };
+      const latest = await chrome.runtime.sendMessage({type:'IMPORT_QUERY'});
+      if (!latest?.ok) throw Error(latest?.error || t('popupCouldNotCheckJobStatus'));
+      if (latest.status?.phase === 'running') throw Error(t('popupAnotherUploadIsRunning'));
       await stageJob(job);
     }
     savedJob = job;

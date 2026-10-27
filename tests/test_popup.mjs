@@ -185,3 +185,17 @@ assert(!el('importForm').hidden);
 assert(!el('settings').hidden);
 assert.equal(optionsOpenCount,0);
 console.log('PASS: a freshly opened popup with stored credentials opens the uploader directly');
+
+// Older analysis must not validate a later invalid file selection.
+let releaseSlow;
+const slowGate=new Promise(resolve=>releaseSlow=resolve);
+const slow={...zipFile,name:'slow.zip',arrayBuffer:async()=>{await slowGate;return zipFile.arrayBuffer();}};
+el('zipFile').files=[slow];
+const oldAnalysis=el('zipFile').handlers.change();
+await new Promise(resolve=>setImmediate(resolve));
+el('zipFile').files=[{name:'invalid.zip',size:3,arrayBuffer:async()=>new ArrayBuffer(3)}];
+await el('zipFile').handlers.change();
+releaseSlow();await oldAnalysis;
+assert(el('start').disabled,'Late result from an old ZIP must not enable upload for an invalid ZIP');
+assert.equal(el('packageInfo').textContent,chrome.i18n.getMessage('popupInvalidPackage'));
+console.log('PASS: stale asynchronous ZIP analysis cannot override the current file selection');

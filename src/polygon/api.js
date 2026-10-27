@@ -42,14 +42,16 @@ export class PolygonAPI {
   }
 
   async pacedRequest(run) {
-    const invoke = async () => {
-      const wait = Math.max(0, this._nextRequestAt - Date.now(), this._cooldownUntil - Date.now());
-      if (wait > 0) await PolygonAPI.sleep(wait);
-      this._nextRequestAt = Date.now() + this.minimumIntervalMs;
-      // Include the fetch in the queued operation; only one signed request
-      // is in flight at a time from this tab.
-      return run();
-    };
+    const wait = Math.max(0, this._nextRequestAt - Date.now(), this._cooldownUntil - Date.now());
+    if (wait > 0) await PolygonAPI.sleep(wait);
+    this._nextRequestAt = Date.now() + this.minimumIntervalMs;
+    return run();
+  }
+
+  call(method, args = {}, options = {}) {
+    // Keep response parsing and retries in the same queue slot. Otherwise the
+    // next fetch can start before a slow 429 body has set the shared cooldown.
+    const invoke = () => this.callSerial(method, args, options);
     const turn = this._gate.then(invoke, invoke);
     this._gate = turn.catch(() => {});
     return turn;
@@ -87,7 +89,7 @@ export class PolygonAPI {
     });
   }
 
-  async call(method, args = {}, { binary = false, raw = false } = {}) {
+  async callSerial(method, args, { binary = false, raw = false } = {}) {
     for (let attempt = 0; attempt <= 4; attempt++) {
       const response = await this.requestOnce(method, args);
       const rateLimited = response.status === 429;

@@ -2,6 +2,16 @@ import { t } from '../i18n.js';
 import { sameText } from './compare.js';
 const encoder = new TextEncoder();
 
+function mayMatchLength(length, text) {
+  const remote = Number(length);
+  if (length == null || !Number.isFinite(remote)) return true;
+  const normalized = text.replace(/\r\n?/g, '\n');
+  const bytes = encoder.encode(normalized).length;
+  const lines = normalized.split('\n').length - 1;
+  // Polygon may normalize LF to CRLF. Byte length alone is not a content diff.
+  return remote >= bytes && remote <= bytes + lines;
+}
+
 function packageFiles(plan) {
   return [
     ['source', plan.sources, 'sourceFiles'],
@@ -20,9 +30,7 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
       const old = remote.get(file.name);
       let same = false;
       if (old) {
-        // A different length proves difference without a download.
-        const length = Number(old.length);
-        if (!Number.isFinite(length) || length === encoder.encode(localContent).length) {
+        if (mayMatchLength(old.length, localContent)) {
           const remoteContent = await read(t('syncComparing', type, file.name),
             () => api.problem('viewFile', id, {type, name:file.name}, {raw:true}));
           same = sameText(remoteContent, localContent);
@@ -43,12 +51,8 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
     // are removed only after the new main has been uploaded successfully.
     const retained = plan.solutions.find(s => s.name === previousMain.name);
     const tag = retained?.tag ?? 'OK';
-    const original = await read(t('syncCheckingPreviousMainSolution', previousMain.name),
-      () => api.problem('viewSolution', id, {name:previousMain.name}, {raw:true}));
-    if (typeof original !== 'string' || !original.length)
-      throw Error(t('syncCannotReadPreviousMainSolutionBeforeChanging', previousMain.name));
     await apply(t('syncUpdatingPreviousMainSolutionTag', previousMain.name),
-      () => api.problem('saveSolution', id, {name:previousMain.name, tag, file:original}));
+      () => api.problem('saveSolution', id, {name:previousMain.name, tag}));
     remoteSolutions.set(previousMain.name, {...previousMain, tag});
   }
   for (const solution of plan.solutions) {
@@ -56,8 +60,7 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
     const localContent = await archive.text(solution.path);
     let same = false;
     if (old) {
-      const length = Number(old.length);
-      if (!Number.isFinite(length) || length === encoder.encode(localContent).length) {
+      if (mayMatchLength(old.length, localContent)) {
         const content = await read(t('syncComparingSolution', solution.name),
           () => api.problem('viewSolution', id, {name:solution.name}, {raw:true}));
         same = sameText(content, localContent);
@@ -66,7 +69,7 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
     const tagDiff = !old || old.tag !== solution.tag;
     if (same && !tagDiff) unchanged(t('syncSolution', solution.name));
     else await apply(t('syncSavingSolution', solution.name), () => api.problem('saveSolution', id, {
-      name:solution.name, file:localContent, ...(tagDiff ? {tag:solution.tag} : {})
+      name:solution.name, ...(!same ? {file:localContent} : {}), ...(tagDiff ? {tag:solution.tag} : {})
     }));
   }
 }

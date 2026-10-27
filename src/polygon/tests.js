@@ -93,13 +93,15 @@ export async function verifyTests({api, id, plan, read, unchanged}, testMutation
   if (testMutations > 0) {
     const tests = await read(t('syncVerifyingChangedTestNumbering'),
       () => api.problem('tests', id, {testset:'tests', noInputs:'true'}));
-    if (!Array.isArray(tests) || tests.length !== plan.tests.length ||
-        new Set(tests.map(test => Number(test.index))).size !== tests.length ||
-        plan.tests.some(test => !tests.some(remote =>
-          Number(remote.index) === test.index && boolean(remote.manual) === (test.method === 'manual') &&
-          boolean(remote.useInStatements) === test.sample &&
-          (!plan.groups.length || str(remote.group) === str(test.group)) &&
-          (test.points == null || (remote.points != null && Number(remote.points) === test.points)))))
+    const byIndex = Array.isArray(tests) ? indexMap(tests) : new Map();
+    if (!Array.isArray(tests) || tests.length !== plan.tests.length || byIndex.size !== tests.length ||
+        plan.tests.some(test => {
+          const remote = byIndex.get(test.index);
+          return !remote || boolean(remote.manual) !== (test.method === 'manual') ||
+            boolean(remote.useInStatements) !== test.sample ||
+            (plan.groups.length && str(remote.group) !== str(test.group)) ||
+            (test.points != null && (remote.points == null || Number(remote.points) !== test.points));
+        }))
       throw Error(t('syncTestMetadataMismatch'));
   } else unchanged(t('syncAllTestsUnchanged'));
 }

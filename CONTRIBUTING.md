@@ -63,3 +63,18 @@ Keep UI messages in both `_locales/en/messages.json` and `_locales/ko/messages.j
 Offscreen documents load the bundled catalog through `chrome.runtime.getURL` because they do not expose `chrome.i18n`.
 `tests/test_structure.py` checks import paths, dependency cycles, and layer boundaries.
 The release scripts use the same runtime allowlist and verify every packaged source file.
+
+## Import reliability
+
+Runtime commands and status writes are serialized. Each attempt has a nonce; late
+messages cannot finish a newer retry. A running job claims its IndexedDB record,
+and compare/delete uses one transaction, so another popup cannot replace its ZIP.
+
+ZIP reads use a 32 MiB per-archive LRU cache and share concurrent decompression.
+Inflated data is bounded while streaming, checked by CRC32, and never cached on failure.
+The 100 MiB ZIP limit is checked again by the uploader, not only by the popup.
+
+File comparisons account for LF/CRLF-equivalent lengths. Tag-only solution updates
+use the API's optional `file` parameter rather than downloading and re-uploading the
+old main solution. API response parsing and backoff stay in the serialized request
+queue; network errors on mutations are still not retried automatically.
