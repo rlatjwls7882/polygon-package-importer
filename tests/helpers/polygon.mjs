@@ -7,7 +7,7 @@ const writes = /^(?:save|set|delete|clear|enable|edit|updateInfo|commitChanges)/
 // Stateful API double: reject invalid request ordering instead of accepting all writes.
 export function createPolygon() {
   const state = {
-    info:{timeLimit:1000,memoryLimit:256,inputFile:'stdin',outputFile:'stdout',interactive:false,
+    info:{timeLimit:1000,memoryLimit:256,inputFile:'stdin',outputFile:'stdout',interactive:false,wellFormed:false,
       runTwice:false,interactiveSecondRun:false,useInteractionLogInExampleTests:false},
     entry:{id:42,revision:1,workingCopyRevision:1,modified:false,deleted:false,accessType:'OWNER',name:'test'},
     fileMetadata:{source:new Map(),resource:new Map(),aux:new Map()},
@@ -64,7 +64,7 @@ export function createPolygon() {
           if (key in args) assert(state.info.interactive,'Conditional option before interactive mode');
         for (const [key,value] of Object.entries(args)) {
           if (key==='runTwice' && state.ignoreRunTwice) continue;
-          state.info[key] = ['interactive','runTwice','interactiveSecondRun','useInteractionLogInExampleTests'].includes(key)
+          state.info[key] = ['interactive','runTwice','interactiveSecondRun','useInteractionLogInExampleTests','wellFormed'].includes(key)
             ? flag(value) : value;
         }
         return {};

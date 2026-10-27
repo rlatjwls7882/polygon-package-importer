@@ -11,6 +11,12 @@ import { sameText } from '../../package/text.js';
 // have documented getters on info()/solutions(). It belongs to a pinned build.
 export async function verifyBuiltDescriptor(built, plan, original) {
   const root = resolveXmlText(await built.text('problem.xml'));
+  // Inspect the built XML directly. The import plan deliberately normalizes
+  // wellFormed to true and must never mask a false/missing server-side value.
+  const wellFormed = CHILDREN(root, 'properties').flatMap(node => CHILDREN(node, 'property'))
+    .filter(node => ATTR(node, 'name') === 'tests-wellformed');
+  if (wellFormed.length !== 1 || ATTR(wellFormed[0], 'value') !== 'true')
+    throw Error(t('verifyDescriptorMismatch', 'tests-wellformed'));
   const judging = readJudging(root);
   if (judging.checkerPercent !== !!plan.checkerPercent ||
       ['interactive','runTwice','interactiveSecondRun'].some(key => !!judging.info[key] !== !!plan.info[key]))
