@@ -158,6 +158,38 @@ for (const [field,name] of [['ignoreRunTwice','two-step'],['ignorePoints','subta
 }
 console.log('PASS: read-back verification blocks success and commit for unapplied judging flags or scores');
 
+// Existing tests keep their input/points, so restoring their groups uses only bulk assignment.
+for (const after of [false,true]) {
+  const mock=createPolygon();
+  await upload(mock,'subtasks-independent','create');
+  for (const test of mock.state.tests.values()) test.group='old';
+  mock.state.groups.clear();
+  mock.state.groups.set('old',{name:'old',pointsPolicy:'COMPLETE_GROUP',feedbackPolicy:'COMPLETE',dependencies:[]});
+  mock.state.entry.modified=true;
+  mock.state.fail={method:'setTestGroup',after};
+  await assert.rejects(()=>upload(mock,'subtasks-independent'),error=>{
+    assert.equal(error.partial,true);assert.equal(error.problemId,42);
+    return /Injected failure/.test(error.message);
+  });
+  assert.equal(mock.state.commits,1,'Failed bulk assignment must not be committed');
+  const calls=mock.calls.length;
+  await upload(mock,'subtasks-independent');
+  assert.equal(mock.state.creates,1);
+  assert.equal(mock.state.commits,2);
+  assert.equal(mock.calls.slice(calls).filter(call=>call.method==='setTestGroup').length,after?1:2);
+  assert.equal((await upload(mock,'subtasks-independent')).mutations,0);
+}
+console.log('PASS: batch assignment failures block commit; retry re-reads groups without creating another problem');
+
+const ignoredGroups=createPolygon();
+await upload(ignoredGroups,'subtasks-independent','create');
+ignoredGroups.state.tests.get(1).group='large';
+const originalGroupProblem=ignoredGroups.api.problem;
+ignoredGroups.api.problem=(method,id,args,options)=>method==='setTestGroup'?Promise.resolve({}):originalGroupProblem(method,id,args,options);
+await assert.rejects(()=>upload(ignoredGroups,'subtasks-independent'),error=>error.message===chrome.i18n.getMessage('syncTestMetadataMismatch'));
+assert.equal(ignoredGroups.state.commits,1,'Read-back mismatch must prevent commit after a supposedly successful batch');
+console.log('PASS: ignored batch assignments cannot produce a successful import or commit');
+
 const invalid=[
   ['batch',root=>{const solutions=child(child(root,'assets'),'solutions');solutions.children.push(structuredClone(solutions.children[0]));}],
   ['batch',root=>{judging(root).attributes['run-count']='3';}],

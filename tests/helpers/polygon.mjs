@@ -146,6 +146,20 @@ export function createPolygon() {
           if (param in args) test[key]=args[param];
         state.tests.set(index,test);pruneGroups();return {};
       }
+      case 'setTestGroup': {
+        assert(state.groupsEnabled, 'Test groups must be enabled before bulk assignment');
+        assert.deepEqual(Object.keys(args).sort(), ['testGroup','testIndices','testset']);
+        assert.equal(args.testset, 'tests');
+        assert.equal(typeof args.testGroup, 'string');
+        assert(args.testGroup, 'Empty-group clearing stays on the saveTest path');
+        assert(/^\d+(?:,\d+)*$/.test(args.testIndices), 'Use comma-separated test indices');
+        const indices = args.testIndices.split(',').map(Number);
+        assert.equal(new Set(indices).size, indices.length, 'No repeated indices');
+        for (const index of indices) assert(state.tests.has(index), 'Tests must exist before bulk assignment');
+        ensureGroup(args.testGroup);
+        for (const index of indices) state.tests.get(index).group = args.testGroup;
+        pruneGroups();return {};
+      }
       case 'deleteTest':
         for (const index of String(args.testIndices??args.testIndex).split(',')) state.tests.delete(Number(index));
         pruneGroups();return {};

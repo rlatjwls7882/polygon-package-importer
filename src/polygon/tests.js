@@ -13,6 +13,19 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
       log:plan.info?.interactive ? (test.interactionLogPath ? await archive.text(test.interactionLogPath) : '') : undefined
     };
   };
+  const pendingGroups = new Map();
+  const saveTest = async (props, label) => {
+    // The two identity fields plus a non-empty group are the only changes.
+    // Keep input/score/sample edits combined in one saveTest request. Empty
+    // group clearing stays on that established path too.
+    if (Object.keys(props).length === 3 && props.testGroup) {
+      if (!pendingGroups.has(props.testGroup)) pendingGroups.set(props.testGroup, []);
+      pendingGroups.get(props.testGroup).push(props.testIndex);
+      return;
+    }
+    await apply(label, () => api.problem('saveTest', id, props), true);
+  };
+
   const wantedTests = new Map(plan.tests.map(t => [t.index, t]));
   let oldTests = target?.tests || [];
   const oldGenerated = oldTests.some(t => !t.manual);
@@ -62,8 +75,7 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
     const input = await archive.text(test.path);
     const props = manualTestChanges(test, remoteByIndex.get(test.index), input, await sample(test), groupsEnabled);
     if (!props) unchanged(t('syncManualTest', test.index, plan.tests.length));
-    else await apply(t('syncManualTest', test.index, plan.tests.length),
-      () => api.problem('saveTest', id, props), true);
+    else await saveTest(props, t('syncManualTest', test.index, plan.tests.length));
   }
 
   if (generated.length) {
@@ -83,9 +95,16 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
       const props = {testset:'tests', testIndex:test.index,
         ...testMetadataChanges(test, remote, await sample(test), groupsEnabled)};
       if (Object.keys(props).length === 2) unchanged(t('syncGeneratedTestMetadata', test.index));
-      else await apply(t('syncGeneratedTestMetadata', test.index),
-        () => api.problem('saveTest', id, props), true);
+      else await saveTest(props, t('syncGeneratedTestMetadata', test.index));
     }
+  }
+
+  // All tests exist now, including any recreated by saveScript. Combine manual
+  // and generated indices for the same destination without duplicating writes.
+  for (const [testGroup, indices] of pendingGroups) {
+    const testIndices = indices.sort((a, b) => a - b).join(',');
+    await apply(t('syncAssigningTestGroup', testGroup, indices.length),
+      () => api.problem('setTestGroup', id, {testset:'tests', testGroup, testIndices}), true);
   }
 }
 

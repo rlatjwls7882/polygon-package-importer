@@ -55,9 +55,33 @@ for(const [version,root] of [['baseline',baseline],['updated',current]]) {
     generatedMock.state.tests.set(i,{index:i,manual:true,input:'1'.repeat(8192),inputBase64:Buffer.from('1'.repeat(8192)).toString('base64')});
   }
   const snapshot=await readTarget(generatedMock.api,42,generatedPlan);
+  const groupBatchScenarios = [];
+  for (const [groupCount, otherEdits] of [[1,0],[5,0],[1,20]]) {
+    const mock = createPolygon(), plan = makePlan();
+    mock.state.groupsEnabled = true;
+    mock.state.groups.set('old',{name:'old',pointsPolicy:'COMPLETE_GROUP',feedbackPolicy:'COMPLETE',dependencies:[]});
+    plan.groups = Array.from({length:groupCount},(_,i)=>({name:'g'+i,pointsPolicy:'COMPLETE_GROUP',feedbackPolicy:'COMPLETE',dependencies:[]}));
+    for (let index=1;index<=100;index++) {
+      const manual = index%2===1;
+      plan.tests.push({index,method:manual?'manual':'generated',path:String(index),cmd:'gen '+index,
+        group:plan.groups[(index-1)%groupCount].name,points:null,sample:false,description:index<=otherEdits?'updated':''});
+      mock.state.tests.set(index,{index,manual,group:'old',description:'',useInStatements:false,
+        ...(manual?{input:index+'\n',inputBase64:Buffer.from(index+'\n').toString('base64')}:{scriptLine:'gen '+index+' > '+index})});
+    }
+    mock.state.script=plan.tests.filter(test=>test.method==='generated').map(test=>test.cmd+' > '+test.index).join('\n');
+    const target=await readTarget(mock.api,42,plan);
+    const result=await syncPackage({api:mock.api,id:42,plan,target,archive:{text:async path=>path+'\n'},read:task,write:task});
+    for (const desired of plan.tests) {
+      assert.equal(mock.state.tests.get(desired.index).group,desired.group);
+      assert.equal(mock.state.tests.get(desired.index).description,desired.description);
+    }
+    groupBatchScenarios.push({tests:100,groupCount,otherEdits,testWrites:result.testMutations,
+      saveTest:mock.calls.filter(call=>call.method==='saveTest').length,
+      setTestGroup:mock.calls.filter(call=>call.method==='setTestGroup').length,totalRequests:mock.calls.length});
+  }
   results[version]={zipFiles:256,zipPasses:4,inflations,zipMs:Number(zipMs.toFixed(1)),
     eolFileMutations:fileResult.mutations,eolRequests:mock.calls.length,eolSourceBytesUploaded:sourceBytes,
     noOpGroupQueries:groupMock.calls.filter(call=>call.method==='viewTestGroup').length,
-    generatedReplacementInputBytes:Buffer.byteLength(JSON.stringify(snapshot.tests))};
+    generatedReplacementInputBytes:Buffer.byteLength(JSON.stringify(snapshot.tests)),groupBatchScenarios};
 }
 console.log(JSON.stringify(results,null,2));
