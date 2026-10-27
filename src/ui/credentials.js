@@ -1,3 +1,4 @@
+import { createViewLifetime } from './lifetime.js';
 import { t } from '../i18n.js';
 import {
   CREDENTIAL_KEY, initializeCredentials, loadCredentials,
@@ -7,6 +8,8 @@ import { STORE_KEY as LEGACY_KEY } from '../storage/legacy-vault.js';
 
 export class CredentialsUI {
   constructor() {
+    this.lifetime = createViewLifetime();
+    this.reloading = null; this.reloadRequested = false; this.recordVersion = 0;
     this.state = 'loading';
     this.record = null;
     this.error = '';
@@ -16,7 +19,8 @@ export class CredentialsUI {
     this.listening = false;
     this.onChange = null;
     this.onAccepted = null;
-    this.$ = id => document.getElementById(id);
+    const doc = document;
+    this.$ = id => doc.getElementById(id);
 
     for (const [id, action] of [
       ['saveCredentials', () => this.save()],
@@ -25,17 +29,19 @@ export class CredentialsUI {
       ['cancelReplace', () => this.cancel()],
       ['deleteCredentials', () => this.remove()],
       ['retryCredentials', () => this.init()]
-    ]) this.$(id).addEventListener('click', action);
+    ]) this.lifetime.listen(this.$(id), 'click', action);
 
     this.render();
   }
 
   clearFields() {
+    if (this.lifetime.disposed) return;
     for (const id of ['key', 'secret', 'legacyPassword'])
       this.$(id).value = '';
   }
 
   notice(message, error = false) {
+    if (this.lifetime.disposed) return;
     const element = this.$('credentialFeedback');
     element.hidden = false;
     element.className = 'feedback' + (error ? ' error' : '');
@@ -43,22 +49,56 @@ export class CredentialsUI {
   }
 
   fail(error) {
+    if (this.lifetime.disposed) return;
     this.state = 'error';
     this.error = String(error?.message || error);
     this.notice(this.error, true);
     this.render();
   }
 
-  async reload() {
-    const saved = await loadCredentials();
-    this.record = saved.record;
-    this.state = saved.credentials ? 'ready' : saved.legacy ? 'legacy' : 'empty';
-    this.error = '';
-    this.render();
+  reload() {
+    if (this.lifetime.disposed) return Promise.resolve();
+    this.reloadRequested = true;
+    if (this.reloading) return this.reloading;
+    this.reloading = this.reloadLatest().finally(() => {
+      this.reloading = null;
+      if (this.reloadRequested && !this.lifetime.disposed) return this.reload();
+    });
+    return this.reloading;
+  }
+
+  async reloadLatest() {
+    while (this.reloadRequested && !this.lifetime.disposed) {
+      this.reloadRequested = false;
+      const version = this.recordVersion;
+      let saved;
+      try {saved = await loadCredentials();}
+      catch (error) {
+        if (version !== this.recordVersion) this.reloadRequested = true;
+        if (this.reloadRequested) continue;
+        throw error;
+      }
+      if (this.lifetime.disposed) return;
+      if (version !== this.recordVersion) this.reloadRequested = true;
+      if (this.reloadRequested) continue; // Do not render an obsolete decrypt result.
+      this.record = saved.record;
+      this.state = saved.credentials ? 'ready' : saved.legacy ? 'legacy' : 'empty';
+      this.error = '';
+      this.render();
+    }
+  }
+
+  dispose() {
+    if (this.lifetime.disposed) return;
+    this.clearFields();
+    this.lifetime.dispose();
+    this.reloadRequested = false;
+    this.record = null;
+    this.onChange = null; this.onAccepted = null;
   }
 
   async init() {
-    if (this.pending) return;
+    if (this.pending || this.lifetime.disposed) return;
     this.pending = true;
     this.state = 'loading';
     this.editing = false;
@@ -69,9 +109,9 @@ export class CredentialsUI {
       if (typeof location !== 'undefined' && location.protocol !== 'chrome-extension:')
         throw Error(t('credentialsUiOpenThisPageFromTheChromeExtension'));
       await initializeCredentials();
-      await this.reload();
+      if (this.lifetime.disposed) return;
       if (!this.listening) {
-        chrome.storage.onChanged.addListener((changes, area) => {
+        this.lifetime.subscribe(chrome.storage.onChanged, (changes, area) => {
           if (area !== 'local' || this.saving) return;
           const latest = changes[CREDENTIAL_KEY];
           if (latest && sameRecord(latest.newValue, this.record)) return;
@@ -80,6 +120,7 @@ export class CredentialsUI {
         });
         this.listening = true;
       }
+      await this.reload();
     } catch (error) {
       this.fail(error);
     } finally {
@@ -89,6 +130,7 @@ export class CredentialsUI {
   }
 
   render() {
+    if (this.lifetime.disposed) return;
     const setup = this.state === 'empty' || this.editing;
     const legacy = this.state === 'legacy' && !this.editing;
     const canManage = ['ready', 'error'].includes(this.state) && !this.editing;
@@ -115,7 +157,7 @@ export class CredentialsUI {
   }
 
   async run(action) {
-    if (this.pending) return;
+    if (this.pending || this.lifetime.disposed) return;
     this.pending = true;
     this.render();
     try {
@@ -129,6 +171,8 @@ export class CredentialsUI {
   }
 
   accept(saved, message) {
+    if (this.lifetime.disposed) return;
+    this.recordVersion++;
     this.record = saved.record;
     this.state = 'ready';
     this.editing = false;
@@ -160,14 +204,14 @@ export class CredentialsUI {
         const saved = await migrateCredentials(this.$('legacyPassword').value);
         this.accept(saved, t('credentialsUiPreviousApiKeysMigrated'));
       } finally {
-        this.$('legacyPassword').value = '';
+        if (!this.lifetime.disposed) this.$('legacyPassword').value = '';
         this.saving = false;
       }
     });
   }
 
   replace() {
-    if (this.pending) return;
+    if (this.pending || this.lifetime.disposed) return;
     this.editing = true;
     this.clearFields();
     this.$('credentialFeedback').hidden = true;
@@ -175,18 +219,20 @@ export class CredentialsUI {
   }
 
   cancel() {
-    if (this.pending) return;
+    if (this.pending || this.lifetime.disposed) return;
     this.editing = false;
     this.clearFields();
     return this.reload().catch(error => this.fail(error));
   }
 
   remove() {
+    if (this.lifetime.disposed) return;
     if (!window.confirm(t('credentialsUiDeleteSavedApiKeys'))) return;
     return this.run(async () => {
       this.saving = true;
       try {
         await deleteCredentials();
+        this.recordVersion++;
         this.record = null;
         this.state = 'empty';
         this.editing = false;

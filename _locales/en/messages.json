@@ -20,6 +20,9 @@
   "apiRedacted": {
     "message": "[redacted]"
   },
+  "apiResponseTooLarge": {
+    "message": "$1: Response exceeds the $2-byte safety limit. Import stopped; no automatic retry."
+  },
   "apiStoppedDueToRateLimits": {
     "message": "$1: Stopped due to rate limits."
   },
@@ -853,6 +856,9 @@
   },
   "zipEncryptedOrUnsupportedZipCompressionMethod": {
     "message": "Encrypted or unsupported ZIP compression method."
+  },
+  "zipFileSizeMismatch": {
+    "message": "The ZIP file size changed while reading. Select the file again."
   },
   "zipInvalidPackagePath": {
     "message": "Invalid package path: $1"

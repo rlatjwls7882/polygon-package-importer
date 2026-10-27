@@ -30,6 +30,10 @@ and descriptor checks live in `src/polygon/verification/`.
 `zip-contents.js` owns bounded decompression, streams, and the cache.
 `src/ui/package-analysis.js` cancels superseded analyses; `runtime/status.js` persists
 status without repeating identical progress writes.
+`ui/popup.js` only mounts `popup-controller.js`. View-owned DOM/storage subscriptions
+are disposed together through `ui/lifetime.js`; credential refreshes are coalesced.
+`polygon/request-session.js` owns serialized requests, response timers and abortable
+cooldowns. `api.js` retains signing, API semantics, pacing and retry policy.
 `src/polygon/sync.js` orders the writes; its sibling modules handle their own content.
 Source files are uploaded before judge selection; obsolete attachments are removed last.
 The popup and offscreen HTML URLs, credential keys, and IndexedDB names stay stable.
@@ -107,7 +111,8 @@ Old inline-Blob jobs migrate lazily on mutation without changing database identi
 ZIP reads use a 32 MiB per-archive LRU cache and deduplicate concurrent reads.
 At most two entries inflate at once, within a 32 MiB declared-output budget; a larger
 allowed entry runs alone. This bounds in-flight allocation, not the browser's total heap.
-Every owner disposes its archive in `finally`; disposal cancels active streams, rejects
+Native File/Blob reads also use a cancellable stream and verify the declared size;
+non-stream test adapters still use `arrayBuffer()`. Every owner disposes its archive in `finally`; disposal cancels active streams, rejects
 queued reads, removes abort listeners and releases the compressed buffer/cache.
 Decoded caches and old remote snapshots are released before polling a server build.
 Inflated data is bounded while streaming, checked by CRC32, and never cached on failure.
@@ -122,12 +127,21 @@ queue; network errors on mutations are still not retried automatically.
 Discarded HTTP bodies are cancelled, request timers are cleared after body consumption,
 and queue tails do not retain response values. Offscreen completion disposes its API
 session; a failed startup closes the unused document but keeps the retryable ZIP.
+Closing an API session also interrupts rate-limit delays and rejects queued calls.
+JSON responses are limited to 256 MiB, raw source responses to 128 MiB, and non-OK
+error bodies to 64 KiB while streaming. Oversize responses stop without retrying an
+uncertain mutation. These bounds limit retained payload, not total browser memory.
+
+Popups explicitly unregister listeners and cancel local analysis on `pagehide` without
+cancelling an already-started background upload. Late queries/decryptions cannot replace
+newer status or newly saved credential records. Credential encryption and persisted key formats are unchanged.
 
 Offline comparison with an older checkout:
 
 ```sh
 node tests/benchmark_import.mjs /path/to/baseline-checkout
 node tests/benchmark_lifecycle.mjs /path/to/baseline-checkout
+node tests/benchmark_request_resources.mjs /path/to/baseline-checkout
 POLYGON_RANDOM_CASES=3000 node tests/test_random_formats.mjs
 ```
 
@@ -154,7 +168,9 @@ also turns off this option. Upload-only jobs say **execution not checked**, neve
 
 Verification polls every five seconds for at most 360 checks. Running invocations use
 summary responses; detailed solution/test runs are fetched only after FINISHED. Timeout is **incomplete**,
-not success. Retry follows the stored build without re-uploading or committing again.
+not success. Coverage uses indexed solution/test pairs and a bounded bitmap rather than
+one allocated string per run. All runs are inspected, so an unfinished result cannot
+hide a later compilation error or malformed verdict. Retry follows the stored build without re-uploading or committing again.
 Changed working copies/revisions require selecting the ZIP again; terminal build failures
 remain failures. A failed verification does not undo the already completed commit.
 Build output uses the same 100 MiB ZIP and decompression limits as imported archives;

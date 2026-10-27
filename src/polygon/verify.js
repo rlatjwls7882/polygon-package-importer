@@ -4,6 +4,14 @@ import { checkInvocation } from './verification/invocation.js';
 import { currentRevision, packages, validId } from './verification/packages.js';
 import { verifyBuiltDescriptor } from './verification/descriptor.js';
 
+// Keep the potentially large detail response out of the build-ZIP download
+// scope. Only the compact verification result survives this function.
+async function readInvocation(api, id, invocationId, pkg, plan) {
+  const detail = await api.problem('invocation', id, {invocationId});
+  if (Number(detail?.invocation?.id) !== Number(invocationId)) throw Error(t('verifyInvalidResponse'));
+  return checkInvocation(detail, pkg, plan);
+}
+
 export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     save = async () => {}, emit = async () => {},
     sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), pollMs = 5000, maxPolls = 360}) {
@@ -26,8 +34,11 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     state = {...state, stage:'polling', packageId:started ? Number(started.id) : null};
     await save(state);
   }
-  if (!Array.isArray(state.beforeIds) || !['launching','polling','verified'].includes(state.stage))
+  if (!Array.isArray(state.beforeIds) || state.beforeIds.some(id => !validId(id)) ||
+      !['launching','polling','verified'].includes(state.stage))
     throw Error(t('verifyInvalidCheckpoint'));
+  const previousIds = new Set(state.beforeIds.map(Number));
+  if (previousIds.size !== state.beforeIds.length) throw Error(t('verifyInvalidCheckpoint'));
 
   for (let poll = 0; poll < maxPolls; poll++) {
     const listed = packages(await api.problem('packages', id));
@@ -36,7 +47,7 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
       pkg = listed.find(item => Number(item.id) === state.packageId);
       if (!pkg || Number(pkg.revision) !== revision) throw Error(t('verifyPackageMissing'));
     } else {
-      const candidates = listed.filter(item => Number(item.revision) === revision && !state.beforeIds.includes(Number(item.id)));
+      const candidates = listed.filter(item => Number(item.revision) === revision && !previousIds.has(Number(item.id)));
       if (candidates.length > 1) throw Error(t('verifyAmbiguousBuild'));
       pkg = candidates[0];
       if (pkg) {
@@ -59,9 +70,7 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
       // The summary is enough while running; defer the potentially huge
       // solution × test result body until execution has actually finished.
       if (invocations.length && invocations[0].status === 'FINISHED') {
-        const detail = await api.problem('invocation', id, {invocationId:invocations[0].id});
-        if (Number(detail?.invocation?.id) !== Number(invocations[0].id)) throw Error(t('verifyInvalidResponse'));
-        const result = checkInvocation(detail, pkg, plan);
+        const result = await readInvocation(api, id, invocations[0].id, pkg, plan);
         if (result) {
           await emit(t('verifyBuiltDescriptor'));
           const blob = await api.problem('package', id, {packageId:pkg.id, type:'standard'}, {binary:true});

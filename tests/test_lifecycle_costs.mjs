@@ -151,7 +151,7 @@ test('API response parsing clears its timers and session disposal rejects queued
     for(const [body,options] of [[JSON.stringify({status:'OK',result:42}),{}],['plain',{raw:true}],['zip',{binary:true}]]) {
       globalThis.fetch=async()=>new Response(body);
       await api.call('problem.info',{},options);
-      assert.equal(timers.size,0);assert.equal(api._controllers.size,0);assert.equal(api._responses.size,0);
+      assert.equal(timers.size,0);assert.equal(api.session.requests.size,0);assert.equal(api.session.responses.size,0);
     }
     let started,fetches=0;const entered=new Promise(resolve=>started=resolve);
     globalThis.fetch=async(url,{signal})=>{fetches++;started();return new Promise((resolve,reject)=>signal.addEventListener('abort',()=>reject(new Error('aborted')),{once:true}));};
@@ -173,7 +173,7 @@ test('the API queue tail does not retain the last raw response body',async()=>{
   try {
     const api=new PolygonAPI('KEY','SECRET');
     assert.equal(await api.problem('viewFile',42,{}, {raw:true}),'large raw source');
-    assert.equal(await api._gate,undefined,'Queue tail retained a successful response value');
+    assert.equal(await api.session.tail,undefined,'Queue tail retained a successful response value');
     api.dispose();
   } finally {globalThis.fetch=fetch;PolygonAPI.minimumIntervalMs=interval;}
 });
