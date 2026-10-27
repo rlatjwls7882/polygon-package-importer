@@ -1,10 +1,12 @@
+import { verifyProblem } from './verify.js';
 import { t } from '../i18n.js';
 import { ZipArchive } from '../package/zip.js';
 import { loadPolygonPackage } from '../package/load.js';
 import { syncPackage } from './sync.js';
 import { readTarget, assertCurrentTarget } from './target.js';
 
-export async function executeImport({job, api, onProgress = async () => {}, onCreated = async () => {}}) {
+export async function executeImport({job, api, onProgress = async () => {}, onCreated = async () => {},
+    onCheckpoint = async () => {}, verificationOptions = {}}) {
   if (!job || !job.file || !['create','replace'].includes(job.mode)) {
     throw Error(t('polygonImportInvalidImportJob'));
   }
@@ -12,9 +14,12 @@ export async function executeImport({job, api, onProgress = async () => {}, onCr
     throw Error(t('polygonImportEnterAValidPolygonProblemId'));
   }
 
-  let id = null;
+  if (job.verify && !job.commit) throw Error(t('verifyRequiresCommit'));
+  if (job.verification && (!job.verify || job.mode !== 'replace')) throw Error(t('verifyInvalidCheckpoint'));
+
+  let id = null, committed = false;
   let changed = false;
-  const emit = (message, progress = null) => onProgress({message, progress});
+  const emit = (message, progress = null, stage = 'uploading') => onProgress({message, progress, stage, committed});
   await emit(t('polygonImportAnalyzingZip'));
   const archive = await ZipArchive.fromFile(job.file);
   const plan = await loadPolygonPackage(archive);
@@ -29,6 +34,14 @@ export async function executeImport({job, api, onProgress = async () => {}, onCr
   let current = null;
   let result = null;
   try {
+    if (job.verification) {
+      id = Number(job.problemId);
+      committed = true;
+      const verification = await verifyProblem({api, id, plan, archive, checkpoint:job.verification,
+        save:onCheckpoint, emit:message => emit(message, null, 'verifying'), ...verificationOptions});
+      await emit(t('verifySucceeded', verification.packageId, verification.runs), 100, 'verified');
+      return {id, name:plan.name, committed:true, mutations:0, skipped:0, verification};
+    }
     if (job.mode === 'replace') {
       id = Number(job.problemId);
       current = await step(t('polygonImportReadingProblem', id), () => readTarget(api, id, plan));
@@ -55,7 +68,6 @@ export async function executeImport({job, api, onProgress = async () => {}, onCr
       }
     });
 
-    let committed = false;
     if (job.commit && (changed || !!current?.modified)) {
       const commit = await step(t('polygonImportCommittingChanges'),
         () => api.problem('commitChanges', id,
@@ -67,11 +79,17 @@ export async function executeImport({job, api, onProgress = async () => {}, onCr
       committed = true;
     }
 
+    let verification = {state:'not-run'};
+    if (job.verify) {
+      verification = await verifyProblem({api, id, plan, archive, save:onCheckpoint,
+        emit:message => emit(message, null, 'verifying'), ...verificationOptions});
+    }
     const details = t('polygonImportChangesSkipped', result.mutations, result.skipped);
-    await emit(t('polygonImportProblemComplete', id, details), 100);
-    return {id, name:plan.name, committed, ...result};
+    await emit(t('polygonImportProblemComplete', id, details), 100, job.verify ? 'verified' : 'uploaded');
+    return {id, name:plan.name, committed, verification, ...result};
   } catch (error) {
-    error.partial = changed;
+    error.partial = changed || committed;
+    error.committed = committed;
     error.problemId = id;
     throw error;
   }

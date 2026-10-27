@@ -1,3 +1,4 @@
+import { assertNoDataWrites } from './helpers/noop.mjs';
 import './helpers/i18n.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -23,6 +24,12 @@ async function upload(mock, name, mode='replace') {
   const {file}=await fixture(name);
   return executeImport({job:{file,mode,problemId:mode==='replace'?'42':null,commit:true},api:mock.api});
 }
+async function unchangedUpload(mock,name) {
+  const start=mock.calls.length;
+  const result=await upload(mock,name);
+  assertNoDataWrites(result,mock.calls.slice(start));
+  return result;
+}
 const child=(node,tag)=>node.children.find(node=>node.tag===tag);
 const judging=root=>child(root,'judging');
 const testset=root=>child(judging(root),'testset');
@@ -42,7 +49,7 @@ for (const [name,interactive,runTwice,second] of [
   assert.equal(mock.state.info.runTwice,runTwice,name);
   assert.equal(mock.state.info.interactiveSecondRun,second,name);
   if (interactive) assert.equal(mock.state.interactor,'interactor.cpp');
-  assert.equal((await upload(mock,name)).mutations,0,name+' must be idempotent');
+  await unchangedUpload(mock,name);
   if (name.startsWith('two-step-interactive')) {
     assert.equal(mock.state.info.useInteractionLogInExampleTests,true);
     assert.equal(mock.state.tests.get(1).input,'1\n','Do not replace judge input with a statement sample');
@@ -76,7 +83,7 @@ for (const name of ['subtasks-independent','subtasks-dependent','subtasks-revers
     assert.equal(mock.state.tests.get(test.index).group||'',test.group);
     assert.equal(mock.state.tests.get(test.index).points,test.points);
   }
-  assert.equal((await upload(mock,name)).mutations,0,name+' must be idempotent');
+  await unchangedUpload(mock,name);
   await upload(mock,'batch');
   assert.equal(mock.state.groupsEnabled,false);
   assert.equal(mock.state.pointsEnabled,false);
@@ -101,7 +108,7 @@ dormant.state.groupsEnabled=false;
 await upload(dormant,'subtasks-reversed');
 assert.deepEqual(dormant.state.groups.get('small').dependencies,['large']);
 assert.deepEqual(dormant.state.groups.get('large').dependencies,[]);
-assert.equal((await upload(dormant,'subtasks-reversed')).mutations,0);
+await unchangedUpload(dormant,'subtasks-reversed');
 console.log('PASS: re-enabling hidden groups does not retain old dependency edges');
 const dormantRebuild=createPolygon();
 await upload(dormantRebuild,'subtasks-diamond','create');
@@ -109,7 +116,7 @@ dormantRebuild.state.script='<#-- @group large -->\ngen 99 > 2';
 dormantRebuild.state.groupsEnabled=false;
 await upload(dormantRebuild,'subtasks-diamond');
 assert.deepEqual(dormantRebuild.state.groups.get('all').dependencies,['large','right']);
-assert.equal((await upload(dormantRebuild,'subtasks-diamond')).mutations,0);
+await unchangedUpload(dormantRebuild,'subtasks-diamond');
 console.log('PASS: rebuilding generated tests also clears previously hidden dependency edges');
 
 
@@ -144,7 +151,7 @@ for (const [method,name,after,when] of [
   await upload(mock,name);
   assert.equal(mock.state.creates,1,'retry must not create a second problem');
   assert.equal(mock.state.commits,1);
-  assert.equal((await upload(mock,name)).mutations,0);
+  await unchangedUpload(mock,name);
   console.log('PASS: retry resumes after an applied but failed response:',method,name);
 }
 
@@ -177,7 +184,7 @@ for (const after of [false,true]) {
   assert.equal(mock.state.creates,1);
   assert.equal(mock.state.commits,2);
   assert.equal(mock.calls.slice(calls).filter(call=>call.method==='setTestGroup').length,after?1:2);
-  assert.equal((await upload(mock,'subtasks-independent')).mutations,0);
+  await unchangedUpload(mock,'subtasks-independent');
 }
 console.log('PASS: batch assignment failures block commit; retry re-reads groups without creating another problem');
 

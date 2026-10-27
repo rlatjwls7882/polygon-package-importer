@@ -1,3 +1,4 @@
+import { canonicalResource } from '../package/metadata.js';
 import { t } from '../i18n.js';
 import { sameText } from './compare.js';
 const encoder = new TextEncoder();
@@ -36,9 +37,20 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
           same = sameText(remoteContent, localContent);
         }
       }
-      if (same) unchanged(type + ': ' + file.name);
-      else await apply(t('syncSaving', type, file.name),
-        () => api.problem('saveFile', id, {type, name:file.name, file:localContent}));
+      const props = {type, name:file.name};
+      if (!same) props.file = localContent;
+      if (type === 'source' && file.sourceType && old?.sourceType !== file.sourceType)
+        props.sourceType = file.sourceType;
+      if (type === 'resource' && Object.hasOwn(file, 'resourceAdvancedProperties') &&
+          JSON.stringify(canonicalResource(old?.resourceAdvancedProperties)) !==
+          JSON.stringify(canonicalResource(file.resourceAdvancedProperties))) {
+        const advanced = file.resourceAdvancedProperties;
+        if (advanced) Object.assign(props, {forTypes:advanced.forTypes,
+          stages:advanced.stages.join(';'), assets:advanced.assets.join(';')});
+        else props.forTypes = ''; // Documented way to remove grader linkage.
+      }
+      if (Object.keys(props).length === 2) unchanged(type + ': ' + file.name);
+      else await apply(t('syncSaving', type, file.name), () => api.problem('saveFile', id, props));
     }
   }
 
@@ -87,9 +99,11 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
       }
     }
     const tagDiff = !old || old.tag !== solution.tag;
-    if (same && !tagDiff) unchanged(t('syncSolution', solution.name));
+    const typeDiff = solution.sourceType && old?.sourceType !== solution.sourceType;
+    if (same && !tagDiff && !typeDiff) unchanged(t('syncSolution', solution.name));
     else await apply(t('syncSavingSolution', solution.name), () => saveSolution({
-      name:solution.name, ...(!same ? {file:localContent} : {}), ...(tagDiff ? {tag:solution.tag} : {})
+      name:solution.name, ...(!same ? {file:localContent} : {}), ...(tagDiff ? {tag:solution.tag} : {}),
+      ...(typeDiff ? {sourceType:solution.sourceType} : {})
     }, () => remoteContent));
   }
 }
@@ -111,5 +125,34 @@ export async function deleteObsoleteFiles({api, id, plan, target, apply}) {
     for (const old of target.solutions || []) if (!plan.solutions.some(s => s.name === old.name))
       await apply(t('syncDeletingPreviousSolution', old.name),
         () => api.problem('deleteSolution', id, {name:old.name}));
+  }
+}
+
+// Compare server metadata, not just the submitted source bytes. Unknown compiler
+// IDs must fail explicitly rather than being accepted under a default compiler.
+export async function verifyFileMetadata({api, id, plan, read}) {
+  if (![...plan.sources, ...plan.solutions].some(file => file.sourceType) &&
+      !plan.resources.some(file => Object.hasOwn(file, 'resourceAdvancedProperties'))) return;
+  const [files, solutions] = await Promise.all([
+    read(t('formatVerifyFiles'), () => api.problem('files', id)),
+    read(t('formatVerifySolutions'), () => api.problem('solutions', id))
+  ]);
+  if (!files || !Array.isArray(files.sourceFiles) || !Array.isArray(files.resourceFiles) || !Array.isArray(solutions))
+    throw Error(t('formatMetadataMismatch'));
+  for (const [wanted, actual] of [[plan.sources, files.sourceFiles], [plan.solutions, solutions]]) {
+    const byName = new Map(actual.map(file => [file.name, file]));
+    for (const file of wanted) {
+      const saved = byName.get(file.name);
+      if (!saved || (file.sourceType && saved.sourceType !== file.sourceType))
+        throw Error(t('formatSourceTypeMismatch', file.name, file.sourceType || ''));
+    }
+  }
+  const resources = new Map(files.resourceFiles.map(file => [file.name, file]));
+  for (const file of plan.resources) {
+    if (!Object.hasOwn(file, 'resourceAdvancedProperties')) continue;
+    const saved = resources.get(file.name);
+    if (!saved || JSON.stringify(canonicalResource(saved.resourceAdvancedProperties)) !==
+        JSON.stringify(canonicalResource(file.resourceAdvancedProperties)))
+      throw Error(t('formatResourceMismatch', file.name));
   }
 }

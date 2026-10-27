@@ -35,7 +35,7 @@ function render() {
   $('problemIdField').hidden = mode() !== 'replace';
   const validId = mode() === 'create' || /^[1-9]\d{0,11}$/.test(problemId());
   const busy = pending || status?.phase === 'running';
-  for (const id of ['zipFile', 'problemId', 'commit', 'retry', 'clearStatus']) $(id).disabled = busy;
+  for (const id of ['zipFile', 'problemId', 'commit', 'verify', 'retry', 'clearStatus']) $(id).disabled = busy;
   for (const input of document.querySelectorAll('input[name="mode"]')) input.disabled = busy;
   $('start').disabled = !authorized || !file || !validPackage || !validId ||
     pending || status?.phase === 'running';
@@ -50,7 +50,8 @@ function render() {
     [label, message].filter(Boolean).join(' · ');
   $('jobSummary').textContent = [
     status.filename,
-    status.problemId ? '#' + status.problemId : ''
+    status.problemId ? '#' + status.problemId : '',
+    status.committed ? t('verifyCommitted') : ''
   ].filter(Boolean).join(' · ');
   $('log').textContent = (status.log || []).join('\n');
   $('clearStatus').hidden = status.phase === 'running';
@@ -132,7 +133,7 @@ async function start(retry = false) {
       job = {
         id:crypto.randomUUID(), file, filename:file.name,
         mode:mode(), problemId:mode() === 'replace' ? problemId() : null,
-        commit:$('commit').checked
+        commit:$('commit').checked, verify:$('verify').checked
       };
       const latest = await chrome.runtime.sendMessage({type:'IMPORT_QUERY'});
       if (!latest?.ok) throw Error(latest?.error || t('popupCouldNotCheckJobStatus'));
@@ -159,6 +160,8 @@ async function initialize() {
   for (const input of document.querySelectorAll('input[name="mode"]'))
     input.addEventListener('change', render);
   $('problemId').addEventListener('input', render);
+  $('commit').addEventListener('change', () => { if (!$('commit').checked) $('verify').checked = false; render(); });
+  $('verify').addEventListener('change', () => { if ($('verify').checked) $('commit').checked = true; render(); });
   $('start').addEventListener('click', () => start());
   $('retry').addEventListener('click', () => start(true));
   $('clearStatus').addEventListener('click', async () => {

@@ -61,9 +61,9 @@ for (const [locale,language,expected] of [
   assert.equal(label.textContent,expected);
   assert.equal(section['aria-label'],createMockI18n(locale).getMessage('uploadSection'));
 }
-assert.equal(t('offscreenDoneProblemChangesSkipped',42,3,2),'Done · problem #42 · 3 changes · 2 skipped');
+assert.equal(t('verifySucceeded',42,3),'Build and execution verified · package #42 · 3 runs');
 globalThis.chrome={i18n:createMockI18n('ko')};
-assert(t('offscreenDoneProblemChangesSkipped',42,3,2).includes('문제 #42'));
+assert(t('verifySucceeded',42,3).includes('패키지 #42'));
 console.log('PASS: locales, manifest, HTML, runtime messages, substitutions and fallback language');
 
 // Match Chrome's offscreen restriction: runtime is available, i18n is not.
@@ -78,8 +78,8 @@ globalThis.fetch = async url => {
 };
 for (const [locale, language] of [['ko','ko'], ['ko-KR','ko'], ['en-US','en'], ['fr','en']]) {
   await loadMessages(locale);
-  const message = t('offscreenDoneProblemChangesSkipped', 42, 3, 2);
-  assert.equal(message, createMockI18n(language).getMessage('offscreenDoneProblemChangesSkipped',['42','3','2']));
+  const message = t('verifySucceeded', 42, 3);
+  assert.equal(message, createMockI18n(language).getMessage('verifySucceeded',['42','3']));
   assert.equal(fetched.at(-1), 'chrome-extension://fixture/_locales/' + language + '/messages.json');
 }
 globalThis.fetch = async () => new Response('', {status:404});

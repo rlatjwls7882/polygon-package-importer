@@ -191,6 +191,81 @@
   "extensionName": {
     "message": "Polygon ZIP Uploader"
   },
+  "formatCheckerPercent": {
+    "message": "Setting checker percentage mode"
+  },
+  "formatClearExtraTag": {
+    "message": "Clearing obsolete extra tag: $1 / $2"
+  },
+  "formatDeleteJudgeTest": {
+    "message": "Removing obsolete $1 self-test $2"
+  },
+  "formatIncompletePackage": {
+    "message": "The package must contain a checker and at least one test."
+  },
+  "formatInvalidExtraTag": {
+    "message": "Invalid or unsupported solution extra tag: $1"
+  },
+  "formatInvalidJudgeTests": {
+    "message": "Invalid checker or validator self-test response."
+  },
+  "formatInvalidPercentage": {
+    "message": "Invalid checker percentage setting."
+  },
+  "formatInvalidSourceType": {
+    "message": "Invalid compiler identifier: $1"
+  },
+  "formatInvalidValidatorContext": {
+    "message": "Validator self-test $1 references an unknown group or unsupported testset."
+  },
+  "formatJudgeTestsMismatch": {
+    "message": "Saved $1 self-tests do not match the ZIP."
+  },
+  "formatMetadataMismatch": {
+    "message": "The saved file metadata could not be verified."
+  },
+  "formatMissingMain": {
+    "message": "The package must contain exactly one main solution."
+  },
+  "formatMultipleValidators": {
+    "message": "This package has multiple validators. The API cannot restore that configuration; no upload was started."
+  },
+  "formatOrphanSample": {
+    "message": "Statement sample has no matching sample test: $1"
+  },
+  "formatPercentageNeedsPoints": {
+    "message": "Checker percentage mode requires test points."
+  },
+  "formatReloadTests": {
+    "message": "Reloading tests after enabling scoring options"
+  },
+  "formatResourceMismatch": {
+    "message": "Resource linkage differs from the ZIP: $1"
+  },
+  "formatSampleMismatch": {
+    "message": "Saved preview or metadata differs for test $1. Changes were not committed."
+  },
+  "formatSaveExtraTag": {
+    "message": "Saving extra tag: $1 / $2"
+  },
+  "formatSourceTypeMismatch": {
+    "message": "Compiler settings were not preserved for $1 (expected $2)."
+  },
+  "formatTargetExtraValidators": {
+    "message": "The target has extra validators, or their configuration cannot be read. Overwrite stopped before changes."
+  },
+  "formatUnsupportedResourceProperties": {
+    "message": "Unsupported resource linkage for $1. Only COMPILE/SOLUTION resources can be restored by the API."
+  },
+  "formatVerifyFiles": {
+    "message": "Verifying source and resource settings"
+  },
+  "formatVerifyJudgeTests": {
+    "message": "Verifying $1 self-tests"
+  },
+  "formatVerifySolutions": {
+    "message": "Verifying solution compiler settings"
+  },
   "getApiKeys": {
     "message": "Get API keys from Polygon"
   },
@@ -331,9 +406,6 @@
   },
   "offscreenCouldNotUpdateJobStatus": {
     "message": "Could not update job status."
-  },
-  "offscreenDoneProblemChangesSkipped": {
-    "message": "Done · problem #$1 · $2 changes · $3 skipped"
   },
   "offscreenRateLimitedRetryInS": {
     "message": "$1: Rate limited · retry in $2 s"
@@ -697,6 +769,75 @@
   },
   "vaultPassword": {
     "message": "Vault password"
+  },
+  "verifyAfterCommit": {
+    "message": "Build and test after committing"
+  },
+  "verifyAmbiguousBuild": {
+    "message": "Multiple new builds were found. No build was assumed to belong to this upload."
+  },
+  "verifyBuildComment": {
+    "message": "Package $1 reported a verification warning or error: $2"
+  },
+  "verifyBuildFailed": {
+    "message": "Upload committed; package $1 failed to build. $2"
+  },
+  "verifyBuildStarting": {
+    "message": "Upload committed. Starting server build and solution checks."
+  },
+  "verifyBuiltDescriptor": {
+    "message": "Checking the built package against the original ZIP"
+  },
+  "verifyCommitted": {
+    "message": "Committed"
+  },
+  "verifyDescriptorMismatch": {
+    "message": "Built package differs from the uploaded ZIP: $1"
+  },
+  "verifyHelp": {
+    "message": "Runs all solutions on Polygon. A failed build does not undo the commit."
+  },
+  "verifyIncomplete": {
+    "message": "Verification is incomplete for package #$1. Retry to check the same build; no second build will be started."
+  },
+  "verifyInvalidCheckpoint": {
+    "message": "Saved verification checkpoint is invalid. Select the ZIP again."
+  },
+  "verifyInvalidResponse": {
+    "message": "Unexpected build verification response. The upload may already be committed; verification is incomplete."
+  },
+  "verifyInvocationCoverage": {
+    "message": "The invocation does not cover the expected solutions and tests."
+  },
+  "verifyInvocationFailed": {
+    "message": "Invocation $1 was aborted or violated a solution tag."
+  },
+  "verifyNeedsCleanRevision": {
+    "message": "Build verification needs a committed, current working copy. The upload may already be committed."
+  },
+  "verifyPackageMissing": {
+    "message": "The saved verification package is missing or has a different revision."
+  },
+  "verifyRequiresCommit": {
+    "message": "Server verification requires committing the upload."
+  },
+  "verifyRevisionChanged": {
+    "message": "The problem revision changed during verification. Select the ZIP again to start a new upload."
+  },
+  "verifyRunFailed": {
+    "message": "Execution failed: $1 / test $2 / $3. $4"
+  },
+  "verifySolutionTagsMismatch": {
+    "message": "Verification used different expectation tags for $1."
+  },
+  "verifySucceeded": {
+    "message": "Build and execution verified · package #$1 · $2 runs"
+  },
+  "verifyUploadOnly": {
+    "message": "Uploaded to problem #$1 · execution not checked"
+  },
+  "verifyWaiting": {
+    "message": "Upload committed · checking package #$1 ($2)"
   },
   "zipArchiveTooLarge": {
     "message": "ZIP size limit is 100 MB."

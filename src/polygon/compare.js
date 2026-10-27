@@ -68,7 +68,7 @@ export function testMetadataChanges(test, remote, sample = {}, groupsEnabled = t
   if (groupsEnabled && str(remote?.group) !== str(test.group)) props.testGroup = test.group || '';
   if (test.points != null && (remote?.points == null || Number(remote.points) !== test.points))
     props.testPoints = test.points;
-  if (test.sample) {
+  {
     for (const [key, parameter, value] of [
       ['inputForStatement', 'testInputForStatements', sample.input],
       ['outputForStatement', 'testOutputForStatements', sample.output],

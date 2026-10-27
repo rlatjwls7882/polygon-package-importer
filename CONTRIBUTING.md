@@ -24,6 +24,7 @@ python3 scripts/check_release.py
 
 `src/package/load.js` reads the ZIP into an import plan. It never calls Polygon.
 `src/polygon/import.js` owns target checks, creation, resume callbacks, and commit.
+`src/polygon/verify.js` pins and follows a server build; `descriptor.js` checks its output.
 `src/polygon/sync.js` orders the writes; its sibling modules handle their own content.
 Source files are uploaded before judge selection; obsolete attachments are removed last.
 The popup and offscreen HTML URLs, credential keys, and IndexedDB names stay stable.
@@ -40,7 +41,9 @@ duplicate names, cycles, invalid policies, empty groups, and inconsistent scores
 before creating a Polygon problem. Group totals without per-test scores are supported
 for `COMPLETE_GROUP`; `EACH_TEST` requires explicit per-test scores. Scores are validated
 to hundredths. Changed dependency edges are cleared before replacing tests and restored
-in topological order afterwards. Ungrouped tests and zero scores explicitly replace
+in topological order afterwards. When hidden groups may be affected by test
+replacement, their dependencies are temporarily exposed and cleared before deletion;
+the requested disabled mode is restored even on an error. Ungrouped tests and zero scores explicitly replace
 old metadata. Group and judging settings are read back before committing.
 
 Group-only edits with a non-empty destination are batched by group through
@@ -51,12 +54,28 @@ request. Batch failures stop the import; retry reads the current remote state an
 sends only remaining differences. The existing read-back check covers batched edits.
 
 Statement sample files (`example.N`, `.a`, `.mu`) take precedence over judge input/output.
+Sample numbers accept leading zeroes; conflicting aliases or orphan samples fail preflight.
 A `.mu` sample enables interaction-log display. Different sample content for different
 statement languages is rejected because the API stores one shared preview per test.
 
 Only the default `tests` testset is supported; multiple testsets are not flattened.
-Binary-only interactors and statement images remain unsupported. No compiler or judge
-runs locally: this extension uploads the package to Polygon.
+Exactly one main solution is required. Multiple validators (including extra validators
+already selected on an overwrite target) are rejected: the public API has no setter
+for that configuration. Binary-only interactors and statement images remain unsupported.
+No downloaded compiler or source is run locally.
+
+Compiler identifiers are preserved verbatim, sent as `sourceType`, and read back.
+Unknown server compiler IDs fail instead of falling back to a different version.
+Resource `forTypes`/`stages`/`assets` linkage supports the API's COMPILE/SOLUTION subset;
+other configurations are refused before uploading. Validator self-tests retain group
+and testset context. Changed/obsolete judge tests are deleted before replacement.
+Public preview bodies, compiler metadata, and judge self-tests are read back before commit.
+
+The API has no documented current getter for checker-percentage mode or solution extra
+tags. Scored problems therefore explicitly set/reset percentage mode; overwrites reconcile
+extra tags for the known testset/group scopes. These requests are not counted as a data
+no-op. Other unchanged files/tests still avoid writes, and group-only edits remain batched.
+The built descriptor and invocation snapshots verify these otherwise opaque settings.
 
 Format contracts: [Polygon API](https://codeforces.github.io/polygon-misc/API)
 (`runTwice`, `interactiveSecondRun`, `saveTest`, `setTestGroup`, `saveTestGroup`), native
@@ -96,3 +115,30 @@ node tests/benchmark_import.mjs /path/to/baseline-checkout
 
 This reports request counts, uploaded source bytes, decompression counts, and local
 ZIP timings using synthetic data. It does not measure Polygon server response times.
+
+## Build and execution verification
+
+New uploads enable **Build and test after committing** by default. Turning off commit
+also turns off this option. Upload-only jobs say **execution not checked**, never verified.
+
+1. Save and compare readable metadata; abort without committing on a mismatch.
+2. Commit the working copy. Polygon package readiness requires a clean revision.
+3. Persist a checkpoint, start `buildPackage(full=false, verify=true)`, and pin the new
+   package ID/revision. A lost response is resolved from the pre-build package list;
+   ambiguous candidates stop instead of guessing or launching a second build.
+4. Require a READY package without a comment, a FINISHED invocation without tag violations,
+   and one terminal run per expected solution/test pair. Missing runs, CE/FL, aborted runs,
+   mismatched expectation tags, and changed revisions never count as verified.
+5. Download that package's standard ZIP and compare its descriptor, compiler types,
+   grader linkage, extra tags, and uploaded source/resource bytes with the selected ZIP.
+
+Verification polls every five seconds for at most 360 checks. Timeout is **incomplete**,
+not success. Retry follows the stored build without re-uploading or committing again.
+Changed working copies/revisions require selecting the ZIP again; terminal build failures
+remain failures. A failed verification does not undo the already completed commit.
+Build output uses the same 100 MiB ZIP and decompression limits as imported archives;
+large outputs fail explicitly instead of skipping the descriptor check.
+
+Tests model the documented API and use real XML parsing for round-trip fixtures. They
+inject failures, corrupt read-backs, missing runs, stale revisions, and lost build responses.
+They do not claim live Polygon compatibility or actual compiler execution.

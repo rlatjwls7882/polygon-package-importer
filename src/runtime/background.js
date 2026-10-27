@@ -133,7 +133,10 @@ async function updateStatus(message) {
     log:[...(current.log || []), text].slice(-12),
     progress:Number.isFinite(message.progress) ? message.progress : current.progress,
     ...(message.problemId ? {problemId:message.problemId} : {}),
-    ...(message.partial ? {partial:true} : {})
+    ...(message.partial ? {partial:true} : {}),
+    ...(message.committed ? {committed:true} : {}),
+    ...(['uploading','uploaded','verifying','verified','verification-failed','upload-failed'].includes(message.stage) ? {stage:message.stage} : {}),
+    ...(message.verification ? {verification:message.verification} : {})
   });
   if (done) await releaseJob(current.id);
   return {ok:true};

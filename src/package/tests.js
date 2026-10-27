@@ -67,8 +67,13 @@ export async function readTests(root, ts, archive, plan) {
       const verdict = mapVerdict(ATTR(es[i], 'verdict'));
       if (kind === 'validator' && !['VALID','INVALID'].includes(verdict)) throw Error(t('modelInvalidValidatorTestVerdict'));
       if (kind === 'checker' && !['OK','WRONG_ANSWER','PRESENTATION_ERROR','CRASHED'].includes(verdict)) throw Error(t('modelInvalidCheckerTestVerdict'));
+      const group = ATTR(es[i], 'group'), testset = ATTR(es[i], 'testset');
+      if (kind === 'validator' && ((testset && testset !== 'tests') ||
+          (group && !plan.groups.some(item => item.name === group))))
+        throw Error(t('formatInvalidValidatorContext', i + 1));
       const inputPath = await testPath(archive, inputs, i+1);
       out.push({ index: i+1, verdict, inputPath,
+        ...(kind === 'validator' ? {testset:testset || 'tests', group} : {}),
         ...(kind === 'checker' ? { outputPath: await testPath(archive, outputs, i+1), answerPath: await testPath(archive, answers, i+1) } : {}) });
     }
     return out;

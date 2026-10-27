@@ -12,8 +12,9 @@ export async function loadPolygonPackage(archive) {
     statements: [], sources: [], resources: [], aux: [], solutions: [], checker: '', validator: '', interactor: '',
     tests: [], groups: [], validatorTests: [], checkerTests: [], tags: [], unsupported: [] };
 
-  const {info, testset} = readJudging(root);
+  const {info, testset, checkerPercent} = readJudging(root);
   plan.info = info;
+  plan.checkerPercent = checkerPercent;
   await readStatements(root, archive, plan);
   await readAssets(root, archive, plan);
   plan.tags = CHILDREN(CHILD(root, 'tags'), 'tag').map(x => ATTR(x, 'value')).filter(Boolean);

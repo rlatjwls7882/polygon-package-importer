@@ -1,18 +1,10 @@
+import { sampleContents } from './samples.js';
 import { t } from '../i18n.js';
 import { boolean, str, sameText, indexMap, manualTestChanges, testMetadataChanges } from './compare.js';
 
 export async function syncTests({api, id, plan, archive, target, read, apply, unchanged, beforeReplacingTests}) {
   const groupsEnabled = plan.groups.length > 0;
-  const sample = async test => {
-    if (!test.sample) return {};
-    const input = test.sampleInputPath || test.path;
-    const output = test.sampleOutputPath || test.outputPath;
-    return {
-      input:input ? await archive.text(input) : undefined,
-      output:output ? await archive.text(output) : undefined,
-      log:plan.info?.interactive ? (test.interactionLogPath ? await archive.text(test.interactionLogPath) : '') : undefined
-    };
-  };
+  const sample = test => sampleContents(archive, plan, test);
   const pendingGroups = new Map();
   const saveTest = async (props, label) => {
     // The two identity fields plus a non-empty group are the only changes.
@@ -108,7 +100,7 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
   }
 }
 
-export async function verifyTests({api, id, plan, read, unchanged}, testMutations) {
+export async function verifyTests({api, id, plan, archive, read, unchanged}, testMutations) {
   if (testMutations > 0) {
     const tests = await read(t('syncVerifyingChangedTestNumbering'),
       () => api.problem('tests', id, {testset:'tests', noInputs:'true'}));
@@ -122,5 +114,10 @@ export async function verifyTests({api, id, plan, read, unchanged}, testMutation
             (test.points != null && (remote.points == null || Number(remote.points) !== test.points));
         }))
       throw Error(t('syncTestMetadataMismatch'));
+    for (const test of plan.tests) {
+      const remote = byIndex.get(test.index);
+      const remaining = testMetadataChanges(test, remote, await sampleContents(archive, plan, test), plan.groups.length > 0);
+      if (Object.keys(remaining).length) throw Error(t('formatSampleMismatch', test.index));
+    }
   } else unchanged(t('syncAllTestsUnchanged'));
 }

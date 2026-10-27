@@ -3,6 +3,15 @@ import { t } from '../i18n.js';
 export async function validatePackage(archive, plan) {
   if (plan.solutions.filter(solution => solution.tag === 'MA').length > 1)
     throw Error(t('syncZipContainsMultipleMainSolutions'));
+  if (!plan.solutions.some(solution => solution.tag === 'MA')) throw Error(t('formatMissingMain'));
+  if (!plan.tests.length || !plan.checker) throw Error(t('formatIncompletePackage'));
+  if (plan.checkerPercent && !plan.tests.some(test => test.points != null))
+    throw Error(t('formatPercentageNeedsPoints'));
+  for (const solution of plan.solutions) for (const extra of solution.extraTags || []) {
+    if ((extra.testset && extra.testset !== 'tests') ||
+        (extra.testGroup && !plan.groups.some(group => group.name === extra.testGroup)))
+      throw Error(t('formatInvalidExtraTag', solution.name));
+  }
   if (new Set(plan.solutions.map(solution => solution.name)).size !== plan.solutions.length)
     throw Error(t('syncZipContainsSolutionsWithDuplicateNames'));
   if (plan.info.interactive && !plan.interactor)
