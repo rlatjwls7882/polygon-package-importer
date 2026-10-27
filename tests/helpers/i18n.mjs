@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 const catalogs = Object.fromEntries(['ko', 'en'].map(locale => [
-  locale, JSON.parse(readFileSync(new URL('../_locales/' + locale + '/messages.json', import.meta.url), 'utf8'))
+  locale, JSON.parse(readFileSync(new URL('../../_locales/' + locale + '/messages.json', import.meta.url), 'utf8'))
 ]));
 
 export function createMockI18n(locale = 'ko') {

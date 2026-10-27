@@ -1,4 +1,4 @@
-import { createMockI18n } from './mock-i18n.mjs';
+import { createMockI18n } from './i18n.mjs';
 // Minimal IndexedDB and chrome.storage.local mocks for the extension tests.
 export function createFakeIndexedDB() {
   const databases = new Map();

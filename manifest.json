@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "minimum_chrome_version": "118",
@@ -10,7 +10,7 @@
     "default_popup": "popup.html"
   },
   "background": {
-    "service_worker": "background.js",
+    "service_worker": "src/runtime/background.js",
     "type": "module"
   },
   "permissions": [

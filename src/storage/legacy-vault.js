@@ -1,4 +1,4 @@
-import { t } from './i18n.js';
+import { t } from '../i18n.js';
 // A local-only encrypted vault. Never store API credentials in plaintext or chrome.storage.sync.
 // Chrome storage.local is NOT encrypted by Chrome. The passphrase is deliberately not stored.
 export const STORE_KEY = 'polygonEncryptedCredentialsV1';

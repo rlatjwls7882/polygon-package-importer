@@ -1,8 +1,8 @@
-import './mock-i18n.mjs';
+import './helpers/i18n.mjs';
 import assert from 'node:assert/strict';
-import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
-import { CredentialsUI } from '../credentials-ui.js';
-import { encryptCredentials, STORE_KEY as LEGACY_KEY } from '../credential-vault.js';
+import { createFakeIndexedDB, createFakeChromeStorage } from './helpers/storage.mjs';
+import { CredentialsUI } from '../src/ui/credentials.js';
+import { encryptCredentials, STORE_KEY as LEGACY_KEY } from '../src/storage/legacy-vault.js';
 
 globalThis.indexedDB=createFakeIndexedDB();
 const browser=createFakeChromeStorage();
@@ -30,7 +30,7 @@ const credentials={key:'KEYVALUE123',secret:'SECRETVALUE456'};
 const legacyPassword='a long legacy passphrase';
 await chrome.storage.local.set({[LEGACY_KEY]:await encryptCredentials(credentials,legacyPassword)});
 
-const { loadCredentials } = await import('../credential-store.js');
+const { loadCredentials } = await import('../src/storage/credentials.js');
 const first=new CredentialsUI();
 await first.init();
 assert.equal(first.state,'legacy');

@@ -1,6 +1,6 @@
 export const STATUS_KEY = 'polygonImportStatusV1';
 
-import { t } from './i18n.js';
+import { t } from '../i18n.js';
 const DATABASE = 'polygon-import-jobs';
 const STORE = 'jobs';
 const ACTIVE = 'active';

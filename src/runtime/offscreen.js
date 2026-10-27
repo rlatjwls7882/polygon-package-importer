@@ -1,8 +1,8 @@
-import { t } from './i18n.js';
-import { readJob, stageJob, clearJob } from './job-store.js';
-import { decryptCredentialRecord } from './credential-store.js';
-import { PolygonAPI } from './api.js';
-import { executeImport } from './polygon-import.js';
+import { t, loadMessages } from '../i18n.js';
+import { readJob, stageJob, clearJob } from '../storage/jobs.js';
+import { decryptCredentialRecord } from '../storage/credentials.js';
+import { PolygonAPI } from '../polygon/api.js';
+import { executeImport } from '../polygon/import.js';
 
 let activeJob = null;
 
@@ -11,10 +11,11 @@ async function publish(type, payload) {
   if (!reply?.ok) throw Error(t('offscreenCouldNotUpdateJobStatus'));
 }
 
-async function processJob(jobId, encryptedRecord) {
+async function processJob(jobId, encryptedRecord, locale) {
   let job = null;
   let api = null;
   try {
+    await loadMessages(locale);
     job = await readJob();
     if (!job || job.id !== jobId) {
       throw Error(t('offscreenSavedZipNotFoundSelectItAgain'));
@@ -66,7 +67,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   }
   activeJob = message.jobId;
   respond({ok:true});
-  processJob(message.jobId, message.encryptedRecord).finally(() => {
+  processJob(message.jobId, message.encryptedRecord, message.locale).finally(() => {
     activeJob = null;
   });
 });

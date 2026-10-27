@@ -1,4 +1,4 @@
-import { t } from './i18n.js';
+import { t } from '../i18n.js';
 const BASE = 'https://polygon.codeforces.com/api/';
 const encoder = new TextEncoder();
 

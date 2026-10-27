@@ -5,9 +5,7 @@ if len(sys.argv)!=2:
     raise SystemExit('Usage: python run_real_package.py <polygon-zip>')
 zip_path=pathlib.Path(sys.argv[1])
 root=pathlib.Path(__file__).resolve().parent
-def tree(el):
-    return {'tag':el.tag,'text':el.text or '', 'attributes':el.attrib,
-            'children':[tree(c) for c in el]}
+from helpers.xml import tree
 with zipfile.ZipFile(zip_path) as z:
     xmls=[name for name in z.namelist() if name=='problem.xml' or name.endswith('/problem.xml')]
     if len(xmls)!=1: raise ValueError('Expected one problem.xml')

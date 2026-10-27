@@ -1,0 +1,94 @@
+import { t } from '../i18n.js';
+import { CHILD, CHILDREN, ATTR, KIND_DESC } from './xml.js';
+const basename = p => p.split('/').pop();
+const validPolygonFileName = name => /^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(name);
+const textDecoder = new TextDecoder('utf-8', {fatal:true});
+
+const TAGS = {
+  main: 'MA', accepted: 'OK', rejected: 'RJ', 'wrong-answer': 'WA',
+  'time-limit-exceeded': 'TL', 'time-limit-exceeded-or-accepted': 'TO',
+  'time-limit-exceeded-or-memory-limit-exceeded': 'TM',
+  'presentation-error': 'PE', 'memory-limit-exceeded': 'ML',
+  'do-not-run': 'NR', 'runtime-error': 'RE'
+};
+
+export async function readAssets(root, archive, plan) {
+  function addSource(src) {
+    if (!src) return '';
+    const path = ATTR(src, 'path');
+    const name = basename(path);
+    if (!path || !archive.has(path)) throw Error(t('modelMissingSourceFile', path || t('modelNoPath')));
+    const sourceType = ATTR(src, 'type') || undefined;
+    const existing = plan.sources.find(x => x.name === name);
+    if (existing && existing.path !== path) throw Error(t('modelDifferentSourceFilesShareTheSameName', name));
+    if (!existing) plan.sources.push({ name, path, sourceType });
+    return name;
+  }
+  const assets = CHILD(root, 'assets');
+  for (const e of CHILDREN(CHILD(CHILD(root, 'files'), 'executables'), 'executable'))
+    addSource(CHILD(e, 'source'));
+  for (const [kind, xmlTag] of [['checker','checker'], ['validator','validator'], ['interactor','interactor']]) {
+    const desc = KIND_DESC(assets, xmlTag);
+    if (!desc) continue;
+    const src = CHILD(desc, 'source');
+    const standard = kind === 'checker' && ATTR(desc, 'name').startsWith('std::');
+    plan[kind] = standard ? ATTR(desc, 'name') : src ? addSource(src) : '';
+  }
+  const files = CHILD(root, 'files');
+  // Polygon exports can repeat the same bundled header under several paths.
+  // Polygon itself uses a flat resource namespace, so merge only identical files.
+  for (const f of CHILDREN(CHILD(files, 'resources'), 'file')) {
+    const path = ATTR(f, 'path');
+    if (!path || !archive.has(path)) throw Error(t('modelMissingResource', path));
+    const name = basename(path);
+    if (name === '.checker-selection-v1') {
+      // SOJ packages attach this private marker when a built-in checker is
+      // selected. It is not a Polygon resource and its name is rejected by
+      // problem.saveFile. Do not skip arbitrary hidden resources.
+      const parts = (await archive.text(path)).trimEnd().split('\t');
+      const folder = path.match(/^files\/soj-checkers\/([0-9a-f]{64})\/\.checker-selection-v1$/);
+      const valid = folder && parts.length === 5 &&
+        parts[0] === 'SOJ-CHECKER-SELECTION' && parts[1] === '1' &&
+        parts[2] === 'builtin' && /^[a-z0-9_-]+$/.test(parts[3]) &&
+        parts[4] === folder[1] &&
+        (plan.checker === `std::${parts[3]}.cpp` || plan.checker === `std::${parts[3]}`);
+      if (!valid) plan.unsupported.push(t('modelCannotVerifySojCheckerSelectionMetadataCheck', path));
+      continue;
+    }
+    if (!validPolygonFileName(name)) {
+      plan.unsupported.push(t('modelInvalidResourceFilename', name, path));
+      continue;
+    }
+    const previous = plan.resources.find(x => x.name === name);
+    if (previous) {
+      const [before, after] = await Promise.all([archive.bytes(previous.path), archive.bytes(path)]);
+      let equal = before.length === after.length && before.every((byte, i) => byte === after[i]);
+      if (!equal) {
+        // A package may include identical text with Windows/Unix line endings.
+        try {
+          const normalize = bytes => textDecoder.decode(bytes).replace(/\r\n?/g, '\n');
+          equal = normalize(before) === normalize(after);
+        } catch { /* Binary resources must match byte-for-byte. */ }
+      }
+      if (!equal)
+        plan.unsupported.push(t('modelResourceNameConflict', name, previous.path, path));
+      continue;
+    }
+    plan.resources.push({ name, path });
+  }
+  for (const f of CHILDREN(CHILD(files, 'auxiliary-files'), 'file')) {
+    const path = ATTR(f, 'path');
+    if (path && archive.has(path)) plan.aux.push({ name: basename(path), path });
+  }
+  for (const el of CHILDREN(CHILD(assets, 'solutions'), 'solution')) {
+    const src = CHILD(el, 'source'), path = ATTR(src, 'path');
+    if (!path || !archive.has(path)) throw Error(t('modelMissingSolutionSource', path));
+    const tag = TAGS[ATTR(el, 'tag').toLowerCase()];
+    if (!tag) throw Error(t('modelUnknownSolutionTag', ATTR(el, 'tag')));
+    plan.solutions.push({ name: basename(path), path, tag, sourceType: ATTR(src, 'type') || undefined });
+  }
+  for (const file of [...plan.sources, ...plan.solutions, ...plan.aux]) {
+    if (!validPolygonFileName(file.name))
+      plan.unsupported.push(t('modelInvalidSourceFilename', file.name, file.path));
+  }
+}

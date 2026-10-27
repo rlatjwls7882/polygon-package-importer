@@ -1,6 +1,6 @@
-import './mock-i18n.mjs';
+import './helpers/i18n.mjs';
 import assert from 'node:assert/strict';
-import { PolygonAPI } from '../api.js';
+import { PolygonAPI } from '../src/polygon/api.js';
 
 PolygonAPI.minimumIntervalMs=0;
 const originalSleep=PolygonAPI.sleep;

@@ -1,7 +1,7 @@
-import './mock-i18n.mjs';
+import './helpers/i18n.mjs';
 // Polygon problem.deleteTest supports a comma-separated batch of indices.
 import assert from 'node:assert/strict';
-import {syncPackage} from '../sync.js';
+import {syncPackage} from '../src/polygon/sync.js';
 
 function fixture({failDeletion = false} = {}) {
   const plan = {

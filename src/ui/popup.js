@@ -1,8 +1,8 @@
-import { t, localizePage } from './i18n.js';
-import { ZipArchive } from './zip.js';
-import { loadPolygonPackage } from './model.js';
-import { CredentialsUI } from './credentials-ui.js';
-import { stageJob, readJob, STATUS_KEY } from './job-store.js';
+import { t, localizePage } from '../i18n.js';
+import { ZipArchive } from '../package/zip.js';
+import { loadPolygonPackage } from '../package/load.js';
+import { CredentialsUI } from './credentials.js';
+import { stageJob, readJob, STATUS_KEY } from '../storage/jobs.js';
 
 const $ = id => document.getElementById(id);
 const MAX_ZIP_SIZE = 100 * 1024 * 1024;

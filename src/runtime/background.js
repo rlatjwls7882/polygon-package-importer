@@ -1,6 +1,6 @@
-import { t } from './i18n.js';
-import { readJob, stageJob, clearJob, STATUS_KEY } from './job-store.js';
-import { CREDENTIAL_KEY } from './credential-store.js';
+import { t } from '../i18n.js';
+import { readJob, stageJob, clearJob, STATUS_KEY } from '../storage/jobs.js';
+import { CREDENTIAL_KEY } from '../storage/credentials.js';
 
 const OFFSCREEN_PAGE = 'offscreen.html';
 let opening = null;
@@ -75,7 +75,8 @@ async function startImport(jobId) {
     prepared = true;
     await openOffscreen();
     const reply = await chrome.runtime.sendMessage({
-      type:'IMPORT_EXECUTE', jobId, encryptedRecord:credentials
+      type:'IMPORT_EXECUTE', jobId, encryptedRecord:credentials,
+      locale:chrome.i18n.getMessage('@@ui_locale')
     });
     if (!reply?.ok) throw Error(reply?.reason || t('backgroundFailedToStartUpload'));
     return {ok:true};

@@ -1,5 +1,5 @@
-import { t } from './i18n.js';
-import { decryptCredentials, normalizeCredentials, STORE_KEY as LEGACY_KEY } from './credential-vault.js';
+import { t } from '../i18n.js';
+import { decryptCredentials, normalizeCredentials, STORE_KEY as LEGACY_KEY } from './legacy-vault.js';
 
 export const CREDENTIAL_KEY = 'polygonCredentialsV2';
 
