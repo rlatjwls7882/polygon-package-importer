@@ -1,4 +1,5 @@
 import { t } from '../i18n.js';
+import { restoreCheckpoint, pinCheckpoint } from './verification/checkpoint.js';
 import { ZipArchive } from '../package/zip.js';
 import { checkInvocation } from './verification/invocation.js';
 import { currentRevision, packages, validId } from './verification/packages.js';
@@ -14,14 +15,17 @@ async function readInvocation(api, id, invocationId, pkg, plan) {
 
 export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     save = async () => {}, emit = async () => {},
-    sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), pollMs = 5000, maxPolls = 360}) {
+    sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), pollMs = 5000, maxPolls = 360, revisionCheckEvery = 12}) {
   // Decoded files are no longer needed while the server is building. Keep
   // only the compressed source; descriptor verification may read it again.
   archive.clearCache?.();
+  if (!Number.isSafeInteger(maxPolls) || maxPolls < 1 || !Number.isSafeInteger(revisionCheckEvery) || revisionCheckEvery < 1)
+    throw Error(t('verifyInvalidCheckpoint'));
+  let state = checkpoint ? restoreCheckpoint(checkpoint, id) : null;
   const revision = await currentRevision(api, id);
-  if (checkpoint && (checkpoint.problemId !== id || checkpoint.revision !== revision))
-    throw Error(t('verifyRevisionChanged'));
-  let state = checkpoint;
+  if (state && state.revision !== revision) throw Error(t('verifyRevisionChanged'));
+  if (checkpoint?.packageId != null && checkpoint.beforeIds.length) await save(state);
+  checkpoint = null;
   if (!state) {
     const before = packages(await api.problem('packages', id));
     state = {problemId:id, revision, stage:'launching', packageId:null, beforeIds:before.map(item => Number(item.id))};
@@ -31,29 +35,22 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     const started = await api.problem('buildPackage', id, {full:'false', verify:'true'});
     if (started != null && (!validId(started.id) || Number(started.revision) !== revision ||
         state.beforeIds.includes(Number(started.id)))) throw Error(t('verifyInvalidResponse'));
-    state = {...state, stage:'polling', packageId:started ? Number(started.id) : null};
+    state = started ? pinCheckpoint(state, Number(started.id)) : {...state, stage:'polling'};
     await save(state);
   }
-  if (!Array.isArray(state.beforeIds) || state.beforeIds.some(id => !validId(id)) ||
-      !['launching','polling','verified'].includes(state.stage))
-    throw Error(t('verifyInvalidCheckpoint'));
-  const previousIds = new Set(state.beforeIds.map(Number));
-  if (previousIds.size !== state.beforeIds.length) throw Error(t('verifyInvalidCheckpoint'));
+  let previousIds = state.packageId == null ? new Set(state.beforeIds) : null;
+  const assertRevision = async () => {
+    if (await currentRevision(api, id) !== revision) throw Error(t('verifyRevisionChanged'));
+  };
 
   for (let poll = 0; poll < maxPolls; poll++) {
-    const listed = packages(await api.problem('packages', id));
-    let pkg;
-    if (state.packageId != null) {
-      pkg = listed.find(item => Number(item.id) === state.packageId);
-      if (!pkg || Number(pkg.revision) !== revision) throw Error(t('verifyPackageMissing'));
-    } else {
-      const candidates = listed.filter(item => Number(item.revision) === revision && !previousIds.has(Number(item.id)));
-      if (candidates.length > 1) throw Error(t('verifyAmbiguousBuild'));
-      pkg = candidates[0];
-      if (pkg) {
-        state = {...state, stage:'polling', packageId:Number(pkg.id)};
-        await save(state);
-      }
+    // A changed working copy invalidates this verification. Stop periodically
+    // instead of spending the full polling budget on an obsolete revision.
+    if (poll > 0 && poll % revisionCheckEvery === 0) await assertRevision();
+    const pkg = await readBuild(api, id, state, previousIds);
+    if (pkg && state.packageId == null) {
+      state = pinCheckpoint(state, Number(pkg.id)); previousIds = null;
+      await save(state);
     }
     if (pkg?.state === 'FAILED') throw Error(t('verifyBuildFailed', pkg.id, pkg.comment || ''));
     if (pkg?.state === 'READY') {
@@ -70,6 +67,7 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
       // The summary is enough while running; defer the potentially huge
       // solution × test result body until execution has actually finished.
       if (invocations.length && invocations[0].status === 'FINISHED') {
+        await assertRevision(); // Before large run details or the standard ZIP.
         const result = await readInvocation(api, id, invocations[0].id, pkg, plan);
         if (result) {
           await emit(t('verifyBuiltDescriptor'));
@@ -77,7 +75,7 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
           const built = await ZipArchive.fromFile(blob);
           try { await verifyBuiltDescriptor(built, plan, archive); }
           finally { built.dispose(); archive.clearCache?.(); }
-          if (await currentRevision(api, id) !== revision) throw Error(t('verifyRevisionChanged'));
+          await assertRevision();
           const final = packages(await api.problem('packages', id)).find(item => Number(item.id) === Number(pkg.id));
           if (!final || final.state !== 'READY' || Number(final.revision) !== revision || String(final.comment || '').trim())
             throw Error(t('verifyInvalidResponse'));
@@ -92,4 +90,20 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     if (poll + 1 < maxPolls) await sleep(pollMs);
   }
   throw Error(t('verifyIncomplete', state.packageId || '-'));
+}
+
+// The full packages() list is temporary; callers retain only the pinned build.
+async function readBuild(api, id, state, previousIds) {
+  const listed = packages(await api.problem('packages', id));
+  if (state.packageId != null) {
+    const pkg = listed.find(item => Number(item.id) === state.packageId);
+    if (!pkg || Number(pkg.revision) !== state.revision) throw Error(t('verifyPackageMissing'));
+    return pkg;
+  }
+  let found;
+  for (const item of listed) if (Number(item.revision) === state.revision && !previousIds.has(Number(item.id))) {
+    if (found) throw Error(t('verifyAmbiguousBuild'));
+    found = item;
+  }
+  return found;
 }

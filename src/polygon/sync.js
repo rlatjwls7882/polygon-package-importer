@@ -1,10 +1,11 @@
+import { verifyFileMetadata } from './file-metadata.js';
 import { testsSnapshot, infoSnapshot, judgeSnapshot, tagsSnapshot } from './snapshot.js';
 import { clearObsoleteSolutionTags, syncSolutionTags } from './solution-tags.js';
 import { t } from '../i18n.js';
 import { orderGroups } from '../package/groups.js';
 import { sameTagList } from './compare.js';
 import { syncStatements, deleteStatementResources } from './statements.js';
-import { syncFiles, deleteObsoleteFiles, verifyFileMetadata } from './files.js';
+import { syncFiles, deleteObsoleteFiles } from './files.js';
 import { syncInfo, syncJudges, syncJudgeTests, prepareJudgeTests, verifyJudging } from './judging.js';
 import { configureScoring, readRemoteGroups, prepareGroups, syncGroups } from './groups.js';
 import { syncTests, verifyTests } from './tests.js';

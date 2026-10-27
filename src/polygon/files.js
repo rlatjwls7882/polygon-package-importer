@@ -125,32 +125,3 @@ export async function deleteObsoleteFiles({api, id, plan, target, apply}) {
         () => api.problem('deleteSolution', id, {name:old.name}));
   }
 }
-
-// Compare server metadata, not just the submitted source bytes. Unknown compiler
-// IDs must fail explicitly rather than being accepted under a default compiler.
-export async function verifyFileMetadata({api, id, plan, read}) {
-  if (![...plan.sources, ...plan.solutions].some(file => file.sourceType) &&
-      !plan.resources.some(file => Object.hasOwn(file, 'resourceAdvancedProperties'))) return;
-  const [files, solutions] = await Promise.all([
-    read(t('formatVerifyFiles'), () => api.problem('files', id)),
-    read(t('formatVerifySolutions'), () => api.problem('solutions', id))
-  ]);
-  if (!files || !Array.isArray(files.sourceFiles) || !Array.isArray(files.resourceFiles) || !Array.isArray(solutions))
-    throw Error(t('formatMetadataMismatch'));
-  for (const [wanted, actual] of [[plan.sources, files.sourceFiles], [plan.solutions, solutions]]) {
-    const byName = new Map(actual.map(file => [file.name, file]));
-    for (const file of wanted) {
-      const saved = byName.get(file.name);
-      if (!saved || (file.sourceType && saved.sourceType !== file.sourceType))
-        throw Error(t('formatSourceTypeMismatch', file.name, file.sourceType || ''));
-    }
-  }
-  const resources = new Map(files.resourceFiles.map(file => [file.name, file]));
-  for (const file of plan.resources) {
-    if (!Object.hasOwn(file, 'resourceAdvancedProperties')) continue;
-    const saved = resources.get(file.name);
-    if (!saved || JSON.stringify(canonicalResource(saved.resourceAdvancedProperties)) !==
-        JSON.stringify(canonicalResource(file.resourceAdvancedProperties)))
-      throw Error(t('formatResourceMismatch', file.name));
-  }
-}
