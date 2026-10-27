@@ -2,6 +2,8 @@ import { t } from '../i18n.js';
 const textDecoder = new TextDecoder('utf-8', {fatal:true});
 
 export async function validatePackage(archive, plan) {
+  if (plan.info.interactive && !plan.interactor)
+    throw Error(t('packageMissingInteractorSource'));
   const binaryPaths = new Set();
   // Sources and solutions must be textual. Binary statement resources cannot be safely
   // round-tripped through the current text-only API adapter.
@@ -19,7 +21,7 @@ export async function validatePackage(archive, plan) {
   if (binaryPaths.size) plan.unsupported.push(t('modelCannotUploadBinaryFiles', [...binaryPaths].join(', ')));
   if (sectionsExtras.length) plan.unsupported.push(t('modelCannotUploadStatementImagesOrExtraResources', sectionsExtras.slice(0,12).join(', ')));
   for (const test of plan.tests) {
-    for (const path of [test.path, test.outputPath].filter(Boolean)) {
+    for (const path of [test.path, test.outputPath, test.sampleInputPath, test.sampleOutputPath, test.interactionLogPath].filter(Boolean)) {
       try { await archive.text(path); } catch { plan.unsupported.push(t('modelTestIsNotUtf8Text', test.index, path)); }
     }
   }

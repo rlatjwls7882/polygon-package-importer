@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<problem short-name="demo-import">
+<statements><statement language="english" charset="UTF-8"/></statements>
+<files><executables><executable><source type="cpp.g++20" path="files/gen.cpp"/></executable></executables>
+<resources><file path="files/testlib.h"/><file path="files/extra/testlib.h"/><file path="files/soj-checkers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/.checker-selection-v1"/></resources></files>
+<assets><checker name="std::wcmp"/><validators><validator><source type="cpp.g++20" path="files/val.cpp"/></validator></validators>
+<solutions><solution tag="main"><source type="cpp.g++20" path="files/sol.cpp"/></solution></solutions></assets>
+<judging><testset name="tests"><time-limit>1000</time-limit><memory-limit>268435456</memory-limit>
+<test-count>4</test-count><input-path-pattern>tests/%02d</input-path-pattern><answer-path-pattern>tests/%02d.a</answer-path-pattern>
+<tests><test method="manual" sample="true" group="small" points="10"/><test method="generated" cmd="gen 99" group="large" points="20"/><test method="manual" group="right" points="30"/><test method="manual" group="all" points="40"/></tests>
+<groups><group name="all" points-policy="complete-group" feedback-policy="icpc"><dependencies><dependency group="large"/><dependency group="right"/></dependencies></group><group name="right" points-policy="complete-group" feedback-policy="none"><dependencies><dependency group="small"/></dependencies></group><group name="large" points-policy="each-test" feedback-policy="points"><dependencies><dependency group="small"/></dependencies></group><group name="small" points-policy="complete-group" feedback-policy="complete"/></groups></testset></judging><tags><tag value="implementation"/></tags></problem>

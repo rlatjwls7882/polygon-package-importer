@@ -299,12 +299,6 @@
   "modelTestGeneratorSourceIsMissingFromThe": {
     "message": "테스트 $1: 제너레이터 원본 $2이(가) 패키지 실행 파일 목록에 없습니다."
   },
-  "modelTestGroupWithoutAName": {
-    "message": "이름이 없는 테스트 그룹이 있습니다."
-  },
-  "modelTestInvalidScore": {
-    "message": "테스트 $1: 잘못된 점수"
-  },
   "modelTestIsNotUtf8Text": {
     "message": "테스트 $1: $2가 UTF-8 텍스트가 아닙니다."
   },
@@ -346,6 +340,63 @@
   },
   "offscreenSavedZipNotFoundSelectItAgain": {
     "message": "보관된 ZIP을 찾지 못했습니다. 다시 선택하세요."
+  },
+  "packageAmbiguousGroupPoints": {
+    "message": "그룹 $1은 테스트별 채점인데 그룹 점수만 있습니다. 각 테스트에 점수를 지정하세요."
+  },
+  "packageConflictingSamples": {
+    "message": "언어별 예제 $1의 내용이 다릅니다. Polygon API는 테스트마다 공통 예제 하나만 지원합니다."
+  },
+  "packageCyclicGroups": {
+    "message": "그룹 $1을 포함하는 순환 의존성이 있습니다."
+  },
+  "packageEmptyGroup": {
+    "message": "그룹 $1에 테스트가 없습니다. Polygon API로는 빈 그룹을 만들 수 없습니다."
+  },
+  "packageGroupCount": {
+    "message": "서브태스크 $1개"
+  },
+  "packageGroupPointsMismatch": {
+    "message": "그룹 $1의 점수와 테스트 점수의 합이 다릅니다."
+  },
+  "packageInvalidGroupDependencies": {
+    "message": "그룹 $1의 의존 관계가 올바르지 않거나 중복됩니다."
+  },
+  "packageInvalidGroupName": {
+    "message": "비어 있거나 중복되거나 올바르지 않은 그룹 이름: $1"
+  },
+  "packageInvalidGroupPolicy": {
+    "message": "그룹 $1의 점수 또는 피드백 정책을 지원하지 않습니다."
+  },
+  "packageInvalidInteractorRuns": {
+    "message": "인터랙터는 1차 실행을 포함해야 하며, 투스텝 문제에서만 2차 실행을 지정할 수 있습니다."
+  },
+  "packageInvalidPoints": {
+    "message": "$1의 점수가 올바르지 않습니다: $2. 0 이상 10억 미만이며 소수 둘째 자리까지만 지원합니다."
+  },
+  "packageMissingGroupDependency": {
+    "message": "그룹 $1이 존재하지 않는 그룹 $2에 의존합니다."
+  },
+  "packageMissingInteractorSource": {
+    "message": "인터랙티브 패키지에 인터랙터 소스가 없습니다. 컴파일된 실행 파일만으로는 업로드할 수 없습니다."
+  },
+  "packageModeInteractive": {
+    "message": "인터랙티브"
+  },
+  "packageModeInteractiveBoth": {
+    "message": "1·2차 인터랙티브"
+  },
+  "packageModeInteractiveFirst": {
+    "message": "1차 인터랙티브"
+  },
+  "packageModeTwoStep": {
+    "message": "투스텝"
+  },
+  "packageUnexpectedInteractionLog": {
+    "message": "테스트 $1에 상호작용 로그가 있지만 인터랙터가 없습니다."
+  },
+  "packageUnsupportedRunCount": {
+    "message": "지원하지 않는 실행 횟수: $1. 한 번 또는 두 번 실행만 지원합니다."
   },
   "packageZip": {
     "message": "Polygon 패키지 ZIP"
@@ -494,6 +545,9 @@
   "syncCheckingTestsAfterDeletion": {
     "message": "테스트 삭제 후 현재 상태 확인"
   },
+  "syncClearGroupDependencies": {
+    "message": "그룹 $1의 기존 의존 관계 해제"
+  },
   "syncComparing": {
     "message": "$1 비교: $2"
   },
@@ -554,11 +608,26 @@
   "syncGeneratedTestScript": {
     "message": "생성 테스트 스크립트"
   },
+  "syncGroupMismatch": {
+    "message": "저장된 그룹 정책 또는 의존 관계가 ZIP과 다릅니다."
+  },
+  "syncInvalidGroupResponse": {
+    "message": "테스트 그룹 설정을 올바르게 읽지 못했습니다."
+  },
   "syncInvalidResponseWhenReloadingTests": {
     "message": "테스트 재조회 결과가 올바르지 않습니다."
   },
+  "syncJudgingMismatch": {
+    "message": "저장된 판정 설정 또는 인터랙터가 ZIP과 다릅니다. 변경 사항을 커밋하지 않았습니다."
+  },
+  "syncJudgingSettings": {
+    "message": "판정 옵션 설정"
+  },
   "syncManualTest": {
     "message": "수동 테스트 $1/$2"
+  },
+  "syncMissingCreatedGroup": {
+    "message": "테스트를 업로드했지만 그룹 $1이 생성되지 않았습니다."
   },
   "syncOverwriteStoppedCouldNotReadExistingStatement": {
     "message": "기존 지문 첨부 리소스 목록을 조회하지 못해 덮어쓰기를 중단했습니다."
@@ -593,11 +662,11 @@
   "syncTags": {
     "message": "태그"
   },
-  "syncTestCountNumberingOrGenerationModeDiffers": {
-    "message": "업로드 후 테스트 개수·번호·생성 방식이 ZIP과 다릅니다."
-  },
   "syncTestGroup": {
     "message": "테스트 그룹: $1"
+  },
+  "syncTestMetadataMismatch": {
+    "message": "업로드한 테스트의 번호·생성 방식·예제 여부·그룹·점수가 ZIP과 다릅니다."
   },
   "syncTimeMemoryAndIOSettings": {
     "message": "시간·메모리·입출력 설정"
@@ -607,6 +676,9 @@
   },
   "syncUploadingGeneratedTestScript": {
     "message": "생성 테스트 스크립트 업로드"
+  },
+  "syncVerifyJudging": {
+    "message": "판정 옵션 검증"
   },
   "syncVerifyingChangedTestNumbering": {
     "message": "변경된 테스트 번호 검증"

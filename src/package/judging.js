@@ -1,5 +1,6 @@
 import { t } from '../i18n.js';
 import { CHILD, CHILDREN, TEXT, ATTR } from './xml.js';
+
 export function readJudging(root) {
   const judging = CHILD(root, 'judging');
   if (!judging) throw Error(t('modelMissingJudgingElementInProblemXml'));
@@ -12,9 +13,22 @@ export function readJudging(root) {
   const ml = ml0 > 1024 ? ml0 / (1024 * 1024) : ml0;
   if (!Number.isInteger(tl) || tl < 250 || tl > 15000 || tl % 50 || !Number.isInteger(ml) || ml < 4 || ml > 1024)
     throw Error(t('modelUnsupportedTimeMemoryLimitsMsMb', tl, ml));
-  const info = { timeLimit: tl, memoryLimit: ml,
-    inputFile: ATTR(judging, 'input-file') || 'stdin', outputFile: ATTR(judging, 'output-file') || 'stdout',
-    interactive: !!CHILD(CHILD(root, 'assets'), 'interactor') };
 
+  const count = ATTR(judging, 'run-count', '1').trim();
+  if (!['1', '2'].includes(count)) throw Error(t('packageUnsupportedRunCount', count));
+  const interactor = CHILD(CHILD(root, 'assets'), 'interactor');
+  const runs = CHILD(interactor, 'runs');
+  const invocations = runs ? CHILDREN(runs, 'run').map(run => run.textContent.trim()) : ['1'];
+  if (interactor && (!invocations.includes('1') || new Set(invocations).size !== invocations.length ||
+      invocations.some(run => !['1', '2'].includes(run) || Number(run) > Number(count))))
+    throw Error(t('packageInvalidInteractorRuns'));
+
+  const info = {
+    timeLimit:tl, memoryLimit:ml,
+    inputFile:ATTR(judging, 'input-file') || 'stdin',
+    outputFile:ATTR(judging, 'output-file') || 'stdout',
+    interactive:!!interactor, runTwice:count === '2',
+    ...(interactor ? {interactiveSecondRun:invocations.includes('2'), useInteractionLogInExampleTests:false} : {})
+  };
   return {info, testset:ts};
 }

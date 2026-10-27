@@ -1,11 +1,43 @@
 import { t } from '../i18n.js';
-import { infoChanges, str, sameText } from './compare.js';
+import { infoChanges, boolean, str, sameText } from './compare.js';
 
 export async function syncInfo({api, id, plan, target, apply, unchanged}, currentInfo) {
   const changes = infoChanges(currentInfo, plan.info);
+  const conditional = {};
+  for (const key of ['interactiveSecondRun', 'useInteractionLogInExampleTests']) {
+    if (key in changes) { conditional[key] = changes[key]; delete changes[key]; }
+  }
+  const wasInteractive = boolean(currentInfo?.interactive);
+  // Conditional settings are rejected for a non-interactive problem. Clear them
+  // before disabling interaction; enable interaction before setting them.
+  if (wasInteractive && !plan.info.interactive) {
+    const reset = {};
+    for (const key of ['interactiveSecondRun', 'useInteractionLogInExampleTests'])
+      if (boolean(currentInfo[key])) reset[key] = 'false';
+    if (Object.keys(reset).length)
+      await apply(t('syncJudgingSettings'), () => api.problem('updateInfo', id, reset));
+  }
   if (Object.keys(changes).length || !target)
     await apply(t('syncTimeMemoryAndIOSettings'), () => api.problem('updateInfo', id, changes));
   else unchanged(t('syncTimeMemoryAndIOSettings'));
+  if (plan.info.interactive) {
+    if (!wasInteractive || !target) {
+      conditional.interactiveSecondRun = String(!!plan.info.interactiveSecondRun);
+      conditional.useInteractionLogInExampleTests = String(!!plan.info.useInteractionLogInExampleTests);
+    }
+    if (Object.keys(conditional).length)
+      await apply(t('syncJudgingSettings'), () => api.problem('updateInfo', id, conditional));
+  }
+}
+
+export async function verifyJudging({api, id, plan, read}) {
+  const info = await read(t('syncVerifyJudging'), () => api.problem('info', id));
+  if (!info || Object.keys(infoChanges(info, plan.info)).length)
+    throw Error(t('syncJudgingMismatch'));
+  if (plan.info.interactive) {
+    const interactor = await read(t('syncComparingInteractor'), () => api.problem('interactor', id));
+    if (interactor !== plan.interactor) throw Error(t('syncJudgingMismatch'));
+  }
 }
 
 export async function syncJudges({api, id, plan, target, apply, unchanged}, {currentChecker, currentValidator, currentInteractor}) {

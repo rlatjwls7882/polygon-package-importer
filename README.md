@@ -15,6 +15,8 @@ Create or update [Codeforces Polygon](https://polygon.codeforces.com) problems f
 
 Uploads continue after the popup closes. Failed uploads can be retried from the popup.
 
+Supports two-step and interactive problems, including an interactive second run. Subtask scores, scoring policies, and dependencies are preserved.
+
 ## Before uploading
 
 **Back up existing problems before updating them.** Files, tests, and statement attachments missing from the ZIP may be deleted. There is no automatic backup.

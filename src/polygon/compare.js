@@ -35,12 +35,14 @@ export function str(value) {return value == null ? '' : String(value);}
 
 export function infoChanges(current, desired) {
   const patch = {};
-  for (const key of ['timeLimit', 'memoryLimit', 'inputFile', 'outputFile', 'interactive']) {
-    const actual = current?.[key];
-    const expected = desired[key];
+  const flags = ['interactive', 'runTwice', 'interactiveSecondRun', 'useInteractionLogInExampleTests'];
+  for (const key of ['timeLimit', 'memoryLimit', 'inputFile', 'outputFile', ...flags]) {
+    if (!Object.hasOwn(desired, key)) continue;
+    if (['interactiveSecondRun', 'useInteractionLogInExampleTests'].includes(key) && !desired.interactive) continue;
+    const actual = current?.[key], expected = desired[key];
     if (key === 'timeLimit' || key === 'memoryLimit') {
       if (Number(actual) !== Number(expected)) patch[key] = expected;
-    } else if (key === 'interactive') {
+    } else if (flags.includes(key)) {
       if (boolean(actual) !== boolean(expected)) patch[key] = String(boolean(expected));
     } else if (str(actual || (key === 'inputFile' ? 'stdin' : 'stdout')) !== str(expected))
       patch[key] = expected;
@@ -57,26 +59,29 @@ export function statementChanges(remote, statement) {
   return Object.keys(changed).length === 1 ? null : changed;
 }
 
-export function manualTestChanges(test, remote, input, sampleOutput) {
-  const props = {testset:'tests', testIndex:test.index};
-  const newTest = !remote || !remote.manual;
-  const differentInput = newTest || !inputMatches(remote, input);
-  if (differentInput) props.testInput = input;
-  if (newTest || str(remote.description) !== str(test.description))
+export function testMetadataChanges(test, remote, sample = {}, groupsEnabled = true) {
+  const props = {};
+  if (!remote || str(remote.description) !== str(test.description))
     props.testDescription = test.description || '';
-  if (newTest || boolean(remote.useInStatements) !== !!test.sample)
+  if (!remote || boolean(remote.useInStatements) !== !!test.sample)
     props.testUseInStatements = String(!!test.sample);
-  if (test.group && (newTest || str(remote.group) !== test.group)) props.testGroup = test.group;
-  if (test.points !== null &&
-      (newTest || remote.points == null || Number(remote.points) !== Number(test.points)))
+  if (groupsEnabled && str(remote?.group) !== str(test.group)) props.testGroup = test.group || '';
+  if (test.points != null && (remote?.points == null || Number(remote.points) !== test.points))
     props.testPoints = test.points;
   if (test.sample) {
-    // A sample's preview is distinct from the judge input in the API.
-    if (newTest || !sameText(str(remote.inputForStatement), input))
-      props.testInputForStatements = input;
-    if (sampleOutput != null && (newTest || !sameText(str(remote.outputForStatement), sampleOutput)))
-      props.testOutputForStatements = sampleOutput;
+    for (const [key, parameter, value] of [
+      ['inputForStatement', 'testInputForStatements', sample.input],
+      ['outputForStatement', 'testOutputForStatements', sample.output],
+      ['interactionLogForStatement', 'testInteractionLogForStatements', sample.log]
+    ]) if (value != null && !sameText(str(remote?.[key]), value)) props[parameter] = value;
   }
+  return props;
+}
+
+export function manualTestChanges(test, remote, input, sample, groupsEnabled) {
+  const props = {testset:'tests', testIndex:test.index,
+    ...testMetadataChanges(test, remote, sample, groupsEnabled)};
+  if (!remote || !boolean(remote.manual) || !inputMatches(remote, input)) props.testInput = input;
   return Object.keys(props).length === 2 ? null : props;
 }
 
