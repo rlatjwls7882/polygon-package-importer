@@ -1,3 +1,4 @@
+import { testsSnapshot } from './snapshot.js';
 import { sampleContents } from './samples.js';
 import { t } from '../i18n.js';
 import { boolean, str, sameText, indexMap, manualTestChanges, testMetadataChanges } from './compare.js';
@@ -43,13 +44,13 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
 
   if (oldGenerated && scriptDiffers) {
     await apply(t('syncReplacingPreviousGeneratorScript'), () => api.problem('clearScript', id, {testset:'tests'}), true);
-    oldTests = oldTests.filter(t => t.manual);
+    oldTests = oldTests.filter(t => boolean(t.manual));
   }
 
   let remoteByIndex = indexMap(oldTests);
   const toDelete = oldTests.filter(t =>
     !wantedTests.has(Number(t.index)) ||
-    (t.manual && wantedTests.get(Number(t.index))?.method !== 'manual'));
+    (boolean(t.manual) && wantedTests.get(Number(t.index))?.method !== 'manual'));
   if (toDelete.length) {
     // Polygon supports deleting multiple tests in one atomic pre-check,
     // avoiding one API round trip per obsolete manual test.
@@ -60,8 +61,7 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
   if (toDelete.length) {
     const snapshot = await read(t('syncCheckingTestsAfterDeletion'),
       () => api.problem('tests', id, {testset:'tests', noInputs:String(!plan.tests.some(test => test.method === 'manual'))}));
-    if (!Array.isArray(snapshot)) throw Error(t('syncInvalidResponseWhenReloadingTests'));
-    remoteByIndex = indexMap(snapshot);
+    remoteByIndex = indexMap(testsSnapshot(snapshot));
   }
 
   for (const test of plan.tests.filter(t => t.method === 'manual')) {
@@ -81,7 +81,7 @@ export async function syncTests({api, id, plan, archive, target, read, apply, un
     const activeTests = scriptDiffers ?
       await read(t('syncCheckingGeneratedTestList'), () => api.problem('tests', id, {testset:'tests', noInputs:'true'})) :
       oldTests;
-    const activeByIndex = indexMap(activeTests);
+    const activeByIndex = indexMap(testsSnapshot(activeTests));
     for (const test of generated) {
       const remote = activeByIndex.get(test.index);
       if (!remote || boolean(remote.manual)) throw Error(t('syncInvalidResponseWhenReloadingTests'));

@@ -5,7 +5,7 @@ import { readAssets } from '../../package/assets.js';
 import { readGroups, readPoints } from '../../package/groups.js';
 import { canonicalExtraTags, canonicalResource } from '../../package/metadata.js';
 
-const equalText = (a, b) => a.replace(/\r\n?/g, '\n') === b.replace(/\r\n?/g, '\n');
+import { sameText } from '../../package/text.js';
 
 // The built descriptor is the read-back source for flags/extra tags that do not
 // have documented getters on info()/solutions(). It belongs to a pinned build.
@@ -52,7 +52,7 @@ export async function verifyBuiltDescriptor(built, plan, original) {
       if (kind === 'resources' && JSON.stringify(canonicalResource(file.resourceAdvancedProperties)) !==
           JSON.stringify(canonicalResource(value.resourceAdvancedProperties)))
         throw Error(t('verifyDescriptorMismatch', file.name));
-      if (!equalText(await built.text(value.path), await original.text(file.path)))
+      if (!sameText(await built.text(value.path), await original.text(file.path)))
         throw Error(t('verifyDescriptorMismatch', file.name));
     }
   }

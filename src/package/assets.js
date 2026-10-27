@@ -1,3 +1,4 @@
+import { sameText } from './text.js';
 import { TAGS, readSourceType, readResourceProperties, canonicalResource, readExtraTags } from './metadata.js';
 import { t } from '../i18n.js';
 import { CHILD, CHILDREN, ATTR, KIND_DESC } from './xml.js';
@@ -67,8 +68,7 @@ export async function readAssets(root, archive, plan) {
       if (!equal) {
         // A package may include identical text with Windows/Unix line endings.
         try {
-          const normalize = bytes => textDecoder.decode(bytes).replace(/\r\n?/g, '\n');
-          equal = normalize(before) === normalize(after);
+          equal = sameText(textDecoder.decode(before), textDecoder.decode(after));
         } catch { /* Binary resources must match byte-for-byte. */ }
       }
       if (JSON.stringify(canonicalResource(previous.resourceAdvancedProperties)) !==

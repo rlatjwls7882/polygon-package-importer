@@ -1,3 +1,4 @@
+import { withStore } from './database.js';
 import { t } from '../i18n.js';
 import { decryptCredentials, normalizeCredentials, STORE_KEY as LEGACY_KEY } from './legacy-vault.js';
 
@@ -21,61 +22,41 @@ function fromBase64(value) {
   return Uint8Array.from(atob(value), ch => ch.charCodeAt(0));
 }
 
-function requestResult(request) {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || Error(t('credentialStoreIndexeddbRequestFailed')));
+function keyTransaction(mode, action) {
+  return withStore(DB_NAME, DB_STORE, mode, action, {
+    unavailable:t('credentialStoreIndexeddbIsUnavailable'), open:t('credentialStoreFailedToOpenIndexeddb'),
+    blocked:t('credentialStoreCredentialStorageIsInUseInAnother'),
+    transaction:t('credentialStoreFailedToSaveEncryptionKey')
   });
 }
 
-async function openDatabase() {
-  if (!globalThis.indexedDB) throw Error(t('credentialStoreIndexeddbIsUnavailable'));
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(DB_STORE))
-        request.result.createObjectStore(DB_STORE);
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || Error(t('credentialStoreFailedToOpenIndexeddb')));
-    request.onblocked = () => reject(Error(t('credentialStoreCredentialStorageIsInUseInAnother')));
+function readKey() {
+  return keyTransaction('readonly', (store, done) => {
+    const request = store.get(DEVICE_KEY);
+    request.onsuccess = () => done(request.result);
   });
 }
 
-async function readKey() {
-  const db = await openDatabase();
-  try {
-    const tx = db.transaction(DB_STORE, 'readonly');
-    return await requestResult(tx.objectStore(DB_STORE).get(DEVICE_KEY));
-  } finally {
-    db.close();
-  }
-}
-
-async function updateKey(value, remove = false) {
-  const db = await openDatabase();
-  try {
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(DB_STORE, 'readwrite');
-      tx.oncomplete = resolve;
-      tx.onabort = () => reject(tx.error || Error(t('credentialStoreFailedToReplaceEncryptionKey')));
-      tx.onerror = () => reject(tx.error || Error(t('credentialStoreFailedToSaveEncryptionKey')));
-      if (remove) tx.objectStore(DB_STORE).delete(DEVICE_KEY);
-      else tx.objectStore(DB_STORE).put(value, DEVICE_KEY);
-    });
-  } finally {
-    db.close();
-  }
+function removeKey() {
+  return keyTransaction('readwrite', store => {store.delete(DEVICE_KEY);});
 }
 
 async function getOrCreateKey() {
   const current = await readKey();
   if (current) return current;
-  const key = await crypto.subtle.generateKey(
-    { name:'AES-GCM', length:256 }, false, ['encrypt', 'decrypt']
+  // WebCrypto cannot be awaited inside an active IndexedDB transaction.
+  const candidate = await crypto.subtle.generateKey(
+    {name:'AES-GCM', length:256}, false, ['encrypt', 'decrypt']
   );
-  await updateKey(key);
-  return key;
+  return keyTransaction('readwrite', (store, done, fail) => {
+    const request = store.get(DEVICE_KEY);
+    request.onsuccess = () => {
+      try {
+        if (request.result) done(request.result);
+        else {store.put(candidate, DEVICE_KEY);done(candidate);}
+      } catch (error) {fail(error);}
+    };
+  });
 }
 
 export function sameRecord(a, b) {
@@ -105,9 +86,8 @@ export async function decryptCredentialRecord(record) {
     const data = new Uint8Array(await crypto.subtle.decrypt(
       {name:'AES-GCM', iv, additionalData:CONTEXT}, key, ciphertext
     ));
-    const credentials = normalizeCredentials(JSON.parse(decoder.decode(data)));
-    data.fill(0);
-    return credentials;
+    try {return normalizeCredentials(JSON.parse(decoder.decode(data)));}
+    finally {data.fill(0);}
   } catch {
     throw Error(t('credentialStoreDecryptionFailed'));
   }
@@ -125,10 +105,9 @@ export async function saveCredentials(credentials) {
   const key = await getOrCreateKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = encoder.encode(JSON.stringify(value));
-  const ciphertext = await crypto.subtle.encrypt(
-    {name:'AES-GCM',iv,additionalData:CONTEXT}, key, data
-  );
-  data.fill(0);
+  let ciphertext;
+  try {ciphertext = await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:CONTEXT}, key, data);}
+  finally {data.fill(0);}
   const record = {version:2, iv:toBase64(iv), ciphertext:toBase64(new Uint8Array(ciphertext))};
   await chrome.storage.local.set({[CREDENTIAL_KEY]:record});
   const verified = await loadCredentials();
@@ -147,5 +126,5 @@ export async function migrateCredentials(passphrase) {
 
 export async function deleteCredentials() {
   await chrome.storage.local.remove([CREDENTIAL_KEY, LEGACY_KEY]);
-  await updateKey(null, true);
+  await removeKey();
 }

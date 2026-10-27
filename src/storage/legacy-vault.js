@@ -70,9 +70,10 @@ export async function encryptCredentials(credentials, passphrase) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(passphrase, salt);
   const data = encoder.encode(JSON.stringify(value));
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, additionalData: AAD, tagLength: 128 }, key, data);
-  data.fill(0); // Best effort. JavaScript strings cannot be reliably zeroed.
+  let ciphertext;
+  try {ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: AAD, tagLength: 128 }, key, data);}
+  finally {data.fill(0);} // Best effort; JavaScript strings cannot be reliably zeroed.
   return { version: 1, kdf: 'PBKDF2-SHA256', iterations: ITERATIONS,
     cipher: 'AES-256-GCM', salt: encode64(salt), iv: encode64(iv),
     ciphertext: encode64(new Uint8Array(ciphertext)) };
@@ -92,9 +93,8 @@ export async function decryptCredentials(record, passphrase) {
     const key = await deriveKey(passphrase, salt);
     const plain = new Uint8Array(await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv, additionalData: AAD, tagLength: 128 }, key, ciphertext));
-    const parsed = JSON.parse(decoder.decode(plain));
-    plain.fill(0);
-    return normalizeCredentials(parsed);
+    try {return normalizeCredentials(JSON.parse(decoder.decode(plain)));}
+    finally {plain.fill(0);}
   } catch {
     throw Error(t('credentialVaultVaultPasswordIsIncorrectOrStoredData'));
   }

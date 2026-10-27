@@ -92,17 +92,11 @@
   "credentialStoreFailedToOpenIndexeddb": {
     "message": "Failed to open IndexedDB."
   },
-  "credentialStoreFailedToReplaceEncryptionKey": {
-    "message": "Failed to replace encryption key."
-  },
   "credentialStoreFailedToSaveEncryptionKey": {
     "message": "Failed to save encryption key."
   },
   "credentialStoreIndexeddbIsUnavailable": {
     "message": "IndexedDB is unavailable."
-  },
-  "credentialStoreIndexeddbRequestFailed": {
-    "message": "IndexedDB request failed."
   },
   "credentialStoreInvalidIv": {
     "message": "Invalid IV."

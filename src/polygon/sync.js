@@ -1,3 +1,4 @@
+import { testsSnapshot, infoSnapshot, judgeSnapshot, tagsSnapshot } from './snapshot.js';
 import { clearObsoleteSolutionTags, syncSolutionTags } from './solution-tags.js';
 import { t } from '../i18n.js';
 import { orderGroups } from '../package/groups.js';
@@ -29,14 +30,16 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   };
   const unchanged = label => {skipped++; skip?.(label);};
   const existing = !!target;
-  const [currentInfo, currentChecker, currentValidator, currentInteractor, currentTags] =
-    existing ? await Promise.all([
-      read(t('syncComparingTimeAndMemoryLimits'), () => api.problem('info', id)),
-      plan.checker ? read(t('syncComparingChecker'), () => api.problem('checker', id)) : Promise.resolve(null),
-      plan.validator ? read(t('syncComparingValidator'), () => api.problem('validator', id)) : Promise.resolve(null),
-      plan.interactor ? read(t('syncComparingInteractor'), () => api.problem('interactor', id)) : Promise.resolve(null),
-      read(t('syncComparingTags'), () => api.problem('viewTags', id))
-    ]) : [null, null, null, null, []];
+  const currentInfo = existing ?
+    infoSnapshot(await read(t('syncComparingTimeAndMemoryLimits'), () => api.problem('info', id))) : null;
+  const currentChecker = existing && plan.checker ?
+    judgeSnapshot(await read(t('syncComparingChecker'), () => api.problem('checker', id))) : null;
+  const currentValidator = existing && plan.validator ?
+    judgeSnapshot(await read(t('syncComparingValidator'), () => api.problem('validator', id))) : null;
+  const currentInteractor = existing && plan.interactor ?
+    judgeSnapshot(await read(t('syncComparingInteractor'), () => api.problem('interactor', id))) : null;
+  const currentTags = existing ?
+    tagsSnapshot(await read(t('syncComparingTags'), () => api.problem('viewTags', id))) : [];
 
   const context = {api, id, plan, archive, target, read, apply, unchanged};
   let currentGroups = target && (plan.groups.length || target.tests.some(test => test.group)) ?
@@ -52,8 +55,7 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   if (revealTests) {
     const tests = await read(t('formatReloadTests'), () => api.problem('tests', id,
       {testset:'tests', noInputs:String(!plan.tests.some(test => test.method === 'manual'))}));
-    if (!Array.isArray(tests)) throw Error(t('syncInvalidResponseWhenReloadingTests'));
-    context.target = {...target, tests};
+    context.target = {...target, tests:testsSnapshot(tests)};
   }
   if (target && plan.groups.length && !target.tests.some(test => test.group)) {
     // Enabling groups can reveal metadata hidden in the previous snapshot.
