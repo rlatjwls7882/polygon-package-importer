@@ -1,16 +1,14 @@
 import { canonicalResource } from '../package/metadata.js';
 import { t } from '../i18n.js';
 import { sameText } from './compare.js';
-const encoder = new TextEncoder();
+import { textByteRange } from '../package/text.js';
 
 function mayMatchLength(length, text) {
   const remote = Number(length);
   if (length == null || !Number.isFinite(remote)) return true;
-  const normalized = text.replace(/\r\n?/g, '\n');
-  const bytes = encoder.encode(normalized).length;
-  const lines = normalized.split('\n').length - 1;
-  // Polygon may normalize LF to CRLF. Byte length alone is not a content diff.
-  return remote >= bytes && remote <= bytes + lines;
+  const {min, max} = textByteRange(text);
+  // An EOL-equivalent remote file may use one or two bytes per line break.
+  return remote >= min && remote <= max;
 }
 
 function packageFiles(plan) {

@@ -1,10 +1,8 @@
+import { sameText } from '../package/text.js';
+export { sameText };
 const decoder = new TextDecoder('utf-8', {fatal:true});
-const normal = text => String(text).replace(/\r\n?/g, '\n');
-export const sameText = (a, b) => typeof a === 'string' && typeof b === 'string' &&
-  normal(a) === normal(b);
-
 function rawTestInput(remote) {
-  if (!remote || !remote.manual) return null;
+  if (!remote || !boolean(remote.manual)) return null;
   if (typeof remote.inputBase64 === 'string') {
     try {
       const raw = atob(remote.inputBase64);

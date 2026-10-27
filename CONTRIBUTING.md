@@ -36,6 +36,9 @@ are disposed together through `ui/lifetime.js`; credential refreshes are coalesc
 cooldowns. `api.js` retains signing, API semantics, pacing and retry policy.
 `src/polygon/sync.js` orders the writes; its sibling modules handle their own content.
 Source files are uploaded before judge selection; obsolete attachments are removed last.
+`src/polygon/snapshot.js` validates remote lists and settings before they become
+an overwrite plan. `src/storage/database.js` owns connection/transaction completion;
+`src/package/text.js` shares EOL comparison and UTF-8 length bounds without full copies.
 The popup and offscreen HTML URLs, credential keys, and IndexedDB names stay stable.
 
 ## Problem formats
@@ -107,6 +110,11 @@ and compare/delete uses one transaction, so another popup cannot replace its ZIP
 Job metadata and its ZIP are separate records in the same store/transaction; locks,
 status queries, and verification checkpoints never reload or re-save the payload.
 Old inline-Blob jobs migrate lazily on mutation without changing database identities.
+A blocked open that later succeeds is closed, and connections yield on version changes.
+Read results are returned only after transaction completion. Initial encryption-key
+creation uses a read/check/write transaction, so concurrent first saves cannot encrypt
+with different keys while retaining only one. Temporary plaintext byte buffers are
+cleared in `finally`; JavaScript strings are not guaranteed to be erasable.
 
 ZIP reads use a 32 MiB per-archive LRU cache and deduplicate concurrent reads.
 At most two entries inflate at once, within a 32 MiB declared-output budget; a larger
@@ -118,7 +126,13 @@ Decoded caches and old remote snapshots are released before polling a server bui
 Inflated data is bounded while streaming, checked by CRC32, and never cached on failure.
 The 100 MiB ZIP limit is checked by the popup/uploader and while downloading build ZIPs.
 
-File comparisons account for LF/CRLF-equivalent lengths. Tag-only solution updates
+Overwrite eligibility (stress tests and extra validators) is checked before test
+input/statement bodies. Snapshot reads stop at the first error instead of queuing
+unused downloads. Duplicate identities and malformed lists/settings fail before writes.
+
+File comparisons account for LF/CRLF-equivalent lengths without allocating normalized
+copies, a whole UTF-8 buffer, or an array of lines. Supplementary characters and lone
+surrogates follow TextEncoder's length semantics. Tag-only solution updates
 use the API's optional `file` parameter rather than downloading and re-uploading the
 old main solution. An explicit `file: Field should not be empty` validation error
 falls back to the original source; network errors do not trigger this fallback.
@@ -142,6 +156,7 @@ Offline comparison with an older checkout:
 node tests/benchmark_import.mjs /path/to/baseline-checkout
 node tests/benchmark_lifecycle.mjs /path/to/baseline-checkout
 node tests/benchmark_request_resources.mjs /path/to/baseline-checkout
+node tests/benchmark_preflight.mjs /path/to/baseline-checkout
 POLYGON_RANDOM_CASES=3000 node tests/test_random_formats.mjs
 ```
 

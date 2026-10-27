@@ -1,23 +1,10 @@
 export const STATUS_KEY = 'polygonImportStatusV1';
 
+import { withStore } from './database.js';
 import { t } from '../i18n.js';
 const DATABASE = 'polygon-import-jobs';
 const STORE = 'jobs';
 const ACTIVE = 'active';
-
-function openDatabase() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE, 1);
-    request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(STORE)) {
-        request.result.createObjectStore(STORE);
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || Error(t('jobStoreCouldNotOpenJobStorage')));
-    request.onblocked = () => reject(Error(t('jobStoreJobStorageIsInUseByAnother')));
-  });
-}
 
 const ZIP = 'activeZip';
 const info = record => {
@@ -28,22 +15,17 @@ const info = record => {
 
 // Both records live in the existing store. Lock/checkpoint updates only touch
 // small metadata; replacing/deleting a job updates metadata + ZIP atomically.
-async function transaction(mode, action) {
-  const db = await openDatabase();
-  try {
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, mode), store = tx.objectStore(STORE);
-      let result, failure;
-      const fail = error => { failure = error; tx.abort(); };
-      const request = store.get(ACTIVE);
-      request.onsuccess = () => {
-        try { action(request.result, store, value => {result = value;}, fail); }
-        catch (error) { fail(error); }
-      };
-      tx.oncomplete = () => resolve(result);
-      tx.onabort = tx.onerror = () => reject(failure || tx.error || Error(t('jobStoreFailedToSaveJob')));
-    });
-  } finally { db.close(); }
+function transaction(mode, action) {
+  return withStore(DATABASE, STORE, mode, (store, done, fail) => {
+    const request = store.get(ACTIVE);
+    request.onsuccess = () => {
+      try {action(request.result, store, done, fail);}
+      catch (error) {fail(error);}
+    };
+  }, {
+    open:t('jobStoreCouldNotOpenJobStorage'), blocked:t('jobStoreJobStorageIsInUseByAnother'),
+    transaction:t('jobStoreFailedToSaveJob')
+  });
 }
 
 export function stageJob(job, expectedId) {

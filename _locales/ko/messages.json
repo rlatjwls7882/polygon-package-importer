@@ -92,17 +92,11 @@
   "credentialStoreFailedToOpenIndexeddb": {
     "message": "IndexedDB 열기 실패"
   },
-  "credentialStoreFailedToReplaceEncryptionKey": {
-    "message": "암호화 키 변경 실패"
-  },
   "credentialStoreFailedToSaveEncryptionKey": {
     "message": "암호화 키 저장 실패"
   },
   "credentialStoreIndexeddbIsUnavailable": {
     "message": "브라우저의 IndexedDB를 사용할 수 없습니다."
-  },
-  "credentialStoreIndexeddbRequestFailed": {
-    "message": "IndexedDB 요청 실패"
   },
   "credentialStoreInvalidIv": {
     "message": "잘못된 IV"

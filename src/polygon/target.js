@@ -1,3 +1,4 @@
+import { testsSnapshot, filesSnapshot, namedSnapshot, statementsSnapshot, judgeTestsSnapshot } from './snapshot.js';
 import { t } from '../i18n.js';
 export async function readTarget(api, id, plan) {
   const listed = await api.call('problems.list', { id });
@@ -8,35 +9,24 @@ export async function readTarget(api, id, plan) {
     throw Error(t('polygonImportNoWriteAccessToProblem', id));
   }
 
-  const [tests, files, solutions, statements, statementResources, stresses] = await Promise.all([
-    api.problem('tests', id, { testset:'tests', noInputs:String(!plan.tests.some(test => test.method === 'manual')) }),
-    api.problem('files', id),
-    api.problem('solutions', id),
-    api.problem('statements', id),
-    api.problem('statementResources', id),
-    api.problem('stresses', id)
-  ]);
-
-  if (!Array.isArray(tests) || !Array.isArray(stresses) || !files ||
-      !['sourceFiles','resourceFiles','auxFiles'].every(key => Array.isArray(files[key])) ||
-      !Array.isArray(solutions) || !statements ||
-      !Array.isArray(statementResources) || statementResources.some(f =>
-        !f || typeof f.name !== 'string' || !f.name)) {
-    throw Error(t('polygonImportCouldNotReadAllExistingProblemData'));
-  }
-  if (Array.isArray(stresses) && stresses.length) {
-    throw Error(t('polygonImportStressTestsPresent'));
-  }
-
-  const [validatorTests, checkerTests] = await Promise.all([
-    api.problem('validatorTests', id),
-    api.problem('checkerTests', id)
-  ]);
-  if (!Array.isArray(validatorTests) || !Array.isArray(checkerTests))
-    throw Error(t('formatInvalidJudgeTests'));
+  // The transport is already serialized. Check cheap eligibility first and
+  // await each read so one failure cannot enqueue large, now-useless payloads.
+  const stresses = await api.problem('stresses', id);
+  if (!Array.isArray(stresses)) throw Error(t('polygonImportCouldNotReadAllExistingProblemData'));
+  if (stresses.length) throw Error(t('polygonImportStressTestsPresent'));
   const extraValidators = await api.problem('extraValidators', id);
   if (!Array.isArray(extraValidators) || extraValidators.length)
     throw Error(t('formatTargetExtraValidators'));
+
+  const files = filesSnapshot(await api.problem('files', id));
+  const solutions = namedSnapshot(await api.problem('solutions', id));
+  const statementResources = namedSnapshot(await api.problem('statementResources', id));
+  const statements = statementsSnapshot(await api.problem('statements', id));
+  const validatorTests = judgeTestsSnapshot(await api.problem('validatorTests', id), 'validator');
+  const checkerTests = judgeTestsSnapshot(await api.problem('checkerTests', id), 'checker');
+  const tests = testsSnapshot(await api.problem('tests', id,
+    {testset:'tests', noInputs:String(!plan.tests.some(test => test.method === 'manual'))}));
+
   return {
     ...entry, tests, files, solutions, statements, statementResources, validatorTests, checkerTests
   };

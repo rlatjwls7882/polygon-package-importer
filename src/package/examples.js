@@ -1,3 +1,4 @@
+import { sameText } from './text.js';
 import { t } from '../i18n.js';
 
 export async function readExamples(archive, plan) {
@@ -19,9 +20,9 @@ export async function readExamples(archive, plan) {
     for (const [field, suffix] of [['sampleInputPath',''], ['sampleOutputPath','.a'], ['interactionLogPath','.mu']]) {
       const paths = found.get((i + 1) + ':' + suffix) || [];
       if (!paths.length) continue;
-      const expected = (await archive.text(paths[0])).replace(/\r\n?/g, '\n');
+      const expected = await archive.text(paths[0]);
       for (const path of paths.slice(1))
-        if ((await archive.text(path)).replace(/\r\n?/g, '\n') !== expected)
+        if (!sameText(await archive.text(path), expected))
           throw Error(t('packageConflictingSamples', i + 1));
       test[field] = paths[0];
     }
