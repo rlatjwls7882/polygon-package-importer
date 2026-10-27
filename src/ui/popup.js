@@ -1,8 +1,9 @@
 import { t, localizePage } from '../i18n.js';
-import { ZipArchive, MAX_ZIP_SIZE } from '../package/zip.js';
-import { loadPolygonPackage } from '../package/load.js';
+import { MAX_ZIP_SIZE } from '../package/zip.js';
+import { createPackageAnalysis } from './package-analysis.js';
+const analysis = createPackageAnalysis();
 import { CredentialsUI } from './credentials.js';
-import { stageJob, readJob, STATUS_KEY } from '../storage/jobs.js';
+import { stageJob, readJobInfo, STATUS_KEY } from '../storage/jobs.js';
 
 const $ = id => document.getElementById(id);
 let file = null;
@@ -62,7 +63,7 @@ async function refresh() {
   const reply = await chrome.runtime.sendMessage({type:'IMPORT_QUERY'});
   if (!reply?.ok) throw Error(reply?.error || t('popupCouldNotCheckJobStatus'));
   status = reply.status;
-  savedJob = await readJob();
+  savedJob = await readJobInfo();
   render();
 }
 
@@ -83,6 +84,7 @@ async function closeCredentials() {
 
 async function analyze() {
   const requestId = ++analysisId;
+  analysis.cancel();
   errorText();
   validPackage = false;
   file = $('zipFile').files?.[0] || null;
@@ -95,9 +97,7 @@ async function analyze() {
     $('packageInfo').textContent = t('popupAnalyzing');
     render();
     try {
-      const archive = await ZipArchive.fromFile(file);
-      if (requestId !== analysisId) return;
-      const plan = await loadPolygonPackage(archive);
+      const plan = await analysis.analyze(file);
       if (requestId !== analysisId) return;
       if (plan.unsupported.length) throw Error(plan.unsupported.join('; '));
       const details = [t('popupTestsSolutions', plan.name, plan.tests.length, plan.solutions.length)];
@@ -125,7 +125,7 @@ async function start(retry = false) {
   try {
     let job;
     if (retry) {
-      job = await readJob();
+      job = await readJobInfo();
       if (!job || job.id !== status?.id) throw Error(t('popupNoJobAvailableToRetry'));
     } else {
       if (!file || !validPackage) throw Error(t('popupSelectAZipFirst'));
@@ -154,6 +154,7 @@ async function start(retry = false) {
 
 async function initialize() {
   localizePage();
+  window.addEventListener?.('pagehide', () => {analysisId++;analysis.cancel();}, {once:true});
   $('settings').addEventListener('click', openCredentials);
   $('closeCredentials').addEventListener('click', closeCredentials);
   $('zipFile').addEventListener('change', analyze);

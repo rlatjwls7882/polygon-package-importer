@@ -1,6 +1,6 @@
 import { createMockI18n } from './i18n.mjs';
 // Minimal IndexedDB and chrome.storage.local mocks for the extension tests.
-export function createFakeIndexedDB() {
+export function createFakeIndexedDB(onOperation = () => {}) {
   const databases = new Map();
 
   function makeDatabase(name) {
@@ -51,9 +51,9 @@ export function createFakeIndexedDB() {
           oncomplete:null,onerror:null,onabort:null,error:null,
           abort(){finish(true);},
           objectStore(){return {
-            get:key=>request(()=>working.get(key)),
-            put:(value,key)=>request(()=>{working.set(key,value);return key;}),
-            delete:key=>request(()=>working.delete(key))
+            get:key=>request(()=>{onOperation({database:name,store:storeName,method:'get',key});return working.get(key);}),
+            put:(value,key)=>request(()=>{onOperation({database:name,store:storeName,method:'put',key,value});working.set(key,value);return key;}),
+            delete:key=>request(()=>{onOperation({database:name,store:storeName,method:'delete',key});return working.delete(key);})
           };}
         };
         before.then(()=>{active=true;working=new Map(entries);schedule();});

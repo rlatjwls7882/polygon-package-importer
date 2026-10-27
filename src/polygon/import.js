@@ -17,14 +17,19 @@ export async function executeImport({job, api, onProgress = async () => {}, onCr
   if (job.verify && !job.commit) throw Error(t('verifyRequiresCommit'));
   if (job.verification && (!job.verify || job.mode !== 'replace')) throw Error(t('verifyInvalidCheckpoint'));
 
-  let id = null, committed = false;
-  let changed = false;
-  const emit = (message, progress = null, stage = 'uploading') => onProgress({message, progress, stage, committed});
-  await emit(t('polygonImportAnalyzingZip'));
+  await onProgress({message:t('polygonImportAnalyzingZip'), progress:null, stage:'uploading', committed:false});
   const archive = await ZipArchive.fromFile(job.file);
-  const plan = await loadPolygonPackage(archive);
-  if (plan.unsupported.length)
-    throw Error(t('polygonImportUnsupportedPackage', plan.unsupported.join('; ')));
+  try {
+    const plan = await loadPolygonPackage(archive);
+    if (plan.unsupported.length)
+      throw Error(t('polygonImportUnsupportedPackage', plan.unsupported.join('; ')));
+    return await importPackage({job, api, archive, plan, onProgress, onCreated, onCheckpoint, verificationOptions});
+  } finally { archive.dispose(); }
+}
+
+async function importPackage({job, api, archive, plan, onProgress, onCreated, onCheckpoint, verificationOptions}) {
+  let id = null, committed = false, changed = false;
+  const emit = (message, progress = null, stage = 'uploading') => onProgress({message, progress, stage, committed});
 
   const step = async (label, task) => {
     await emit(label);
@@ -79,6 +84,9 @@ export async function executeImport({job, api, onProgress = async () => {}, onCr
       committed = true;
     }
 
+    // Old manual-input snapshots can dwarf the archive. They are only needed
+    // while synchronizing, never during the server build/polling phase.
+    current = null;
     let verification = {state:'not-run'};
     if (job.verify) {
       verification = await verifyProblem({api, id, plan, archive, save:onCheckpoint,

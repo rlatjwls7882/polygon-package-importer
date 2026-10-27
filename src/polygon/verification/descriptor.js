@@ -1,9 +1,9 @@
-import { t } from '../i18n.js';
-import { CHILD, CHILDREN, ATTR, resolveXmlText } from '../package/xml.js';
-import { readJudging } from '../package/judging.js';
-import { readAssets } from '../package/assets.js';
-import { readGroups, readPoints } from '../package/groups.js';
-import { canonicalExtraTags, canonicalResource } from '../package/metadata.js';
+import { t } from '../../i18n.js';
+import { CHILD, CHILDREN, ATTR, resolveXmlText } from '../../package/xml.js';
+import { readJudging } from '../../package/judging.js';
+import { readAssets } from '../../package/assets.js';
+import { readGroups, readPoints } from '../../package/groups.js';
+import { canonicalExtraTags, canonicalResource } from '../../package/metadata.js';
 
 const equalText = (a, b) => a.replace(/\r\n?/g, '\n') === b.replace(/\r\n?/g, '\n');
 

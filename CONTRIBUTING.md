@@ -24,7 +24,12 @@ python3 scripts/check_release.py
 
 `src/package/load.js` reads the ZIP into an import plan. It never calls Polygon.
 `src/polygon/import.js` owns target checks, creation, resume callbacks, and commit.
-`src/polygon/verify.js` pins and follows a server build; `descriptor.js` checks its output.
+`src/polygon/verify.js` pins and follows a server build. Pure invocation, package,
+and descriptor checks live in `src/polygon/verification/`.
+`src/package/zip.js` owns archive lifetime; `zip-directory.js` parses metadata and
+`zip-contents.js` owns bounded decompression, streams, and the cache.
+`src/ui/package-analysis.js` cancels superseded analyses; `runtime/status.js` persists
+status without repeating identical progress writes.
 `src/polygon/sync.js` orders the writes; its sibling modules handle their own content.
 Source files are uploaded before judge selection; obsolete attachments are removed last.
 The popup and offscreen HTML URLs, credential keys, and IndexedDB names stay stable.
@@ -95,10 +100,18 @@ The release scripts use the same runtime allowlist and verify every packaged sou
 Runtime commands and status writes are serialized. Each attempt has a nonce; late
 messages cannot finish a newer retry. A running job claims its IndexedDB record,
 and compare/delete uses one transaction, so another popup cannot replace its ZIP.
+Job metadata and its ZIP are separate records in the same store/transaction; locks,
+status queries, and verification checkpoints never reload or re-save the payload.
+Old inline-Blob jobs migrate lazily on mutation without changing database identities.
 
-ZIP reads use a 32 MiB per-archive LRU cache and share concurrent decompression.
+ZIP reads use a 32 MiB per-archive LRU cache and deduplicate concurrent reads.
+At most two entries inflate at once, within a 32 MiB declared-output budget; a larger
+allowed entry runs alone. This bounds in-flight allocation, not the browser's total heap.
+Every owner disposes its archive in `finally`; disposal cancels active streams, rejects
+queued reads, removes abort listeners and releases the compressed buffer/cache.
+Decoded caches and old remote snapshots are released before polling a server build.
 Inflated data is bounded while streaming, checked by CRC32, and never cached on failure.
-The 100 MiB ZIP limit is checked again by the uploader, not only by the popup.
+The 100 MiB ZIP limit is checked by the popup/uploader and while downloading build ZIPs.
 
 File comparisons account for LF/CRLF-equivalent lengths. Tag-only solution updates
 use the API's optional `file` parameter rather than downloading and re-uploading the
@@ -106,15 +119,22 @@ old main solution. An explicit `file: Field should not be empty` validation erro
 falls back to the original source; network errors do not trigger this fallback.
 API response parsing and backoff stay in the serialized request
 queue; network errors on mutations are still not retried automatically.
+Discarded HTTP bodies are cancelled, request timers are cleared after body consumption,
+and queue tails do not retain response values. Offscreen completion disposes its API
+session; a failed startup closes the unused document but keeps the retryable ZIP.
 
 Offline comparison with an older checkout:
 
 ```sh
 node tests/benchmark_import.mjs /path/to/baseline-checkout
+node tests/benchmark_lifecycle.mjs /path/to/baseline-checkout
+POLYGON_RANDOM_CASES=3000 node tests/test_random_formats.mjs
 ```
 
 This reports request counts, uploaded source bytes, decompression counts, and local
-ZIP timings using synthetic data. It does not measure Polygon server response times.
+ZIP timings using synthetic data. The lifecycle comparison counts simultaneous inflations,
+Blob-bearing storage writes, duplicate status writes, result downloads and planning reads.
+These are operation counts, not live server latency, physical disk writes or browser RSS.
 
 ## Build and execution verification
 
@@ -132,7 +152,8 @@ also turns off this option. Upload-only jobs say **execution not checked**, neve
 5. Download that package's standard ZIP and compare its descriptor, compiler types,
    grader linkage, extra tags, and uploaded source/resource bytes with the selected ZIP.
 
-Verification polls every five seconds for at most 360 checks. Timeout is **incomplete**,
+Verification polls every five seconds for at most 360 checks. Running invocations use
+summary responses; detailed solution/test runs are fetched only after FINISHED. Timeout is **incomplete**,
 not success. Retry follows the stored build without re-uploading or committing again.
 Changed working copies/revisions require selecting the ZIP again; terminal build failures
 remain failures. A failed verification does not undo the already completed commit.

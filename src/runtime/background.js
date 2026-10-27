@@ -1,5 +1,6 @@
+import { readStatus, saveStatus, updateStatus } from './status.js';
 import { t } from '../i18n.js';
-import { readJob, stageJob, clearJob, claimJob, releaseJob, STATUS_KEY } from '../storage/jobs.js';
+import { readJobInfo, patchJob, clearJob, claimJob, releaseJob, STATUS_KEY } from '../storage/jobs.js';
 import { CREDENTIAL_KEY } from '../storage/credentials.js';
 
 const OFFSCREEN_PAGE = 'offscreen.html';
@@ -9,7 +10,7 @@ let closeTimer = null;
 
 function serialize(action) {
   const result = commands.then(action, action);
-  commands = result.catch(() => {});
+  commands = result.then(() => undefined, () => undefined);
   return result;
 }
 
@@ -45,23 +46,13 @@ async function openOffscreen() {
   await opening;
 }
 
-async function readStatus() {
-  return (await chrome.storage.local.get(STATUS_KEY))[STATUS_KEY] ?? null;
-}
-
-async function saveStatus(status) {
-  const next = {...status, updatedAt:Date.now()};
-  await chrome.storage.local.set({[STATUS_KEY]:next});
-  return next;
-}
-
 async function getStatus() {
   let status = await readStatus();
   if (status?.phase === 'running' && !(await offscreenOpen())) {
     status = await saveStatus({...status, phase:'error',
       message:t('backgroundUploadInterruptedYouCanRetry')});
   }
-  const job = await readJob();
+  const job = await readJobInfo();
   // A worker may have stopped after claiming the ZIP but before saving status.
   if (job?.locked && (status?.id !== job.id || status?.phase !== 'running'))
     await releaseJob(job.id);
@@ -85,7 +76,7 @@ async function startImport(jobId) {
         previous.phase === 'error' && previous.partial &&
         /^[1-9]\d{0,11}$/.test(resumeId)) {
       job = {...job, mode:'replace', problemId:resumeId};
-      await stageJob(job, jobId);
+      await patchJob(jobId, {mode:job.mode, problemId:job.problemId});
     }
 
     cancelClose();
@@ -112,34 +103,12 @@ async function startImport(jobId) {
       await saveStatus({...await readStatus(), phase:'error',
         message:error?.message || t('backgroundUploadCouldNotStart')});
     }
-    if (claimed) await releaseJob(jobId);
+    if (claimed) {
+      await chrome.offscreen.closeDocument().catch(() => {});
+      await releaseJob(jobId);
+    }
     throw error;
   }
-}
-
-async function updateStatus(message) {
-  const current = await readStatus();
-  if (!current || current.id !== message.jobId || current.phase !== 'running' ||
-      current.attempt !== message.attempt)
-    return {ok:false};
-
-  const done = message.type === 'IMPORT_COMPLETE';
-  if (done && !['done','error'].includes(message.phase)) return {ok:false};
-  const text = String(message.message || '').slice(0, 350);
-  await saveStatus({
-    ...current,
-    phase:done ? message.phase : 'running',
-    message:text,
-    log:[...(current.log || []), text].slice(-12),
-    progress:Number.isFinite(message.progress) ? message.progress : current.progress,
-    ...(message.problemId ? {problemId:message.problemId} : {}),
-    ...(message.partial ? {partial:true} : {}),
-    ...(message.committed ? {committed:true} : {}),
-    ...(['uploading','uploaded','verifying','verified','verification-failed','upload-failed'].includes(message.stage) ? {stage:message.stage} : {}),
-    ...(message.verification ? {verification:message.verification} : {})
-  });
-  if (done) await releaseJob(current.id);
-  return {ok:true};
 }
 
 async function clearStatus() {
