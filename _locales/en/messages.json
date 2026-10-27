@@ -533,6 +533,9 @@
   "syncAllTestsUnchanged": {
     "message": "All tests unchanged"
   },
+  "syncAssigningTestGroup": {
+    "message": "Assigning group $1 to $2 tests"
+  },
   "syncCheckingGeneratedTestList": {
     "message": "Checking generated test list"
   },

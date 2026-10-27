@@ -533,6 +533,9 @@
   "syncAllTestsUnchanged": {
     "message": "동일한 테스트 전체"
   },
+  "syncAssigningTestGroup": {
+    "message": "테스트 $2개의 그룹을 $1로 지정"
+  },
   "syncCheckingGeneratedTestList": {
     "message": "생성 테스트 목록 검증"
   },

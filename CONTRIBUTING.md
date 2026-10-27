@@ -43,6 +43,13 @@ to hundredths. Changed dependency edges are cleared before replacing tests and r
 in topological order afterwards. Ungrouped tests and zero scores explicitly replace
 old metadata. Group and judging settings are read back before committing.
 
+Group-only edits with a non-empty destination are batched by group through
+`problem.setTestGroup(testIndices=...)`. Manual and generated test indices share
+one batch after any script rebuild. New manual tests, group clearing, and edits
+that also change input, points, description, or samples keep a single `saveTest`
+request. Batch failures stop the import; retry reads the current remote state and
+sends only remaining differences. The existing read-back check covers batched edits.
+
 Statement sample files (`example.N`, `.a`, `.mu`) take precedence over judge input/output.
 A `.mu` sample enables interaction-log display. Different sample content for different
 statement languages is rejected because the API stores one shared preview per test.
@@ -52,7 +59,7 @@ Binary-only interactors and statement images remain unsupported. No compiler or 
 runs locally: this extension uploads the package to Polygon.
 
 Format contracts: [Polygon API](https://codeforces.github.io/polygon-misc/API)
-(`runTwice`, `interactiveSecondRun`, `saveTest`, `saveTestGroup`), native
+(`runTwice`, `interactiveSecondRun`, `saveTest`, `setTestGroup`, `saveTestGroup`), native
 [run-count descriptor](https://github.com/noisg/sg_noi_archive/blob/d44b1d5964f609ccc13ac76f935e700fb9b794fb/2022_qualification/lboard/problem.xml),
 and [interactor run parsing](https://github.com/Niobium-41-nb/p2h/blob/72a3335158d51b8e056b9324fc5569d9bc7afd81/polygon_tests.py).
 The synthetic fixtures exercise the formats and their combinations; the stateful API
