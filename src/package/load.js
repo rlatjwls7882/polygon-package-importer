@@ -13,7 +13,8 @@ export async function loadPolygonPackage(archive) {
     tests: [], groups: [], validatorTests: [], checkerTests: [], tags: [], unsupported: [] };
 
   const {info, testset, checkerPercent} = readJudging(root);
-  plan.info = info;
+  // Import policy, not a default: never inherit a false/missing source flag.
+  plan.info = {...info, wellFormed:true};
   plan.checkerPercent = checkerPercent;
   await readStatements(root, archive, plan);
   await readAssets(root, archive, plan);

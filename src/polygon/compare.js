@@ -33,7 +33,7 @@ export function str(value) {return value == null ? '' : String(value);}
 
 export function infoChanges(current, desired) {
   const patch = {};
-  const flags = ['interactive', 'runTwice', 'interactiveSecondRun', 'useInteractionLogInExampleTests'];
+  const flags = ['interactive', 'runTwice', 'interactiveSecondRun', 'useInteractionLogInExampleTests', 'wellFormed'];
   for (const key of ['timeLimit', 'memoryLimit', 'inputFile', 'outputFile', ...flags]) {
     if (!Object.hasOwn(desired, key)) continue;
     if (['interactiveSecondRun', 'useInteractionLogInExampleTests'].includes(key) && !desired.interactive) continue;

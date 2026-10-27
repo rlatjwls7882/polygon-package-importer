@@ -49,6 +49,7 @@ function builtArchive(state, transform) {
     'feedback-policy':group.feedbackPolicy.toLowerCase()
   },[n('dependencies',{},group.dependencies.map(name=>n('dependency',{group:name})))])):[];
   const root=n('problem',{'short-name':'verified-fixture'},[
+    n('properties',{},[n('property',{name:'tests-wellformed',value:String(!!state.info.wellFormed)})]),
     n('files',{},[n('executables',{},executables),n('resources',{},resources),n('auxiliary-files',{},auxiliary)]),
     n('assets',{},assets),n('judging',{'run-count':state.info.runTwice?'2':'1',
       'input-file':state.info.inputFile,'output-file':state.info.outputFile,

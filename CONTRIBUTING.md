@@ -45,6 +45,12 @@ The popup and offscreen HTML URLs, credential keys, and IndexedDB names stay sta
 
 ## Problem formats
 
+Imports always enable `wellFormed`, even if the source ZIP says false or omits
+`tests-wellformed`. This is an intentional policy override, not source metadata
+preservation. Existing targets are repaired when necessary; an already true flag
+needs no extra update. The API read-back and built XML must both confirm true.
+Built descriptors are checked directly, never through the normalized import plan.
+
 `judging/@run-count` maps to `runTwice` (1 or 2 only). The interactor asset enables
 interactive judging; its `runs/run` text nodes select the interactive invocations.
 Run 1 is required, and run 2 maps to `interactiveSecondRun`. The API's interactive-only

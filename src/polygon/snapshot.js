@@ -50,7 +50,7 @@ export function infoSnapshot(value) {
   if (!record(value) || !['timeLimit','memoryLimit'].every(key =>
       Number.isFinite(Number(value[key])) && Number(value[key]) > 0) ||
       !['inputFile','outputFile'].every(key => typeof value[key] === 'string') ||
-      ['interactive','runTwice','interactiveSecondRun','useInteractionLogInExampleTests'].some(key =>
+      ['interactive','runTwice','interactiveSecondRun','useInteractionLogInExampleTests','wellFormed'].some(key =>
         value[key] !== undefined && !flag(value[key])))
     throw Error(t('syncJudgingMismatch'));
   return value;
