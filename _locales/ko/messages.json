@@ -218,9 +218,6 @@
   "formatJudgeTestsMismatch": {
     "message": "저장된 $1 자체 테스트가 ZIP과 다릅니다."
   },
-  "formatMetadataMismatch": {
-    "message": "저장된 파일 메타데이터를 검증하지 못했습니다."
-  },
   "formatMissingMain": {
     "message": "패키지에는 메인 솔루션이 정확히 하나 있어야 합니다."
   },

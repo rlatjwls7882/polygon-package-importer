@@ -17,13 +17,25 @@ export async function validatePackage(archive, plan) {
     throw Error(t('syncZipContainsSolutionsWithDuplicateNames'));
   if (plan.info.interactive && !plan.interactor)
     throw Error(t('packageMissingInteractorSource'));
+  const checked = new Map();
+  const inspect = async (path, checkNul = false) => {
+    if (!checked.has(path) || (checkNul && checked.get(path).valid && checked.get(path).hasNul === undefined)) {
+      try {
+        const text = await archive.text(path);
+        checked.set(path, {valid:true, ...(checkNul ? {hasNul:text.includes('\0')} : {})});
+      } catch (error) {
+        if (error?.name === 'AbortError') throw error;
+        checked.set(path, {valid:false, hasNul:false});
+      }
+    }
+    return checked.get(path);
+  };
   const binaryPaths = new Set();
   // Sources and solutions must be textual. Binary statement resources cannot be safely
   // round-tripped through the current text-only API adapter.
   for (const {path} of [...plan.sources, ...plan.solutions, ...plan.resources, ...plan.aux]) {
-    try {
-      if ((await archive.text(path)).includes('\0')) binaryPaths.add(path);
-    } catch (error) { if (error?.name === 'AbortError') throw error; binaryPaths.add(path); }
+    const result = await inspect(path, true);
+    if (!result.valid || result.hasNul) binaryPaths.add(path);
   }
   const sectionsExtras = archive.names().filter(p => /^statement-sections\/[^/]+\//.test(p) &&
     !/\/(?:name|legend|input|output|notes|scoring|interaction|tutorial|example\.\d+(?:\.a|\.mu)?)\.tex?$/.test(p) &&
@@ -32,12 +44,12 @@ export async function validatePackage(archive, plan) {
   if (sectionsExtras.length) plan.unsupported.push(t('modelCannotUploadStatementImagesOrExtraResources', sectionsExtras.slice(0,12).join(', ')));
   for (const test of plan.tests) {
     for (const path of [test.path, test.outputPath, test.sampleInputPath, test.sampleOutputPath, test.interactionLogPath].filter(Boolean)) {
-      try { await archive.text(path); } catch (error) { if (error?.name === 'AbortError') throw error; plan.unsupported.push(t('modelTestIsNotUtf8Text', test.index, path)); }
+      if (!(await inspect(path)).valid) plan.unsupported.push(t('modelTestIsNotUtf8Text', test.index, path));
     }
   }
   for (const test of [...plan.validatorTests, ...plan.checkerTests]) {
     for (const path of [test.inputPath, test.outputPath, test.answerPath].filter(Boolean)) {
-      try { await archive.text(path); } catch (error) { if (error?.name === 'AbortError') throw error; plan.unsupported.push(t('modelSelfTestIsNotUtf8Text', test.index, path)); }
+      if (!(await inspect(path)).valid) plan.unsupported.push(t('modelSelfTestIsNotUtf8Text', test.index, path));
     }
   }
   if (plan.tests.some(test => test.method === 'generated')) {

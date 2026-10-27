@@ -25,7 +25,9 @@ python3 scripts/check_release.py
 `src/package/load.js` reads the ZIP into an import plan. It never calls Polygon.
 `src/polygon/import.js` owns target checks, creation, resume callbacks, and commit.
 `src/polygon/verify.js` pins and follows a server build. Pure invocation, package,
-and descriptor checks live in `src/polygon/verification/`.
+descriptor checks, and durable checkpoint validation live in `src/polygon/verification/`.
+File synchronization owns writes; `polygon/file-metadata.js` independently checks the
+required remote namespaces and stops before a second read if the first one fails.
 `src/package/zip.js` owns archive lifetime; `zip-directory.js` parses metadata and
 `zip-contents.js` owns bounded decompression, streams, and the cache.
 `src/ui/package-analysis.js` cancels superseded analyses; `runtime/status.js` persists
@@ -157,6 +159,7 @@ node tests/benchmark_import.mjs /path/to/baseline-checkout
 node tests/benchmark_lifecycle.mjs /path/to/baseline-checkout
 node tests/benchmark_request_resources.mjs /path/to/baseline-checkout
 node tests/benchmark_preflight.mjs /path/to/baseline-checkout
+node tests/benchmark_verification_work.mjs /path/to/baseline-checkout
 POLYGON_RANDOM_CASES=3000 node tests/test_random_formats.mjs
 ```
 
@@ -194,3 +197,20 @@ large outputs fail explicitly instead of skipping the descriptor check.
 Tests model the documented API and use real XML parsing for round-trip fixtures. They
 inject failures, corrupt read-backs, missing runs, stale revisions, and lost build responses.
 They do not claim live Polygon compatibility or actual compiler execution.
+
+### Verification work and retained state
+
+A launch checkpoint keeps prior package IDs only until the new package is identified.
+Pinned checkpoints drop that history; older pinned records migrate without creating a
+new package. Malformed checkpoints fail before package queries, and a missing pinned
+build never launches a replacement automatically. Cached reports are never trusted.
+
+Verification rechecks the clean revision before downloading finished invocation details
+and the ZIP, every 12 polling rounds while waiting, and after comparing the descriptor.
+The periodic check adds a small read but stops obsolete jobs instead of wasting the
+entire poll budget. Partial and final validation remain mandatory.
+
+Package validation memoizes only validity/NUL facts per referenced path, not decoded
+content. Shared test/sample/self-test paths are decoded once within that pass even
+when archive caching is disabled or a file is too large to retain in the LRU cache.
+Asset NUL checks and per-test error contexts are preserved.

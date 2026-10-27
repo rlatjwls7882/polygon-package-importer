@@ -218,9 +218,6 @@
   "formatJudgeTestsMismatch": {
     "message": "Saved $1 self-tests do not match the ZIP."
   },
-  "formatMetadataMismatch": {
-    "message": "The saved file metadata could not be verified."
-  },
   "formatMissingMain": {
     "message": "The package must contain exactly one main solution."
   },
