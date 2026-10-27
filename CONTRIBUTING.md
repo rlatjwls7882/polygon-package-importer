@@ -78,3 +78,12 @@ File comparisons account for LF/CRLF-equivalent lengths. Tag-only solution updat
 use the API's optional `file` parameter rather than downloading and re-uploading the
 old main solution. API response parsing and backoff stay in the serialized request
 queue; network errors on mutations are still not retried automatically.
+
+Offline comparison with an older checkout:
+
+```sh
+node tests/benchmark_import.mjs /path/to/baseline-checkout
+```
+
+This reports request counts, uploaded source bytes, decompression counts, and local
+ZIP timings using synthetic data. It does not measure Polygon server response times.
