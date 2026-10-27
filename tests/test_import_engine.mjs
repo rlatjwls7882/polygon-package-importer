@@ -1,3 +1,4 @@
+import './mock-i18n.mjs';
 // Integration test of the new importer engine using a mock Polygon API.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

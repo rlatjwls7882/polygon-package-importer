@@ -9,13 +9,14 @@ output = root / 'dist' / f'polygon-zip-uploader-v{version}.zip'
 output.parent.mkdir(exist_ok=True)
 
 files = [
-    'manifest.json', 'background.js', 'popup.html', 'popup.js', 'popup.css',
+    'manifest.json', 'background.js', 'popup.html', 'popup.js', 'popup.css', 'i18n.js',
     'offscreen.html', 'offscreen.js',
-    'polygon-import.js', 'job-store.js', 'status.js',
+    'polygon-import.js', 'job-store.js',
     'api.js', 'sync.js', 'zip.js', 'model.js',
     'credential-store.js', 'credential-vault.js', 'credentials-ui.js',
     'LICENSE',
-    'icons/icon16.png', 'icons/icon48.png', 'icons/icon128.png'
+    'icons/icon16.png', 'icons/icon48.png', 'icons/icon128.png',
+    '_locales/en/messages.json', '_locales/ko/messages.json'
 ]
 
 with ZipFile(output, 'w', ZIP_DEFLATED, compresslevel=9) as archive:

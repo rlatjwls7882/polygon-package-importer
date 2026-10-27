@@ -1,8 +1,8 @@
+import { t, localizePage } from './i18n.js';
 import { ZipArchive } from './zip.js';
 import { loadPolygonPackage } from './model.js';
 import { CredentialsUI } from './credentials-ui.js';
-import { stageJob, readJob } from './job-store.js';
-import { STATUS_KEY } from './status.js';
+import { stageJob, readJob, STATUS_KEY } from './job-store.js';
 
 const $ = id => document.getElementById(id);
 const MAX_ZIP_SIZE = 100 * 1024 * 1024;
@@ -29,8 +29,8 @@ function render() {
   $('importForm').hidden = showingCredentials;
   $('settings').hidden = !authorized || showingCredentials;
   $('closeCredentials').hidden = !authorized || !showingCredentials;
-  $('credentialTitle').textContent = credentialsUI?.editing ? 'API 키 변경' :
-    authorized ? 'API 키 관리' : credentialsUI?.state === 'legacy' ? '기존 API 키 이전' : 'API 키 등록';
+  $('credentialTitle').textContent = credentialsUI?.editing ? t('popupChangeApiKeys') :
+    authorized ? t('popupManageApiKeys') : credentialsUI?.state === 'legacy' ? t('popupMigrateApiKeys') : t('popupAddApiKeys');
 
   $('problemIdField').hidden = mode() !== 'replace';
   const validId = mode() === 'create' || /^[1-9]\d{0,11}$/.test(problemId());
@@ -40,8 +40,8 @@ function render() {
   $('progressSection').hidden = !status || showingCredentials;
   if (!status) return;
 
-  const labels = {running:'진행 중', done:'완료', error:'실패'};
-  const label = labels[status.phase] || '대기 중';
+  const labels = {running:t('popupRunning'), done:t('popupDone'), error:t('popupFailed')};
+  const label = labels[status.phase] || t('popupWaiting');
   const message = status.message || '';
   $('stateLabel').textContent = message.startsWith(label) ? message :
     [label, message].filter(Boolean).join(' · ');
@@ -56,7 +56,7 @@ function render() {
 
 async function refresh() {
   const reply = await chrome.runtime.sendMessage({type:'IMPORT_QUERY'});
-  if (!reply?.ok) throw Error(reply?.error || '작업 상태를 확인할 수 없습니다.');
+  if (!reply?.ok) throw Error(reply?.error || t('popupCouldNotCheckJobStatus'));
   status = reply.status;
   savedJob = await readJob();
   render();
@@ -82,22 +82,22 @@ async function analyze() {
   validPackage = false;
   file = $('zipFile').files?.[0] || null;
   if (!file) {
-    $('packageInfo').textContent = 'ZIP 파일을 선택하세요.';
+    $('packageInfo').textContent = t('popupSelectAZipFile');
   } else if (file.size > MAX_ZIP_SIZE) {
     file = null;
-    $('packageInfo').textContent = '100MB 이하의 ZIP을 선택하세요.';
+    $('packageInfo').textContent = t('popupSelectAZipSmallerThan100Mb');
   } else {
-    $('packageInfo').textContent = '분석 중…';
+    $('packageInfo').textContent = t('popupAnalyzing');
     render();
     try {
       const archive = await ZipArchive.fromFile(file);
       const plan = await loadPolygonPackage(archive);
       if (plan.unsupported.length) throw Error(plan.unsupported.join('; '));
       $('packageInfo').textContent =
-        plan.name + ' · 테스트 ' + plan.tests.length + '개 · 솔루션 ' + plan.solutions.length + '개';
+        t('popupTestsSolutions', plan.name, plan.tests.length, plan.solutions.length);
       validPackage = true;
     } catch (error) {
-      $('packageInfo').textContent = '패키지 오류';
+      $('packageInfo').textContent = t('popupInvalidPackage');
       errorText(error?.message || error);
     }
   }
@@ -113,12 +113,12 @@ async function start(retry = false) {
     let job;
     if (retry) {
       job = await readJob();
-      if (!job || job.id !== status?.id) throw Error('재시도할 작업이 없습니다.');
+      if (!job || job.id !== status?.id) throw Error(t('popupNoJobAvailableToRetry'));
     } else {
-      if (!file || !validPackage) throw Error('먼저 ZIP을 선택하세요.');
+      if (!file || !validPackage) throw Error(t('popupSelectAZipFirst'));
       const latest = await chrome.runtime.sendMessage({type:'IMPORT_QUERY'});
-      if (!latest?.ok) throw Error(latest?.error || '작업 상태를 확인할 수 없습니다.');
-      if (latest.status?.phase === 'running') throw Error('다른 업로드가 진행 중입니다.');
+      if (!latest?.ok) throw Error(latest?.error || t('popupCouldNotCheckJobStatus'));
+      if (latest.status?.phase === 'running') throw Error(t('popupAnotherUploadIsRunning'));
       job = {
         id:crypto.randomUUID(), file, filename:file.name,
         mode:mode(), problemId:mode() === 'replace' ? problemId() : null,
@@ -128,7 +128,7 @@ async function start(retry = false) {
     }
     savedJob = job;
     const result = await chrome.runtime.sendMessage({type:'IMPORT_START', jobId:job.id});
-    if (!result?.ok) throw Error(result?.error || '업로드를 시작하지 못했습니다.');
+    if (!result?.ok) throw Error(result?.error || t('popupCouldNotStartUpload'));
   } catch (error) {
     errorText(error?.message || error);
   } finally {
@@ -139,6 +139,7 @@ async function start(retry = false) {
 }
 
 async function initialize() {
+  localizePage();
   $('settings').addEventListener('click', openCredentials);
   $('closeCredentials').addEventListener('click', closeCredentials);
   $('zipFile').addEventListener('change', analyze);
@@ -152,7 +153,7 @@ async function initialize() {
     if (reply?.ok) {
       errorText();
       await refresh();
-    } else errorText(reply?.error || '작업을 지우지 못했습니다.');
+    } else errorText(reply?.error || t('popupCouldNotClearTheJob'));
   });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local' || !changes[STATUS_KEY]) return;

@@ -1,0 +1,689 @@
+{
+  "apiApiVaultLockedBeforeTheRequestUpload": {
+    "message": "$1: 요청 전 API 보관함이 잠겨 업로드를 중단했습니다."
+  },
+  "apiApiVaultLockedRequestCancelled": {
+    "message": "$1: API 보관함이 잠겨 요청을 중단했습니다."
+  },
+  "apiKeys": {
+    "message": "API 키"
+  },
+  "apiMissingCredentials": {
+    "message": "API Key와 Secret이 필요합니다."
+  },
+  "apiNetworkErrorPolygonMayHaveProcessedThe": {
+    "message": "$1: 네트워크 실패 ($2). 서버에서 처리되었을 수 있으므로 다음 실행에서 상태를 재조회하세요."
+  },
+  "apiPolygonRateLimitReachedRepeatedlyRetryLater": {
+    "message": "$1: Polygon API 요청 제한이 반복됐습니다. 제한이 풀린 후 다시 실행하면 이미 저장한 항목은 건너뜁니다."
+  },
+  "apiRedacted": {
+    "message": "[비공개]"
+  },
+  "apiStoppedDueToRateLimits": {
+    "message": "$1: 요청 제한으로 종료되었습니다."
+  },
+  "apiUnexpectedResponseHttp": {
+    "message": "$1: 예상하지 못한 응답 (HTTP $2, $3)"
+  },
+  "backToUpload": {
+    "message": "업로드로 돌아가기"
+  },
+  "backgroundAnUploadIsAlreadyRunning": {
+    "message": "이미 업로드 중입니다."
+  },
+  "backgroundAnotherUploadIsBeingPrepared": {
+    "message": "다른 업로드를 준비 중입니다."
+  },
+  "backgroundCannotClearARunningUpload": {
+    "message": "업로드 중에는 지울 수 없습니다."
+  },
+  "backgroundFailedToStartUpload": {
+    "message": "업로드를 시작하지 못했습니다."
+  },
+  "backgroundPreparingUpload": {
+    "message": "업로드 준비 중"
+  },
+  "backgroundRegisterYourApiKeysFirst": {
+    "message": "API 키를 등록하세요."
+  },
+  "backgroundSelectedZipNotFound": {
+    "message": "선택한 ZIP을 찾지 못했습니다."
+  },
+  "backgroundUploadCouldNotStart": {
+    "message": "업로드 시작 실패"
+  },
+  "backgroundUploadInterruptedYouCanRetry": {
+    "message": "업로드가 중단됐습니다. 다시 시도할 수 있습니다."
+  },
+  "cancel": {
+    "message": "취소"
+  },
+  "changeKeys": {
+    "message": "키 변경"
+  },
+  "checkAgain": {
+    "message": "다시 확인"
+  },
+  "clear": {
+    "message": "지우기"
+  },
+  "commitAfterUpload": {
+    "message": "완료 후 커밋"
+  },
+  "credentialAccessError": {
+    "message": "인증 저장소에 접근할 수 없습니다."
+  },
+  "credentialSection": {
+    "message": "Polygon API 키"
+  },
+  "credentialStoreChromeExtensionStorageIsUnavailable": {
+    "message": "Chrome 확장 프로그램 저장소를 사용할 수 없습니다."
+  },
+  "credentialStoreCouldNotVerifyTheSavedCredentials": {
+    "message": "인증 정보 저장 결과를 확인하지 못했습니다."
+  },
+  "credentialStoreCredentialStorageIsInUseInAnother": {
+    "message": "다른 탭이 인증 저장소를 사용 중입니다. 다른 Importer 탭을 닫고 다시 시도하세요."
+  },
+  "credentialStoreDecryptionFailed": {
+    "message": "저장된 인증 정보를 복호화할 수 없습니다. 삭제 후 다시 등록하세요."
+  },
+  "credentialStoreEncryptionOrIndexeddbIsUnavailable": {
+    "message": "암호화 또는 IndexedDB API를 사용할 수 없습니다."
+  },
+  "credentialStoreFailedToOpenIndexeddb": {
+    "message": "IndexedDB 열기 실패"
+  },
+  "credentialStoreFailedToReplaceEncryptionKey": {
+    "message": "암호화 키 변경 실패"
+  },
+  "credentialStoreFailedToSaveEncryptionKey": {
+    "message": "암호화 키 저장 실패"
+  },
+  "credentialStoreIndexeddbIsUnavailable": {
+    "message": "브라우저의 IndexedDB를 사용할 수 없습니다."
+  },
+  "credentialStoreIndexeddbRequestFailed": {
+    "message": "IndexedDB 요청 실패"
+  },
+  "credentialStoreInvalidIv": {
+    "message": "잘못된 IV"
+  },
+  "credentialStorePreviousCredentialsWereNotFound": {
+    "message": "이전 인증 정보를 찾을 수 없습니다."
+  },
+  "credentialStoreStoredApiCredentialsHaveAnInvalidFormat": {
+    "message": "저장된 API 인증 데이터 형식이 올바르지 않습니다."
+  },
+  "credentialStoreStoredCredentialsAreInvalid": {
+    "message": "저장된 인증 정보가 올바르지 않습니다."
+  },
+  "credentialStoreThisBrowserProfileHasNoEncryptionKey": {
+    "message": "이 브라우저 프로필의 암호화 키가 없습니다. 인증 정보를 삭제하고 다시 등록하세요."
+  },
+  "credentialVaultApiCredentialsAreTooLong": {
+    "message": "API 인증 정보가 지나치게 깁니다."
+  },
+  "credentialVaultApiCredentialsMustBeStrings": {
+    "message": "API 인증 정보를 문자열로 입력하세요."
+  },
+  "credentialVaultEnterBothApiKeyAndSecret": {
+    "message": "API Key와 Secret을 모두 입력하세요."
+  },
+  "credentialVaultInvalidCredentialDataLength": {
+    "message": "인증 데이터 길이가 올바르지 않습니다."
+  },
+  "credentialVaultStoredVaultDataHasAnInvalidFormat": {
+    "message": "저장된 인증 데이터의 형식이 올바르지 않습니다."
+  },
+  "credentialVaultStoredVaultDataIsCorrupted": {
+    "message": "저장된 인증 데이터가 손상되었습니다."
+  },
+  "credentialVaultThisVaultFormatIsUnsupportedCheckThe": {
+    "message": "이 버전에서 읽을 수 없는 보관함입니다. 기존 값을 확인한 뒤 새로 등록하세요."
+  },
+  "credentialVaultVaultPasswordIsIncorrectOrStoredData": {
+    "message": "보관함 암호가 일치하지 않거나 저장된 데이터가 손상되었습니다."
+  },
+  "credentialVaultVaultPasswordIsInvalid": {
+    "message": "보관함 암호가 올바르지 않습니다."
+  },
+  "credentialVaultVaultPasswordMustBeAtLeast12": {
+    "message": "보관함 암호는 최소 12자 이상으로 설정하세요."
+  },
+  "credentialsUiApiKeyError": {
+    "message": "API 키 오류: $1"
+  },
+  "credentialsUiApiKeysDeleted": {
+    "message": "API 키를 삭제했습니다."
+  },
+  "credentialsUiApiKeysFromAnOlderVersionWere": {
+    "message": "이전 버전의 API 키가 있습니다."
+  },
+  "credentialsUiApiKeysSaved": {
+    "message": "API 키 등록됨"
+  },
+  "credentialsUiApiKeysSaved2": {
+    "message": "API 키를 저장했습니다."
+  },
+  "credentialsUiCheckingApiKeys": {
+    "message": "API 키 확인 중"
+  },
+  "credentialsUiDeleteSavedApiKeys": {
+    "message": "저장된 API 키를 삭제할까요?"
+  },
+  "credentialsUiNoApiKeysSaved": {
+    "message": "등록된 API 키가 없습니다."
+  },
+  "credentialsUiOpenThisPageFromTheChromeExtension": {
+    "message": "Chrome 확장 프로그램 팝업에서 열어 주세요."
+  },
+  "credentialsUiPreviousApiKeysMigrated": {
+    "message": "기존 API 키를 이전했습니다."
+  },
+  "delete": {
+    "message": "삭제"
+  },
+  "destination": {
+    "message": "대상"
+  },
+  "existingProblem": {
+    "message": "기존 문제"
+  },
+  "extensionDescription": {
+    "message": "로컬 Polygon 문제 ZIP으로 문제를 생성하거나 갱신합니다."
+  },
+  "extensionName": {
+    "message": "Polygon ZIP Uploader"
+  },
+  "getApiKeys": {
+    "message": "Polygon API 설정에서 키 발급"
+  },
+  "jobStoreCouldNotOpenJobStorage": {
+    "message": "작업 저장소를 열 수 없습니다."
+  },
+  "jobStoreFailedToSaveJob": {
+    "message": "작업 저장 실패"
+  },
+  "jobStoreJobStorageIsInUseByAnother": {
+    "message": "다른 확장 프로그램 창에서 작업 저장소를 사용하고 있습니다."
+  },
+  "jobStoreNoZipFileSelected": {
+    "message": "ZIP 파일이 선택되지 않았습니다."
+  },
+  "log": {
+    "message": "로그"
+  },
+  "migrateKeys": {
+    "message": "기존 키 이전"
+  },
+  "migrationHelp": {
+    "message": "이전 보관함 암호를 입력해 API 키를 이전하세요."
+  },
+  "modelATestReferencesAGroupNotDefined": {
+    "message": "테스트가 참조하는 그룹이 그룹 정의 목록에 없습니다."
+  },
+  "modelCannotUploadBinaryFiles": {
+    "message": "바이너리 파일은 자동 업로드 불가: $1"
+  },
+  "modelCannotUploadStatementImagesOrExtraResources": {
+    "message": "지문 이미지/추가 리소스는 자동 업로드 불가: $1"
+  },
+  "modelCannotVerifySojCheckerSelectionMetadataCheck": {
+    "message": "SOJ Checker 선택 메타데이터를 검증할 수 없습니다: $1. Checker 설정을 확인하세요."
+  },
+  "modelDeclaredTestCountDiffersOrExceeds1": {
+    "message": "테스트 개수 선언이 다르거나 1000개를 초과합니다."
+  },
+  "modelDifferentSourceFilesShareTheSameName": {
+    "message": "동일 이름의 다른 소스 충돌: $1"
+  },
+  "modelInvalidCheckerTestVerdict": {
+    "message": "Checker Test 판정값 오류"
+  },
+  "modelInvalidLanguageName": {
+    "message": "잘못된 언어명: $1"
+  },
+  "modelInvalidPolygonProblemXml": {
+    "message": "유효한 Polygon problem.xml이 아닙니다."
+  },
+  "modelInvalidResourceFilename": {
+    "message": "Polygon API에 사용할 수 없는 리소스 파일명: $1 ($2). 파일명은 영문 또는 숫자로 시작해야 합니다."
+  },
+  "modelInvalidSourceFilename": {
+    "message": "Polygon API에 사용할 수 없는 소스/솔루션/보조 파일명: $1 ($2)"
+  },
+  "modelInvalidValidatorTestVerdict": {
+    "message": "Validator Test 판정값 오류"
+  },
+  "modelMissingJudgingElementInProblemXml": {
+    "message": "problem.xml에 judging 항목이 없습니다."
+  },
+  "modelMissingResource": {
+    "message": "리소스 파일 누락: $1"
+  },
+  "modelMissingSolutionSource": {
+    "message": "솔루션 원본 누락: $1"
+  },
+  "modelMissingSourceFile": {
+    "message": "소스 코드 누락: $1"
+  },
+  "modelMissingStatementSource": {
+    "message": "$1의 statement-sections TeX 원본이 없습니다. 렌더링된 problem.tex만으로는 원본을 복원할 수 없습니다."
+  },
+  "modelMissingTestData": {
+    "message": "테스트 데이터 누락: $1"
+  },
+  "modelNoPath": {
+    "message": "(경로 없음)"
+  },
+  "modelNoRestorableStatementLanguagesWereFound": {
+    "message": "패키지에 복원 가능한 문제 지문 언어가 없습니다."
+  },
+  "modelProblemTitleInContainsANewline": {
+    "message": "$1 문제 제목에 줄바꿈이 있습니다."
+  },
+  "modelProblemXmlMustNotContainDoctypeOr": {
+    "message": "DOCTYPE/ENTITY가 포함된 problem.xml은 허용하지 않습니다."
+  },
+  "modelResourceNameConflict": {
+    "message": "리소스 $1 내용 충돌: $2와 $3가 서로 다릅니다. Polygon의 같은 이름으로 안전하게 복원할 수 없습니다."
+  },
+  "modelSelfTestIsNotUtf8Text": {
+    "message": "자체 테스트 $1: $2가 UTF-8 텍스트가 아닙니다."
+  },
+  "modelTestCannotSafelyRestoreTheGeneratorCommand": {
+    "message": "테스트 $1: 명령을 안전하게 스크립트로 복원할 수 없습니다."
+  },
+  "modelTestGeneratorSourceIsMissingFromThe": {
+    "message": "테스트 $1: 제너레이터 원본 $2이(가) 패키지 실행 파일 목록에 없습니다."
+  },
+  "modelTestGroupWithoutAName": {
+    "message": "이름이 없는 테스트 그룹이 있습니다."
+  },
+  "modelTestInvalidScore": {
+    "message": "테스트 $1: 잘못된 점수"
+  },
+  "modelTestIsNotUtf8Text": {
+    "message": "테스트 $1: $2가 UTF-8 텍스트가 아닙니다."
+  },
+  "modelTestPathPatternIsMissing": {
+    "message": "테스트 경로 패턴이 없습니다."
+  },
+  "modelTestUnsupportedGeneratorCommand": {
+    "message": "테스트 $1: 지원하지 않는 생성 명령 $2"
+  },
+  "modelUnknownSolutionTag": {
+    "message": "알 수 없는 솔루션 태그: $1"
+  },
+  "modelUnsupportedTestMethodTest": {
+    "message": "지원하지 않는 테스트 방식: $1 ($2번)"
+  },
+  "modelUnsupportedTestPathPattern": {
+    "message": "지원하지 않는 테스트 경로 패턴: $1"
+  },
+  "modelUnsupportedTestsets": {
+    "message": "현재는 기본 testset인 tests 한 개만 지원합니다. (Polygon API에 testset 생성 기능이 없음)"
+  },
+  "modelUnsupportedTimeMemoryLimitsMsMb": {
+    "message": "API에 맞지 않는 시간/메모리 제한: $1ms / $2MB"
+  },
+  "newProblem": {
+    "message": "새 문제"
+  },
+  "offscreenAnotherUploadIsAlreadyRunning": {
+    "message": "이미 다른 업로드가 실행 중입니다."
+  },
+  "offscreenCouldNotUpdateJobStatus": {
+    "message": "작업 상태를 업데이트하지 못했습니다."
+  },
+  "offscreenDoneProblemChangesSkipped": {
+    "message": "완료 · 문제 #$1 · 변경 $2개 · 생략 $3개"
+  },
+  "offscreenRateLimitedRetryInS": {
+    "message": "$1: 요청 제한 · $2초 후 재시도"
+  },
+  "offscreenSavedZipNotFoundSelectItAgain": {
+    "message": "보관된 ZIP을 찾지 못했습니다. 다시 선택하세요."
+  },
+  "packageZip": {
+    "message": "Polygon 패키지 ZIP"
+  },
+  "polygonImportAnalyzingZip": {
+    "message": "ZIP 분석 중"
+  },
+  "polygonImportCannotAccessProblem": {
+    "message": "문제 #$1에 접근할 수 없습니다."
+  },
+  "polygonImportChangesSkipped": {
+    "message": "변경 $1개 · 건너뜀 $2개"
+  },
+  "polygonImportCheckingProblemRevision": {
+    "message": "문제 리비전 확인"
+  },
+  "polygonImportCommittingChanges": {
+    "message": "변경 사항 커밋"
+  },
+  "polygonImportCouldNotReadAllExistingProblemData": {
+    "message": "기존 문제의 지문 첨부 리소스를 포함한 정보를 완전히 읽지 못했습니다."
+  },
+  "polygonImportCouldNotVerifyCommitResult": {
+    "message": "커밋 결과를 확인할 수 없습니다."
+  },
+  "polygonImportCreatingNewPolygonProblem": {
+    "message": "새 Polygon 문제 생성"
+  },
+  "polygonImportEnterAValidPolygonProblemId": {
+    "message": "올바른 Polygon 문제 ID를 입력하세요."
+  },
+  "polygonImportInvalidImportJob": {
+    "message": "가져오기 작업 정보가 올바르지 않습니다."
+  },
+  "polygonImportInvalidResponseFromPolygonProblemList": {
+    "message": "Polygon 문제 목록의 응답 형식이 올바르지 않습니다."
+  },
+  "polygonImportNewProblemResponseDidNotContainA": {
+    "message": "새 문제 생성 응답에 올바른 문제 ID가 없습니다."
+  },
+  "polygonImportNoWriteAccessToProblem": {
+    "message": "문제 #$1에 쓰기 권한이 없습니다."
+  },
+  "polygonImportProblemComplete": {
+    "message": "문제 #$1 완료 ($2)"
+  },
+  "polygonImportReadingProblem": {
+    "message": "문제 #$1 조회"
+  },
+  "polygonImportStressTestsPresent": {
+    "message": "기존 문제에 Stress 테스트가 있어 덮어쓰기를 중단했습니다."
+  },
+  "polygonImportTargetChanged": {
+    "message": "작업 중 대상 문제의 권한 또는 리비전이 변경되었습니다. 다시 실행하세요."
+  },
+  "polygonImportUnsupportedPackage": {
+    "message": "지원하지 않는 패키지: $1"
+  },
+  "popupAddApiKeys": {
+    "message": "API 키 등록"
+  },
+  "popupAnalyzing": {
+    "message": "분석 중…"
+  },
+  "popupAnotherUploadIsRunning": {
+    "message": "다른 업로드가 진행 중입니다."
+  },
+  "popupChangeApiKeys": {
+    "message": "API 키 변경"
+  },
+  "popupCouldNotCheckJobStatus": {
+    "message": "작업 상태를 확인할 수 없습니다."
+  },
+  "popupCouldNotClearTheJob": {
+    "message": "작업을 지우지 못했습니다."
+  },
+  "popupCouldNotStartUpload": {
+    "message": "업로드를 시작하지 못했습니다."
+  },
+  "popupDone": {
+    "message": "완료"
+  },
+  "popupFailed": {
+    "message": "실패"
+  },
+  "popupInvalidPackage": {
+    "message": "패키지 오류"
+  },
+  "popupManageApiKeys": {
+    "message": "API 키 관리"
+  },
+  "popupMigrateApiKeys": {
+    "message": "기존 API 키 이전"
+  },
+  "popupNoJobAvailableToRetry": {
+    "message": "재시도할 작업이 없습니다."
+  },
+  "popupRunning": {
+    "message": "진행 중"
+  },
+  "popupSelectAZipFile": {
+    "message": "ZIP 파일을 선택하세요."
+  },
+  "popupSelectAZipFirst": {
+    "message": "먼저 ZIP을 선택하세요."
+  },
+  "popupSelectAZipSmallerThan100Mb": {
+    "message": "100MB 이하의 ZIP을 선택하세요."
+  },
+  "popupTestsSolutions": {
+    "message": "$1 · 테스트 $2개 · 솔루션 $3개"
+  },
+  "popupWaiting": {
+    "message": "대기 중"
+  },
+  "privacyPolicy": {
+    "message": "개인정보 처리방침"
+  },
+  "problemId": {
+    "message": "Polygon 문제 ID"
+  },
+  "recentJob": {
+    "message": "최근 작업"
+  },
+  "replaceWarning": {
+    "message": "ZIP에 없는 파일이나 테스트는 삭제될 수 있습니다."
+  },
+  "retry": {
+    "message": "다시 시도"
+  },
+  "save": {
+    "message": "저장"
+  },
+  "syncAllTestsUnchanged": {
+    "message": "동일한 테스트 전체"
+  },
+  "syncCannotReadPreviousMainSolutionBeforeChanging": {
+    "message": "기존 메인 솔루션 내용을 읽지 못해 태그 변경을 중단했습니다: $1"
+  },
+  "syncCheckingGeneratedTestList": {
+    "message": "생성 테스트 목록 검증"
+  },
+  "syncCheckingPreviousMainSolution": {
+    "message": "기존 메인 솔루션 내용 확인: $1"
+  },
+  "syncCheckingTestsAfterDeletion": {
+    "message": "테스트 삭제 후 현재 상태 확인"
+  },
+  "syncComparing": {
+    "message": "$1 비교: $2"
+  },
+  "syncComparingChecker": {
+    "message": "Checker 비교"
+  },
+  "syncComparingInteractor": {
+    "message": "Interactor 비교"
+  },
+  "syncComparingPreviousTestGeneratorScript": {
+    "message": "기존 테스트 생성 스크립트 비교"
+  },
+  "syncComparingSolution": {
+    "message": "솔루션 비교: $1"
+  },
+  "syncComparingTags": {
+    "message": "태그 비교"
+  },
+  "syncComparingTestGroupPolicy": {
+    "message": "테스트 그룹 정책 비교"
+  },
+  "syncComparingTimeAndMemoryLimits": {
+    "message": "시간·메모리 설정 비교"
+  },
+  "syncComparingValidator": {
+    "message": "Validator 비교"
+  },
+  "syncConfiguringTestGroup": {
+    "message": "테스트 그룹 설정: $1"
+  },
+  "syncConfiguringTestPoints": {
+    "message": "테스트 점수 설정"
+  },
+  "syncDeletingOldFile": {
+    "message": "기존 $1 파일 삭제: $2"
+  },
+  "syncDeletingOldStatementAttachment": {
+    "message": "기존 지문 첨부 파일 삭제: $1"
+  },
+  "syncDeletingPreviousSolution": {
+    "message": "기존 솔루션 삭제: $1"
+  },
+  "syncDeletingStatement": {
+    "message": "기존 지문 삭제: $1"
+  },
+  "syncDeletingUnnecessaryTests": {
+    "message": "불필요한 기존 테스트 일괄 삭제: $1개"
+  },
+  "syncDisablingUnusedTestGroups": {
+    "message": "사용하지 않는 테스트 그룹 비활성화"
+  },
+  "syncEnablingTestGroups": {
+    "message": "테스트 그룹 활성화"
+  },
+  "syncGeneratedTestMetadata": {
+    "message": "생성 테스트 메타데이터 $1"
+  },
+  "syncGeneratedTestScript": {
+    "message": "생성 테스트 스크립트"
+  },
+  "syncInvalidResponseWhenReloadingTests": {
+    "message": "테스트 재조회 결과가 올바르지 않습니다."
+  },
+  "syncManualTest": {
+    "message": "수동 테스트 $1/$2"
+  },
+  "syncOverwriteStoppedCouldNotReadExistingStatement": {
+    "message": "기존 지문 첨부 리소스 목록을 조회하지 못해 덮어쓰기를 중단했습니다."
+  },
+  "syncReplacingPreviousGeneratorScript": {
+    "message": "기존 생성 스크립트 교체"
+  },
+  "syncSaving": {
+    "message": "$1 저장: $2"
+  },
+  "syncSavingSolution": {
+    "message": "솔루션 저장: $1"
+  },
+  "syncSavingStatement": {
+    "message": "지문 저장: $1"
+  },
+  "syncSavingTags": {
+    "message": "태그 설정"
+  },
+  "syncSelecting": {
+    "message": "$1 선택"
+  },
+  "syncSelfTest": {
+    "message": "$1 자체 테스트: $2"
+  },
+  "syncSolution": {
+    "message": "솔루션: $1"
+  },
+  "syncStatement": {
+    "message": "지문: $1"
+  },
+  "syncTags": {
+    "message": "태그"
+  },
+  "syncTestCountNumberingOrGenerationModeDiffers": {
+    "message": "업로드 후 테스트 개수·번호·생성 방식이 ZIP과 다릅니다."
+  },
+  "syncTestGroup": {
+    "message": "테스트 그룹: $1"
+  },
+  "syncTimeMemoryAndIOSettings": {
+    "message": "시간·메모리·입출력 설정"
+  },
+  "syncUpdatingPreviousMainSolutionTag": {
+    "message": "기존 메인 솔루션 태그 변경: $1"
+  },
+  "syncUploadingGeneratedTestScript": {
+    "message": "생성 테스트 스크립트 업로드"
+  },
+  "syncVerifyingChangedTestNumbering": {
+    "message": "변경된 테스트 번호 검증"
+  },
+  "syncZipContainsMultipleMainSolutions": {
+    "message": "ZIP에 메인 솔루션이 여러 개 있습니다."
+  },
+  "syncZipContainsSolutionsWithDuplicateNames": {
+    "message": "ZIP에 이름이 중복된 솔루션이 있습니다."
+  },
+  "upload": {
+    "message": "Polygon에 업로드"
+  },
+  "uploadSection": {
+    "message": "패키지 업로드"
+  },
+  "vaultPassword": {
+    "message": "보관함 암호"
+  },
+  "zipCrc32CheckFailed": {
+    "message": "CRC32 검증 실패: $1"
+  },
+  "zipDecompressedSizeMismatch": {
+    "message": "압축 해제 길이 오류: $1"
+  },
+  "zipDuplicateZipPath": {
+    "message": "중복 ZIP 경로: $1"
+  },
+  "zipEncryptedOrUnsupportedZipCompressionMethod": {
+    "message": "암호화 또는 미지원 압축 방식입니다."
+  },
+  "zipInvalidPackagePath": {
+    "message": "올바르지 않은 패키지 경로: $1"
+  },
+  "zipInvalidZipLocalHeader": {
+    "message": "ZIP 로컬 헤더 오류: $1"
+  },
+  "zipMissingFileInPackage": {
+    "message": "패키지 내부 파일 누락: $1"
+  },
+  "zipSplitZipArchivesAreUnsupported": {
+    "message": "분할 ZIP은 지원하지 않습니다."
+  },
+  "zipSuspiciousDecompressedSize": {
+    "message": "압축 해제 크기가 비정상적입니다: $1"
+  },
+  "zipTotalDecompressedSizeExceeds512Mb": {
+    "message": "압축 해제 총량이 512MB를 초과합니다."
+  },
+  "zipUnsafeZipPath": {
+    "message": "위험한 ZIP 경로: $1"
+  },
+  "zipZip64ArchivesAreUnsupported": {
+    "message": "ZIP64 형식은 지원하지 않습니다."
+  },
+  "zipZipCentralDirectoryIsCorrupted": {
+    "message": "ZIP 중앙 디렉터리가 손상되었습니다."
+  },
+  "zipZipCentralDirectoryNotFound": {
+    "message": "올바른 ZIP 중앙 디렉터리를 찾지 못했습니다."
+  },
+  "zipZipDataIsOutOfBounds": {
+    "message": "압축 데이터 범위 오류: $1"
+  },
+  "zipZipEntryListIsCorrupted": {
+    "message": "ZIP 파일 목록이 손상되었습니다."
+  },
+  "zipZipEntryListIsOutOfBounds": {
+    "message": "ZIP 파일 목록 범위 오류"
+  },
+  "zipZipExceedsThe768MbSizeLimit": {
+    "message": "ZIP 최대 크기는 768MB입니다."
+  },
+  "zipZipHasMoreThanEntries": {
+    "message": "파일 수 제한 $1개 초과"
+  },
+  "zipZipMustContainExactlyOneProblemXml": {
+    "message": "ZIP에는 단일 문제의 problem.xml이 정확히 한 개 있어야 합니다. 대회 ZIP은 지원하지 않습니다."
+  }
+}

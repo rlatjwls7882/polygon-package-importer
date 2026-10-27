@@ -1,9 +1,9 @@
+import './mock-i18n.mjs';
 // Exercise popup -> service worker -> offscreen -> status without network access.
 import assert from 'node:assert/strict';
 import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
-import { stageJob, readJob } from '../job-store.js';
+import { stageJob, readJob, STATUS_KEY } from '../job-store.js';
 import { saveCredentials } from '../credential-store.js';
-import { STATUS_KEY } from '../status.js';
 
 globalThis.indexedDB=createFakeIndexedDB();
 const mock=createFakeChromeStorage();

@@ -1,0 +1,689 @@
+{
+  "apiApiVaultLockedBeforeTheRequestUpload": {
+    "message": "$1: API vault locked before the request. Upload stopped."
+  },
+  "apiApiVaultLockedRequestCancelled": {
+    "message": "$1: API vault locked. Request cancelled."
+  },
+  "apiKeys": {
+    "message": "API keys"
+  },
+  "apiMissingCredentials": {
+    "message": "API Key and Secret are required."
+  },
+  "apiNetworkErrorPolygonMayHaveProcessedThe": {
+    "message": "$1: Network error ($2). Polygon may have processed the request; check the current state before retrying."
+  },
+  "apiPolygonRateLimitReachedRepeatedlyRetryLater": {
+    "message": "$1: Polygon rate limit reached repeatedly. Retry later; already saved items will be skipped."
+  },
+  "apiRedacted": {
+    "message": "[redacted]"
+  },
+  "apiStoppedDueToRateLimits": {
+    "message": "$1: Stopped due to rate limits."
+  },
+  "apiUnexpectedResponseHttp": {
+    "message": "$1: Unexpected response (HTTP $2, $3)"
+  },
+  "backToUpload": {
+    "message": "Back to upload"
+  },
+  "backgroundAnUploadIsAlreadyRunning": {
+    "message": "An upload is already running."
+  },
+  "backgroundAnotherUploadIsBeingPrepared": {
+    "message": "Another upload is being prepared."
+  },
+  "backgroundCannotClearARunningUpload": {
+    "message": "Cannot clear a running upload."
+  },
+  "backgroundFailedToStartUpload": {
+    "message": "Failed to start upload."
+  },
+  "backgroundPreparingUpload": {
+    "message": "Preparing upload"
+  },
+  "backgroundRegisterYourApiKeysFirst": {
+    "message": "Register your API keys first."
+  },
+  "backgroundSelectedZipNotFound": {
+    "message": "Selected ZIP not found."
+  },
+  "backgroundUploadCouldNotStart": {
+    "message": "Upload could not start."
+  },
+  "backgroundUploadInterruptedYouCanRetry": {
+    "message": "Upload interrupted. You can retry."
+  },
+  "cancel": {
+    "message": "Cancel"
+  },
+  "changeKeys": {
+    "message": "Change keys"
+  },
+  "checkAgain": {
+    "message": "Try again"
+  },
+  "clear": {
+    "message": "Clear"
+  },
+  "commitAfterUpload": {
+    "message": "Commit after upload"
+  },
+  "credentialAccessError": {
+    "message": "Cannot access credential storage."
+  },
+  "credentialSection": {
+    "message": "Polygon API keys"
+  },
+  "credentialStoreChromeExtensionStorageIsUnavailable": {
+    "message": "Chrome extension storage is unavailable."
+  },
+  "credentialStoreCouldNotVerifyTheSavedCredentials": {
+    "message": "Could not verify the saved credentials."
+  },
+  "credentialStoreCredentialStorageIsInUseInAnother": {
+    "message": "Credential storage is in use in another tab. Close other extension windows and try again."
+  },
+  "credentialStoreDecryptionFailed": {
+    "message": "Could not decrypt stored credentials. Delete and register them again."
+  },
+  "credentialStoreEncryptionOrIndexeddbIsUnavailable": {
+    "message": "Encryption or IndexedDB is unavailable."
+  },
+  "credentialStoreFailedToOpenIndexeddb": {
+    "message": "Failed to open IndexedDB."
+  },
+  "credentialStoreFailedToReplaceEncryptionKey": {
+    "message": "Failed to replace encryption key."
+  },
+  "credentialStoreFailedToSaveEncryptionKey": {
+    "message": "Failed to save encryption key."
+  },
+  "credentialStoreIndexeddbIsUnavailable": {
+    "message": "IndexedDB is unavailable."
+  },
+  "credentialStoreIndexeddbRequestFailed": {
+    "message": "IndexedDB request failed."
+  },
+  "credentialStoreInvalidIv": {
+    "message": "Invalid IV."
+  },
+  "credentialStorePreviousCredentialsWereNotFound": {
+    "message": "Previous credentials were not found."
+  },
+  "credentialStoreStoredApiCredentialsHaveAnInvalidFormat": {
+    "message": "Stored API credentials have an invalid format."
+  },
+  "credentialStoreStoredCredentialsAreInvalid": {
+    "message": "Stored credentials are invalid."
+  },
+  "credentialStoreThisBrowserProfileHasNoEncryptionKey": {
+    "message": "This browser profile has no encryption key. Delete and register your API credentials again."
+  },
+  "credentialVaultApiCredentialsAreTooLong": {
+    "message": "API credentials are too long."
+  },
+  "credentialVaultApiCredentialsMustBeStrings": {
+    "message": "API credentials must be strings."
+  },
+  "credentialVaultEnterBothApiKeyAndSecret": {
+    "message": "Enter both API Key and Secret."
+  },
+  "credentialVaultInvalidCredentialDataLength": {
+    "message": "Invalid credential data length."
+  },
+  "credentialVaultStoredVaultDataHasAnInvalidFormat": {
+    "message": "Stored vault data has an invalid format."
+  },
+  "credentialVaultStoredVaultDataIsCorrupted": {
+    "message": "Stored vault data is corrupted."
+  },
+  "credentialVaultThisVaultFormatIsUnsupportedCheckThe": {
+    "message": "This vault format is unsupported. Check the old credentials, then register new ones."
+  },
+  "credentialVaultVaultPasswordIsIncorrectOrStoredData": {
+    "message": "Vault password is incorrect, or stored data is corrupted."
+  },
+  "credentialVaultVaultPasswordIsInvalid": {
+    "message": "Vault password is invalid."
+  },
+  "credentialVaultVaultPasswordMustBeAtLeast12": {
+    "message": "Vault password must be at least 12 characters."
+  },
+  "credentialsUiApiKeyError": {
+    "message": "API key error: $1"
+  },
+  "credentialsUiApiKeysDeleted": {
+    "message": "API keys deleted."
+  },
+  "credentialsUiApiKeysFromAnOlderVersionWere": {
+    "message": "API keys from an older version were found."
+  },
+  "credentialsUiApiKeysSaved": {
+    "message": "API keys saved"
+  },
+  "credentialsUiApiKeysSaved2": {
+    "message": "API keys saved."
+  },
+  "credentialsUiCheckingApiKeys": {
+    "message": "Checking API keys"
+  },
+  "credentialsUiDeleteSavedApiKeys": {
+    "message": "Delete saved API keys?"
+  },
+  "credentialsUiNoApiKeysSaved": {
+    "message": "No API keys saved."
+  },
+  "credentialsUiOpenThisPageFromTheChromeExtension": {
+    "message": "Open this page from the Chrome extension popup."
+  },
+  "credentialsUiPreviousApiKeysMigrated": {
+    "message": "Previous API keys migrated."
+  },
+  "delete": {
+    "message": "Delete"
+  },
+  "destination": {
+    "message": "Destination"
+  },
+  "existingProblem": {
+    "message": "Existing problem"
+  },
+  "extensionDescription": {
+    "message": "Upload local Polygon package ZIPs to create or update problems."
+  },
+  "extensionName": {
+    "message": "Polygon ZIP Uploader"
+  },
+  "getApiKeys": {
+    "message": "Get API keys from Polygon"
+  },
+  "jobStoreCouldNotOpenJobStorage": {
+    "message": "Could not open job storage."
+  },
+  "jobStoreFailedToSaveJob": {
+    "message": "Failed to save job."
+  },
+  "jobStoreJobStorageIsInUseByAnother": {
+    "message": "Job storage is in use by another extension window."
+  },
+  "jobStoreNoZipFileSelected": {
+    "message": "No ZIP file selected."
+  },
+  "log": {
+    "message": "Log"
+  },
+  "migrateKeys": {
+    "message": "Migrate keys"
+  },
+  "migrationHelp": {
+    "message": "Enter your old vault password to migrate your keys."
+  },
+  "modelATestReferencesAGroupNotDefined": {
+    "message": "A test references a group not defined in the package."
+  },
+  "modelCannotUploadBinaryFiles": {
+    "message": "Cannot upload binary files: $1"
+  },
+  "modelCannotUploadStatementImagesOrExtraResources": {
+    "message": "Cannot upload statement images or extra resources: $1"
+  },
+  "modelCannotVerifySojCheckerSelectionMetadataCheck": {
+    "message": "Cannot verify SOJ checker selection metadata: $1. Check the checker setting."
+  },
+  "modelDeclaredTestCountDiffersOrExceeds1": {
+    "message": "Declared test count differs or exceeds 1,000."
+  },
+  "modelDifferentSourceFilesShareTheSameName": {
+    "message": "Different source files share the same name: $1"
+  },
+  "modelInvalidCheckerTestVerdict": {
+    "message": "Invalid checker test verdict."
+  },
+  "modelInvalidLanguageName": {
+    "message": "Invalid language name: $1"
+  },
+  "modelInvalidPolygonProblemXml": {
+    "message": "Invalid Polygon problem.xml."
+  },
+  "modelInvalidResourceFilename": {
+    "message": "Invalid Polygon resource filename: $1 ($2). Filenames must begin with a letter or digit."
+  },
+  "modelInvalidSourceFilename": {
+    "message": "Invalid Polygon source/solution/auxiliary filename: $1 ($2)"
+  },
+  "modelInvalidValidatorTestVerdict": {
+    "message": "Invalid validator test verdict."
+  },
+  "modelMissingJudgingElementInProblemXml": {
+    "message": "Missing judging element in problem.xml."
+  },
+  "modelMissingResource": {
+    "message": "Missing resource: $1"
+  },
+  "modelMissingSolutionSource": {
+    "message": "Missing solution source: $1"
+  },
+  "modelMissingSourceFile": {
+    "message": "Missing source file: $1"
+  },
+  "modelMissingStatementSource": {
+    "message": "Missing statement-sections TeX source for $1. Rendered problem.tex cannot restore the original."
+  },
+  "modelMissingTestData": {
+    "message": "Missing test data: $1"
+  },
+  "modelNoPath": {
+    "message": "(no path)"
+  },
+  "modelNoRestorableStatementLanguagesWereFound": {
+    "message": "No restorable statement languages were found."
+  },
+  "modelProblemTitleInContainsANewline": {
+    "message": "Problem title in $1 contains a newline."
+  },
+  "modelProblemXmlMustNotContainDoctypeOr": {
+    "message": "problem.xml must not contain DOCTYPE or ENTITY declarations."
+  },
+  "modelResourceNameConflict": {
+    "message": "Resource name conflict $1: $2 differs from $3. Cannot safely restore both under one Polygon filename."
+  },
+  "modelSelfTestIsNotUtf8Text": {
+    "message": "Self-test $1: $2 is not UTF-8 text."
+  },
+  "modelTestCannotSafelyRestoreTheGeneratorCommand": {
+    "message": "Test $1: Cannot safely restore the generator command as a script."
+  },
+  "modelTestGeneratorSourceIsMissingFromThe": {
+    "message": "Test $1: Generator source $2 is missing from the executable list."
+  },
+  "modelTestGroupWithoutAName": {
+    "message": "Test group without a name."
+  },
+  "modelTestInvalidScore": {
+    "message": "Test $1: Invalid score."
+  },
+  "modelTestIsNotUtf8Text": {
+    "message": "Test $1: $2 is not UTF-8 text."
+  },
+  "modelTestPathPatternIsMissing": {
+    "message": "Test path pattern is missing."
+  },
+  "modelTestUnsupportedGeneratorCommand": {
+    "message": "Test $1: Unsupported generator command $2"
+  },
+  "modelUnknownSolutionTag": {
+    "message": "Unknown solution tag: $1"
+  },
+  "modelUnsupportedTestMethodTest": {
+    "message": "Unsupported test method: $1 (test $2)"
+  },
+  "modelUnsupportedTestPathPattern": {
+    "message": "Unsupported test path pattern: $1"
+  },
+  "modelUnsupportedTestsets": {
+    "message": "Only the default tests testset is supported (Polygon API cannot create testsets)."
+  },
+  "modelUnsupportedTimeMemoryLimitsMsMb": {
+    "message": "Unsupported time/memory limits: $1 ms / $2 MB"
+  },
+  "newProblem": {
+    "message": "New problem"
+  },
+  "offscreenAnotherUploadIsAlreadyRunning": {
+    "message": "Another upload is already running."
+  },
+  "offscreenCouldNotUpdateJobStatus": {
+    "message": "Could not update job status."
+  },
+  "offscreenDoneProblemChangesSkipped": {
+    "message": "Done · problem #$1 · $2 changes · $3 skipped"
+  },
+  "offscreenRateLimitedRetryInS": {
+    "message": "$1: Rate limited · retry in $2 s"
+  },
+  "offscreenSavedZipNotFoundSelectItAgain": {
+    "message": "Saved ZIP not found. Select it again."
+  },
+  "packageZip": {
+    "message": "Polygon package ZIP"
+  },
+  "polygonImportAnalyzingZip": {
+    "message": "Analyzing ZIP"
+  },
+  "polygonImportCannotAccessProblem": {
+    "message": "Cannot access problem #$1."
+  },
+  "polygonImportChangesSkipped": {
+    "message": "$1 changes · $2 skipped"
+  },
+  "polygonImportCheckingProblemRevision": {
+    "message": "Checking problem revision"
+  },
+  "polygonImportCommittingChanges": {
+    "message": "Committing changes"
+  },
+  "polygonImportCouldNotReadAllExistingProblemData": {
+    "message": "Could not read all existing problem data, including statement attachments."
+  },
+  "polygonImportCouldNotVerifyCommitResult": {
+    "message": "Could not verify commit result."
+  },
+  "polygonImportCreatingNewPolygonProblem": {
+    "message": "Creating new Polygon problem"
+  },
+  "polygonImportEnterAValidPolygonProblemId": {
+    "message": "Enter a valid Polygon problem ID."
+  },
+  "polygonImportInvalidImportJob": {
+    "message": "Invalid import job."
+  },
+  "polygonImportInvalidResponseFromPolygonProblemList": {
+    "message": "Invalid response from Polygon problem list."
+  },
+  "polygonImportNewProblemResponseDidNotContainA": {
+    "message": "New problem response did not contain a valid problem ID."
+  },
+  "polygonImportNoWriteAccessToProblem": {
+    "message": "No write access to problem #$1."
+  },
+  "polygonImportProblemComplete": {
+    "message": "Problem #$1 complete ($2)"
+  },
+  "polygonImportReadingProblem": {
+    "message": "Reading problem #$1"
+  },
+  "polygonImportStressTestsPresent": {
+    "message": "Overwrite stopped: the existing problem contains stress tests."
+  },
+  "polygonImportTargetChanged": {
+    "message": "Target permissions or revision changed during the job. Run it again."
+  },
+  "polygonImportUnsupportedPackage": {
+    "message": "Unsupported package: $1"
+  },
+  "popupAddApiKeys": {
+    "message": "Add API keys"
+  },
+  "popupAnalyzing": {
+    "message": "Analyzing…"
+  },
+  "popupAnotherUploadIsRunning": {
+    "message": "Another upload is running."
+  },
+  "popupChangeApiKeys": {
+    "message": "Change API keys"
+  },
+  "popupCouldNotCheckJobStatus": {
+    "message": "Could not check job status."
+  },
+  "popupCouldNotClearTheJob": {
+    "message": "Could not clear the job."
+  },
+  "popupCouldNotStartUpload": {
+    "message": "Could not start upload."
+  },
+  "popupDone": {
+    "message": "Done"
+  },
+  "popupFailed": {
+    "message": "Failed"
+  },
+  "popupInvalidPackage": {
+    "message": "Invalid package"
+  },
+  "popupManageApiKeys": {
+    "message": "Manage API keys"
+  },
+  "popupMigrateApiKeys": {
+    "message": "Migrate API keys"
+  },
+  "popupNoJobAvailableToRetry": {
+    "message": "No job available to retry."
+  },
+  "popupRunning": {
+    "message": "Running"
+  },
+  "popupSelectAZipFile": {
+    "message": "Select a ZIP file."
+  },
+  "popupSelectAZipFirst": {
+    "message": "Select a ZIP first."
+  },
+  "popupSelectAZipSmallerThan100Mb": {
+    "message": "Select a ZIP smaller than 100 MB."
+  },
+  "popupTestsSolutions": {
+    "message": "$1 · $2 tests · $3 solutions"
+  },
+  "popupWaiting": {
+    "message": "Waiting"
+  },
+  "privacyPolicy": {
+    "message": "Privacy policy"
+  },
+  "problemId": {
+    "message": "Polygon problem ID"
+  },
+  "recentJob": {
+    "message": "Recent job"
+  },
+  "replaceWarning": {
+    "message": "Files and tests absent from the ZIP may be deleted."
+  },
+  "retry": {
+    "message": "Retry"
+  },
+  "save": {
+    "message": "Save"
+  },
+  "syncAllTestsUnchanged": {
+    "message": "All tests unchanged"
+  },
+  "syncCannotReadPreviousMainSolutionBeforeChanging": {
+    "message": "Cannot read previous main solution before changing its tag: $1"
+  },
+  "syncCheckingGeneratedTestList": {
+    "message": "Checking generated test list"
+  },
+  "syncCheckingPreviousMainSolution": {
+    "message": "Checking previous main solution: $1"
+  },
+  "syncCheckingTestsAfterDeletion": {
+    "message": "Checking tests after deletion"
+  },
+  "syncComparing": {
+    "message": "Comparing $1: $2"
+  },
+  "syncComparingChecker": {
+    "message": "Comparing checker"
+  },
+  "syncComparingInteractor": {
+    "message": "Comparing interactor"
+  },
+  "syncComparingPreviousTestGeneratorScript": {
+    "message": "Comparing previous test generator script"
+  },
+  "syncComparingSolution": {
+    "message": "Comparing solution: $1"
+  },
+  "syncComparingTags": {
+    "message": "Comparing tags"
+  },
+  "syncComparingTestGroupPolicy": {
+    "message": "Comparing test group policy"
+  },
+  "syncComparingTimeAndMemoryLimits": {
+    "message": "Comparing time and memory limits"
+  },
+  "syncComparingValidator": {
+    "message": "Comparing validator"
+  },
+  "syncConfiguringTestGroup": {
+    "message": "Configuring test group: $1"
+  },
+  "syncConfiguringTestPoints": {
+    "message": "Configuring test points"
+  },
+  "syncDeletingOldFile": {
+    "message": "Deleting old $1 file: $2"
+  },
+  "syncDeletingOldStatementAttachment": {
+    "message": "Deleting old statement attachment: $1"
+  },
+  "syncDeletingPreviousSolution": {
+    "message": "Deleting previous solution: $1"
+  },
+  "syncDeletingStatement": {
+    "message": "Deleting statement: $1"
+  },
+  "syncDeletingUnnecessaryTests": {
+    "message": "Deleting $1 unnecessary tests"
+  },
+  "syncDisablingUnusedTestGroups": {
+    "message": "Disabling unused test groups"
+  },
+  "syncEnablingTestGroups": {
+    "message": "Enabling test groups"
+  },
+  "syncGeneratedTestMetadata": {
+    "message": "Generated test metadata $1"
+  },
+  "syncGeneratedTestScript": {
+    "message": "Generated test script"
+  },
+  "syncInvalidResponseWhenReloadingTests": {
+    "message": "Invalid response when reloading tests."
+  },
+  "syncManualTest": {
+    "message": "Manual test $1/$2"
+  },
+  "syncOverwriteStoppedCouldNotReadExistingStatement": {
+    "message": "Overwrite stopped: could not read existing statement attachment resources."
+  },
+  "syncReplacingPreviousGeneratorScript": {
+    "message": "Replacing previous generator script"
+  },
+  "syncSaving": {
+    "message": "Saving $1: $2"
+  },
+  "syncSavingSolution": {
+    "message": "Saving solution: $1"
+  },
+  "syncSavingStatement": {
+    "message": "Saving statement: $1"
+  },
+  "syncSavingTags": {
+    "message": "Saving tags"
+  },
+  "syncSelecting": {
+    "message": "Selecting $1"
+  },
+  "syncSelfTest": {
+    "message": "$1 self-test: $2"
+  },
+  "syncSolution": {
+    "message": "Solution: $1"
+  },
+  "syncStatement": {
+    "message": "Statement: $1"
+  },
+  "syncTags": {
+    "message": "Tags"
+  },
+  "syncTestCountNumberingOrGenerationModeDiffers": {
+    "message": "Test count, numbering, or generation mode differs from the ZIP after upload."
+  },
+  "syncTestGroup": {
+    "message": "Test group: $1"
+  },
+  "syncTimeMemoryAndIOSettings": {
+    "message": "Time, memory, and I/O settings"
+  },
+  "syncUpdatingPreviousMainSolutionTag": {
+    "message": "Updating previous main solution tag: $1"
+  },
+  "syncUploadingGeneratedTestScript": {
+    "message": "Uploading generated test script"
+  },
+  "syncVerifyingChangedTestNumbering": {
+    "message": "Verifying changed test numbering"
+  },
+  "syncZipContainsMultipleMainSolutions": {
+    "message": "ZIP contains multiple main solutions."
+  },
+  "syncZipContainsSolutionsWithDuplicateNames": {
+    "message": "ZIP contains solutions with duplicate names."
+  },
+  "upload": {
+    "message": "Upload to Polygon"
+  },
+  "uploadSection": {
+    "message": "Upload package"
+  },
+  "vaultPassword": {
+    "message": "Vault password"
+  },
+  "zipCrc32CheckFailed": {
+    "message": "CRC32 check failed: $1"
+  },
+  "zipDecompressedSizeMismatch": {
+    "message": "Decompressed size mismatch: $1"
+  },
+  "zipDuplicateZipPath": {
+    "message": "Duplicate ZIP path: $1"
+  },
+  "zipEncryptedOrUnsupportedZipCompressionMethod": {
+    "message": "Encrypted or unsupported ZIP compression method."
+  },
+  "zipInvalidPackagePath": {
+    "message": "Invalid package path: $1"
+  },
+  "zipInvalidZipLocalHeader": {
+    "message": "Invalid ZIP local header: $1"
+  },
+  "zipMissingFileInPackage": {
+    "message": "Missing file in package: $1"
+  },
+  "zipSplitZipArchivesAreUnsupported": {
+    "message": "Split ZIP archives are unsupported."
+  },
+  "zipSuspiciousDecompressedSize": {
+    "message": "Suspicious decompressed size: $1"
+  },
+  "zipTotalDecompressedSizeExceeds512Mb": {
+    "message": "Total decompressed size exceeds 512 MB."
+  },
+  "zipUnsafeZipPath": {
+    "message": "Unsafe ZIP path: $1"
+  },
+  "zipZip64ArchivesAreUnsupported": {
+    "message": "ZIP64 archives are unsupported."
+  },
+  "zipZipCentralDirectoryIsCorrupted": {
+    "message": "ZIP central directory is corrupted."
+  },
+  "zipZipCentralDirectoryNotFound": {
+    "message": "ZIP central directory not found."
+  },
+  "zipZipDataIsOutOfBounds": {
+    "message": "ZIP data is out of bounds: $1"
+  },
+  "zipZipEntryListIsCorrupted": {
+    "message": "ZIP entry list is corrupted."
+  },
+  "zipZipEntryListIsOutOfBounds": {
+    "message": "ZIP entry list is out of bounds."
+  },
+  "zipZipExceedsThe768MbSizeLimit": {
+    "message": "ZIP exceeds the 768 MB size limit."
+  },
+  "zipZipHasMoreThanEntries": {
+    "message": "ZIP has more than $1 entries."
+  },
+  "zipZipMustContainExactlyOneProblemXml": {
+    "message": "ZIP must contain exactly one problem.xml for a single problem. Contest ZIPs are unsupported."
+  }
+}

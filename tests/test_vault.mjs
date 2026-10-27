@@ -1,3 +1,4 @@
+import './mock-i18n.mjs';
 import assert from 'node:assert/strict';
 import {
   encryptCredentials, decryptCredentials, normalizeCredentials, sameVaultRecord

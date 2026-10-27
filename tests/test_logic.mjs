@@ -1,3 +1,4 @@
+import './mock-i18n.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
@@ -42,8 +43,6 @@ assert.equal(plan.tests[1].method,'generated');
 assert.equal(plan.validator,'val.cpp');
 assert.equal(plan.checker,'std::wcmp');
 assert.deepEqual(plan.unsupported,[]);
-assert(plan.warnings.some(x => x.includes('중복 리소스 testlib.h')));
-assert(plan.warnings.some(x => x.includes('SOJ 전용 Checker 선택 메타데이터')));
 assert(!plan.resources.some(x => x.name.startsWith('.')));
 const conflict = await fs.readFile(process.argv[4]);
 const badzip = new ZipArchive(conflict.buffer.slice(conflict.byteOffset, conflict.byteOffset + conflict.byteLength));

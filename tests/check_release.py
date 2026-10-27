@@ -42,9 +42,13 @@ offscreen = parse_html('offscreen.html')
 assert not (used_ids('popup.js') - popup.names), 'Missing popup elements'
 assert not (used_ids('credentials-ui.js') - popup.names), 'Missing API-key popup elements'
 
-assert manifest['name'] == 'Polygon ZIP Uploader'
-assert 1 <= len(manifest['description']) <= 132
-assert 'local' in manifest['description'].lower()
+assert manifest['name'] == '__MSG_extensionName__'
+assert manifest['description'] == '__MSG_extensionDescription__'
+assert manifest['default_locale'] == 'en'
+en_messages = json.loads((root / '_locales/en/messages.json').read_text(encoding='utf-8'))
+assert en_messages['extensionName']['message'] == 'Polygon ZIP Uploader'
+description = en_messages['extensionDescription']['message']
+assert 1 <= len(description) <= 132 and 'local' in description.lower()
 assert manifest['manifest_version'] == 3
 assert manifest['action']['default_popup'] == 'popup.html'
 assert 'options_ui' not in manifest, 'No separate settings page should open'
@@ -71,7 +75,8 @@ with ZipFile(package) as archive:
     assert packed['version'] == version
     assert archive.testzip() is None
     assert {'popup.html', 'offscreen.html', 'job-store.js',
-            'polygon-import.js', 'credential-store.js', 'status.js',
+            'polygon-import.js', 'credential-store.js', 'i18n.js',
+            '_locales/en/messages.json', '_locales/ko/messages.json',
             'LICENSE', 'icons/icon128.png'}.issubset(paths)
     assert not any(path.startswith(('tests/', '.github/', 'store-assets/')) for path in paths)
     assert 'importer.html' not in paths and 'importer.js' not in paths

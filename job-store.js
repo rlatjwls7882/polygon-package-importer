@@ -1,3 +1,6 @@
+export const STATUS_KEY = 'polygonImportStatusV1';
+
+import { t } from './i18n.js';
 const DATABASE = 'polygon-import-jobs';
 const STORE = 'jobs';
 const ACTIVE = 'active';
@@ -11,8 +14,8 @@ function openDatabase() {
       }
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || Error('작업 저장소를 열 수 없습니다.'));
-    request.onblocked = () => reject(Error('다른 확장 프로그램 창에서 작업 저장소를 사용하고 있습니다.'));
+    request.onerror = () => reject(request.error || Error(t('jobStoreCouldNotOpenJobStorage')));
+    request.onblocked = () => reject(Error(t('jobStoreJobStorageIsInUseByAnother')));
   });
 }
 
@@ -23,8 +26,8 @@ async function operation(mode, callback) {
       const transaction = db.transaction(STORE, mode);
       const request = callback(transaction.objectStore(STORE));
       transaction.oncomplete = () => resolve(request?.result);
-      transaction.onabort = () => reject(transaction.error || Error('작업 저장 실패'));
-      transaction.onerror = () => reject(transaction.error || Error('작업 저장 실패'));
+      transaction.onabort = () => reject(transaction.error || Error(t('jobStoreFailedToSaveJob')));
+      transaction.onerror = () => reject(transaction.error || Error(t('jobStoreFailedToSaveJob')));
     });
   } finally {
     db.close();
@@ -34,7 +37,7 @@ async function operation(mode, callback) {
 // Store the original File using IndexedDB's structured clone rather than
 // encoding megabytes of ZIP data into Chrome runtime messages.
 export async function stageJob(job) {
-  if (!job?.file || !job?.id) throw Error('ZIP 파일이 선택되지 않았습니다.');
+  if (!job?.file || !job?.id) throw Error(t('jobStoreNoZipFileSelected'));
   return operation('readwrite', store => store.put(job, ACTIVE));
 }
 

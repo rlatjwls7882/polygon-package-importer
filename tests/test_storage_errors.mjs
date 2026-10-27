@@ -1,3 +1,4 @@
+import { createMockI18n } from './mock-i18n.mjs';
 import assert from 'node:assert/strict';
 import { CredentialsUI } from '../credentials-ui.js';
 import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
@@ -23,7 +24,7 @@ globalThis.document={getElementById:name=>{
   return elements[name];
 }};
 globalThis.location={protocol:'file:'};
-globalThis.chrome=undefined;
+globalThis.chrome={i18n:createMockI18n()};
 globalThis.indexedDB=createFakeIndexedDB();
 
 const ui=new CredentialsUI();

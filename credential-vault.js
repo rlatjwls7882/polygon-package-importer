@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 // A local-only encrypted vault. Never store API credentials in plaintext or chrome.storage.sync.
 // Chrome storage.local is NOT encrypted by Chrome. The passphrase is deliberately not stored.
 export const STORE_KEY = 'polygonEncryptedCredentialsV1';
@@ -27,10 +28,10 @@ function encode64(bytes) {
 function decode64(value, expectedLength = null) {
   if (typeof value !== 'string' || value.length > 32768 ||
       !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value))
-    throw Error('저장된 인증 데이터의 형식이 올바르지 않습니다.');
+    throw Error(t('credentialVaultStoredVaultDataHasAnInvalidFormat'));
   const result = Uint8Array.from(atob(value), c => c.charCodeAt(0));
   if (expectedLength !== null && result.length !== expectedLength)
-    throw Error('저장된 인증 데이터가 손상되었습니다.');
+    throw Error(t('credentialVaultStoredVaultDataIsCorrupted'));
   return result;
 }
 
@@ -38,19 +39,19 @@ export function normalizeCredentials({ key, secret }) {
   // Older credential records may contain extra fields. Only Key and Secret
   // are used for new API requests and newly saved credentials.
   if (typeof key !== 'string' || typeof secret !== 'string')
-    throw Error('API 인증 정보를 문자열로 입력하세요.');
+    throw Error(t('credentialVaultApiCredentialsMustBeStrings'));
   const value = { key: key.trim(), secret: secret.trim() };
-  if (!value.key || !value.secret) throw Error('API Key와 Secret을 모두 입력하세요.');
+  if (!value.key || !value.secret) throw Error(t('credentialVaultEnterBothApiKeyAndSecret'));
   if ([value.key, value.secret].some(s => s.length > 4096))
-    throw Error('API 인증 정보가 지나치게 깁니다.');
+    throw Error(t('credentialVaultApiCredentialsAreTooLong'));
   return value;
 }
 
 function validatePassphrase(passphrase, firstUse = false) {
   if (typeof passphrase !== 'string' || passphrase.length > 1024)
-    throw Error('보관함 암호가 올바르지 않습니다.');
+    throw Error(t('credentialVaultVaultPasswordIsInvalid'));
   if (firstUse && (Array.from(passphrase).length < 12 || !passphrase.trim()))
-    throw Error('보관함 암호는 최소 12자 이상으로 설정하세요.');
+    throw Error(t('credentialVaultVaultPasswordMustBeAtLeast12'));
 }
 
 async function deriveKey(passphrase, salt) {
@@ -81,13 +82,13 @@ export async function decryptCredentials(record, passphrase) {
   validatePassphrase(passphrase);
   if (!record || record.version !== 1 || record.kdf !== 'PBKDF2-SHA256' ||
       record.iterations !== ITERATIONS || record.cipher !== 'AES-256-GCM')
-    throw Error('이 버전에서 읽을 수 없는 보관함입니다. 기존 값을 확인한 뒤 새로 등록하세요.');
+    throw Error(t('credentialVaultThisVaultFormatIsUnsupportedCheckThe'));
   try {
     const salt = decode64(record.salt, 16);
     const iv = decode64(record.iv, 12);
     const ciphertext = decode64(record.ciphertext);
     if (ciphertext.length < 17 || ciphertext.length > 32768)
-      throw Error('인증 데이터 길이가 올바르지 않습니다.');
+      throw Error(t('credentialVaultInvalidCredentialDataLength'));
     const key = await deriveKey(passphrase, salt);
     const plain = new Uint8Array(await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv, additionalData: AAD, tagLength: 128 }, key, ciphertext));
@@ -95,6 +96,6 @@ export async function decryptCredentials(record, passphrase) {
     plain.fill(0);
     return normalizeCredentials(parsed);
   } catch {
-    throw Error('보관함 암호가 일치하지 않거나 저장된 데이터가 손상되었습니다.');
+    throw Error(t('credentialVaultVaultPasswordIsIncorrectOrStoredData'));
   }
 }

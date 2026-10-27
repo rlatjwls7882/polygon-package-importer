@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 // Differential synchronization of a Polygon package with an existing working copy.
 // Read existing manual test inputs in ONE problem.tests call, then submit only
 // differences. There is no persistent local checkpoint: remote state is truth.
@@ -93,11 +94,11 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   // Polygon permits only one MA solution. Reject ambiguous packages before
   // any writes, rather than leaving a partially updated working copy.
   if (plan.solutions.filter(s => s.tag === 'MA').length > 1)
-    throw Error('ZIP에 메인 솔루션이 여러 개 있습니다.');
+    throw Error(t('syncZipContainsMultipleMainSolutions'));
   if (new Set(plan.solutions.map(s => s.name)).size !== plan.solutions.length)
-    throw Error('ZIP에 이름이 중복된 솔루션이 있습니다.');
+    throw Error(t('syncZipContainsSolutionsWithDuplicateNames'));
   if (target && !Array.isArray(target.statementResources))
-    throw Error('기존 지문 첨부 리소스 목록을 조회하지 못해 덮어쓰기를 중단했습니다.');
+    throw Error(t('syncOverwriteStoppedCouldNotReadExistingStatement'));
 
   let mutations = 0, testMutations = 0, skipped = 0;
   const apply = async (label, fn, isTest = false) => {
@@ -116,27 +117,27 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
 
   const [currentInfo, currentChecker, currentValidator, currentInteractor, currentTags] =
     existing ? await Promise.all([
-      read('시간·메모리 설정 비교', () => api.problem('info', id)),
-      plan.checker ? read('Checker 비교', () => api.problem('checker', id)) : Promise.resolve(null),
-      plan.validator ? read('Validator 비교', () => api.problem('validator', id)) : Promise.resolve(null),
-      plan.interactor ? read('Interactor 비교', () => api.problem('interactor', id)) : Promise.resolve(null),
-      read('태그 비교', () => api.problem('viewTags', id))
+      read(t('syncComparingTimeAndMemoryLimits'), () => api.problem('info', id)),
+      plan.checker ? read(t('syncComparingChecker'), () => api.problem('checker', id)) : Promise.resolve(null),
+      plan.validator ? read(t('syncComparingValidator'), () => api.problem('validator', id)) : Promise.resolve(null),
+      plan.interactor ? read(t('syncComparingInteractor'), () => api.problem('interactor', id)) : Promise.resolve(null),
+      read(t('syncComparingTags'), () => api.problem('viewTags', id))
     ]) : [null, null, null, null, []];
 
   const changes = infoChanges(currentInfo, plan.info);
   if (Object.keys(changes).length || !existing)
-    await apply('시간·메모리·입출력 설정', () => api.problem('updateInfo', id, changes));
-  else unchanged('시간·메모리·입출력 설정');
+    await apply(t('syncTimeMemoryAndIOSettings'), () => api.problem('updateInfo', id, changes));
+  else unchanged(t('syncTimeMemoryAndIOSettings'));
 
   const wantedLanguages = new Set(plan.statements.map(s => s.lang));
   if (existing) for (const lang of Object.keys(target.statements || {})) {
     if (!wantedLanguages.has(lang))
-      await apply('기존 지문 삭제: ' + lang, () => api.problem('deleteStatement', id, {lang}));
+      await apply(t('syncDeletingStatement', lang), () => api.problem('deleteStatement', id, {lang}));
   }
   for (const statement of plan.statements) {
     const patch = statementChanges(target?.statements?.[statement.lang], statement);
-    if (!patch) unchanged('지문: ' + statement.lang);
-    else await apply('지문 저장: ' + statement.lang, () => api.problem('saveStatement', id, patch));
+    if (!patch) unchanged(t('syncStatement', statement.lang));
+    else await apply(t('syncSavingStatement', statement.lang), () => api.problem('saveStatement', id, patch));
   }
 
   // Upload source and resource files before changing checker/generator settings.
@@ -150,13 +151,13 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
         // A different length proves difference without a download.
         const length = Number(old.length);
         if (!Number.isFinite(length) || length === encoder.encode(localContent).length) {
-          const remoteContent = await read(type + ' 비교: ' + file.name,
+          const remoteContent = await read(t('syncComparing', type, file.name),
             () => api.problem('viewFile', id, {type, name:file.name}, {raw:true}));
           same = sameText(remoteContent, localContent);
         }
       }
       if (same) unchanged(type + ': ' + file.name);
-      else await apply(type + ' 저장: ' + file.name,
+      else await apply(t('syncSaving', type, file.name),
         () => api.problem('saveFile', id, {type, name:file.name, file:localContent}));
     }
   }
@@ -170,11 +171,11 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     // are removed only after the new main has been uploaded successfully.
     const retained = plan.solutions.find(s => s.name === previousMain.name);
     const tag = retained?.tag ?? 'OK';
-    const original = await read('기존 메인 솔루션 내용 확인: ' + previousMain.name,
+    const original = await read(t('syncCheckingPreviousMainSolution', previousMain.name),
       () => api.problem('viewSolution', id, {name:previousMain.name}, {raw:true}));
     if (typeof original !== 'string' || !original.length)
-      throw Error('기존 메인 솔루션 내용을 읽지 못해 태그 변경을 중단했습니다: ' + previousMain.name);
-    await apply('기존 메인 솔루션 태그 변경: ' + previousMain.name,
+      throw Error(t('syncCannotReadPreviousMainSolutionBeforeChanging', previousMain.name));
+    await apply(t('syncUpdatingPreviousMainSolutionTag', previousMain.name),
       () => api.problem('saveSolution', id, {name:previousMain.name, tag, file:original}));
     remoteSolutions.set(previousMain.name, {...previousMain, tag});
   }
@@ -185,14 +186,14 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     if (old) {
       const length = Number(old.length);
       if (!Number.isFinite(length) || length === encoder.encode(localContent).length) {
-        const content = await read('솔루션 비교: ' + solution.name,
+        const content = await read(t('syncComparingSolution', solution.name),
           () => api.problem('viewSolution', id, {name:solution.name}, {raw:true}));
         same = sameText(content, localContent);
       }
     }
     const tagDiff = !old || old.tag !== solution.tag;
-    if (same && !tagDiff) unchanged('솔루션: ' + solution.name);
-    else await apply('솔루션 저장: ' + solution.name, () => api.problem('saveSolution', id, {
+    if (same && !tagDiff) unchanged(t('syncSolution', solution.name));
+    else await apply(t('syncSavingSolution', solution.name), () => api.problem('saveSolution', id, {
       name:solution.name, file:localContent, ...(tagDiff ? {tag:solution.tag} : {})
     }));
   }
@@ -205,7 +206,7 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     const prop = kind.toLowerCase();
     if (!plan[prop]) continue;
     if (existing && actual === plan[prop]) unchanged(kind);
-    else await apply(kind + ' 선택', () => api.problem(method, id, {[prop]:plan[prop]}));
+    else await apply(t('syncSelecting', kind), () => api.problem(method, id, {[prop]:plan[prop]}));
   }
 
   // Drop only truly obsolete files after replacing references.
@@ -216,27 +217,27 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
         ['olymp.sty', 'problem.tex', 'statements.ftl'] : []);
       for (const file of target.files?.[key] || []) {
         if (!wanted.has(file.name) && !protectedFiles.has(file.name))
-          await apply('기존 ' + type + ' 파일 삭제: ' + file.name,
+          await apply(t('syncDeletingOldFile', type, file.name),
             () => api.problem('deleteFile', id, {type, name:file.name}));
       }
     }
     for (const old of target.solutions || []) if (!plan.solutions.some(s => s.name === old.name))
-      await apply('기존 솔루션 삭제: ' + old.name,
+      await apply(t('syncDeletingPreviousSolution', old.name),
         () => api.problem('deleteSolution', id, {name:old.name}));
   }
 
   const desiredGroups = plan.groups.length > 0 || plan.tests.some(t => t.group);
   const currentGroups = (target?.tests || []).some(t => t.group);
   if (desiredGroups && (!existing || !currentGroups))
-    await apply('테스트 그룹 활성화', () => api.problem('enableGroups', id, {testset:'tests', enable:'true'}));
+    await apply(t('syncEnablingTestGroups'), () => api.problem('enableGroups', id, {testset:'tests', enable:'true'}));
   else if (!desiredGroups && currentGroups)
-    await apply('사용하지 않는 테스트 그룹 비활성화',
+    await apply(t('syncDisablingUnusedTestGroups'),
       () => api.problem('enableGroups', id, {testset:'tests', enable:'false'}));
 
   const wantedPoints = plan.tests.some(t => t.points !== null);
   const existingPoints = (target?.tests || []).some(t => t.points != null);
   if (wantedPoints !== existingPoints || (wantedPoints && !existing))
-    await apply('테스트 점수 설정', () => api.problem('enablePoints', id, {enable:String(wantedPoints)}));
+    await apply(t('syncConfiguringTestPoints'), () => api.problem('enablePoints', id, {enable:String(wantedPoints)}));
 
   const wantedTests = new Map(plan.tests.map(t => [t.index, t]));
   let oldTests = target?.tests || [];
@@ -246,7 +247,7 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     (t.group ? '<#-- @group ' + t.group + ' -->\n' : '') + t.cmd + ' > ' + t.index).join('\n');
   let currentScript = '';
   if (existing && oldGenerated)
-    currentScript = await read('기존 테스트 생성 스크립트 비교',
+    currentScript = await read(t('syncComparingPreviousTestGeneratorScript'),
       () => api.problem('script', id, {testset:'tests'}, {raw:true}));
   let scriptDiffers = oldGenerated ? !sameText(currentScript, wantedScript) : generated.length > 0;
   if (oldGenerated && plan.tests.some(t =>
@@ -254,7 +255,7 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     scriptDiffers = true;
 
   if (oldGenerated && scriptDiffers) {
-    await apply('기존 생성 스크립트 교체', () => api.problem('clearScript', id, {testset:'tests'}), true);
+    await apply(t('syncReplacingPreviousGeneratorScript'), () => api.problem('clearScript', id, {testset:'tests'}), true);
     oldTests = oldTests.filter(t => t.manual);
   }
 
@@ -266,13 +267,13 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     // Polygon supports deleting multiple tests in one atomic pre-check,
     // avoiding one API round trip per obsolete manual test.
     const testIndices = toDelete.map(t => Number(t.index)).sort((a, b) => b - a).join(',');
-    await apply('불필요한 기존 테스트 일괄 삭제: ' + toDelete.length + '개',
+    await apply(t('syncDeletingUnnecessaryTests', toDelete.length),
       () => api.problem('deleteTest', id, {testset:'tests', testIndices}), true);
   }
   if (toDelete.length) {
-    const snapshot = await read('테스트 삭제 후 현재 상태 확인',
+    const snapshot = await read(t('syncCheckingTestsAfterDeletion'),
       () => api.problem('tests', id, {testset:'tests', noInputs:'false'}));
-    if (!Array.isArray(snapshot)) throw Error('테스트 재조회 결과가 올바르지 않습니다.');
+    if (!Array.isArray(snapshot)) throw Error(t('syncInvalidResponseWhenReloadingTests'));
     remoteByIndex = indexMap(snapshot);
   }
 
@@ -280,20 +281,20 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     const input = await archive.text(test.path);
     const sampleOutput = test.sample && test.outputPath ? await archive.text(test.outputPath) : null;
     const props = manualTestChanges(test, remoteByIndex.get(test.index), input, sampleOutput);
-    if (!props) unchanged('수동 테스트 ' + test.index + '/' + plan.tests.length);
-    else await apply('수동 테스트 ' + test.index + '/' + plan.tests.length,
+    if (!props) unchanged(t('syncManualTest', test.index, plan.tests.length));
+    else await apply(t('syncManualTest', test.index, plan.tests.length),
       () => api.problem('saveTest', id, props), true);
   }
 
   if (generated.length) {
-    if (scriptDiffers) await apply('생성 테스트 스크립트 업로드',
+    if (scriptDiffers) await apply(t('syncUploadingGeneratedTestScript'),
       () => api.problem('saveScript', id, {testset:'tests', source:wantedScript}), true);
-    else unchanged('생성 테스트 스크립트');
+    else unchanged(t('syncGeneratedTestScript'));
   }
 
   if (generated.length) {
     const activeTests = scriptDiffers ?
-      await read('생성 테스트 목록 검증', () => api.problem('tests', id, {testset:'tests', noInputs:'true'})) :
+      await read(t('syncCheckingGeneratedTestList'), () => api.problem('tests', id, {testset:'tests', noInputs:'true'})) :
       oldTests;
     const activeByIndex = indexMap(activeTests);
     for (const test of generated) {
@@ -314,14 +315,14 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
         const output = await archive.text(test.outputPath);
         if (!sameText(str(remote?.outputForStatement), output)) props.testOutputForStatements = output;
       }
-      if (Object.keys(props).length === 2) unchanged('생성 테스트 메타데이터 ' + test.index);
-      else await apply('생성 테스트 메타데이터 ' + test.index,
+      if (Object.keys(props).length === 2) unchanged(t('syncGeneratedTestMetadata', test.index));
+      else await apply(t('syncGeneratedTestMetadata', test.index),
         () => api.problem('saveTest', id, props), true);
     }
   }
 
   if (plan.groups.length) {
-    const current = existing ? await read('테스트 그룹 정책 비교',
+    const current = existing ? await read(t('syncComparingTestGroupPolicy'),
       () => api.problem('viewTestGroup', id, {testset:'tests'})) : [];
     for (const group of plan.groups) {
       const previous = (Array.isArray(current) ? current : []).find(x => x.name === group.name);
@@ -330,8 +331,8 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
         previous.dependencies.join(',') : str(previous?.dependencies);
       if (previous && previous.pointsPolicy === group.pointsPolicy &&
           previous.feedbackPolicy === group.feedbackPolicy && priorDepends === depends)
-        unchanged('테스트 그룹: ' + group.name);
-      else await apply('테스트 그룹 설정: ' + group.name,
+        unchanged(t('syncTestGroup', group.name));
+      else await apply(t('syncConfiguringTestGroup', group.name),
         () => api.problem('saveTestGroup', id, {testset:'tests', group:group.name,
           pointsPolicy:group.pointsPolicy, feedbackPolicy:group.feedbackPolicy, dependencies:depends}));
     }
@@ -354,31 +355,31 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
         (kind !== 'Checker' ||
           (sameText(str(old.output || old.testOutput), props.testOutput) &&
            sameText(str(old.answer || old.testAnswer), props.testAnswer)));
-      if (equal) unchanged(kind + ' 자체 테스트: ' + test.index);
-      else await apply(kind + ' 자체 테스트: ' + test.index,
+      if (equal) unchanged(t('syncSelfTest', kind, test.index));
+      else await apply(t('syncSelfTest', kind, test.index),
         () => api.problem(method, id, props));
     }
   }
 
   if (!existing || !sameTagList(currentTags, plan.tags))
-    await apply('태그 설정', () => api.problem('saveTags', id, {tags:plan.tags.join(',')}));
-  else unchanged('태그');
+    await apply(t('syncSavingTags'), () => api.problem('saveTags', id, {tags:plan.tags.join(',')}));
+  else unchanged(t('syncTags'));
 
   if (testMutations > 0) {
-    const tests = await read('변경된 테스트 번호 검증',
+    const tests = await read(t('syncVerifyingChangedTestNumbering'),
       () => api.problem('tests', id, {testset:'tests', noInputs:'true'}));
     if (!Array.isArray(tests) || tests.length !== plan.tests.length ||
         plan.tests.some(t => !tests.some(remote =>
           Number(remote.index) === t.index && !!remote.manual === (t.method === 'manual'))))
-      throw Error('업로드 후 테스트 개수·번호·생성 방식이 ZIP과 다릅니다.');
-  } else unchanged('동일한 테스트 전체');
+      throw Error(t('syncTestCountNumberingOrGenerationModeDiffers'));
+  } else unchanged(t('syncAllTestsUnchanged'));
 
   // Statement Resources (including images) are separate from problem.files.
   // A ZIP without importable statement attachments must not leave older
   // images on the problem. Delete them only after all other writes succeed.
   // On interruption the next run re-reads Polygon and removes only survivors.
   if (existing) for (const file of target.statementResources) {
-    await apply('기존 지문 첨부 파일 삭제: ' + file.name,
+    await apply(t('syncDeletingOldStatementAttachment', file.name),
       () => api.problem('deleteStatementResource', id, {name:file.name}));
   }
 

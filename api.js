@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 const BASE = 'https://polygon.codeforces.com/api/';
 const encoder = new TextEncoder();
 
@@ -21,7 +22,7 @@ export class PolygonAPI {
   constructor(key, secret) {
     this.key = key.trim();
     this.secret = secret.trim();
-    if (!this.key || !this.secret) throw Error('API Key와 Secret이 필요합니다.');
+    if (!this.key || !this.secret) throw Error(t('apiMissingCredentials'));
     this.minimumIntervalMs = PolygonAPI.minimumIntervalMs;
     this.onRateLimit = null;
     this._gate = Promise.resolve();
@@ -34,7 +35,7 @@ export class PolygonAPI {
     for (const credential of [this.secret, this.key]) {
       if (!credential) continue;
       for (const token of [credential, encodeURIComponent(credential)]) {
-        if (token) result = result.split(token).join('[비공개]');
+        if (token) result = result.split(token).join(t('apiRedacted'));
       }
     }
     return result.slice(0, 300);
@@ -57,7 +58,7 @@ export class PolygonAPI {
   async requestOnce(method, args) {
     return this.pacedRequest(async () => {
       if (this.sessionActive && !this.sessionActive())
-        throw Error(method + ': API 보관함이 잠겨 요청을 중단했습니다.');
+        throw Error(t('apiApiVaultLockedRequestCancelled', method));
       // Sign AFTER waiting, so the timestamp remains valid even after long 429 cooldowns.
       const p = Object.entries({ ...args, apiKey:this.key, time:String(Math.floor(Date.now() / 1000)) })
         .filter(([, v]) => v !== undefined && v !== null)
@@ -72,7 +73,7 @@ export class PolygonAPI {
       for (const [k, v] of p) form.append(k, v);
       form.set('apiSig', prefix + hex);
       if (this.sessionActive && !this.sessionActive())
-        throw Error(method + ': 요청 전 API 보관함이 잠겨 업로드를 중단했습니다.');
+        throw Error(t('apiApiVaultLockedBeforeTheRequestUpload', method));
 
       try {
         return await fetch(BASE + method, {
@@ -81,8 +82,7 @@ export class PolygonAPI {
         });
       } catch (e) {
         // The request could have reached Polygon; do not repeat uncertain mutations.
-        throw Error(method + ': 네트워크 실패 (' + this.safeDetail(e?.message) +
-          '). 서버에서 처리되었을 수 있으므로 다음 실행에서 상태를 재조회하세요.');
+        throw Error(t('apiNetworkErrorPolygonMayHaveProcessedThe', method, this.safeDetail(e?.message)));
       }
     });
   }
@@ -117,8 +117,7 @@ export class PolygonAPI {
         }
         try { if (!json) json = JSON.parse(payload); }
         catch {
-          throw Error(method + ': 예상하지 못한 응답 (HTTP ' + response.status +
-            ', ' + this.safeDetail(String(payload).slice(0, 120)) + ')');
+          throw Error(t('apiUnexpectedResponseHttp', method, response.status, this.safeDetail(String(payload).slice(0, 120))));
         }
       }
       const message = String(json?.comment || '');
@@ -136,7 +135,7 @@ export class PolygonAPI {
         const wait = Math.min(240000, Math.max(this.minimumIntervalMs, serverWait ?? fallback));
         this._cooldownUntil = Math.max(this._cooldownUntil, Date.now() + wait);
         if (attempt >= 4)
-          throw Error(method + ': Polygon API 요청 제한이 반복됐습니다. 제한이 풀린 후 다시 실행하면 이미 저장한 항목은 건너뜁니다.');
+          throw Error(t('apiPolygonRateLimitReachedRepeatedlyRetryLater', method));
         this.onRateLimit?.({method, attempt:attempt+1, waitMs:wait});
         continue;
       }
@@ -144,7 +143,7 @@ export class PolygonAPI {
         throw Error(method + ': ' + this.safeDetail(json?.comment || ('HTTP ' + response.status)));
       return json.result;
     }
-    throw Error(method + ': 요청 제한으로 종료되었습니다.');
+    throw Error(t('apiStoppedDueToRateLimits', method));
   }
 
   problem(method, id, args = {}, opts = {}) {
