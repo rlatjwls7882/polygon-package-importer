@@ -1,3 +1,4 @@
+import './mock-i18n.mjs';
 // Read-only test against a real Polygon package, with a fake API server.
 // Simulates 28/50 manual tests already uploaded, HTTP loss mid-run, and resumes.
 import assert from 'node:assert/strict';

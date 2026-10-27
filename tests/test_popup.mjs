@@ -1,10 +1,10 @@
+import './mock-i18n.mjs';
 // Exercise first-run API setup, credential management and ZIP uploading in one popup.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
 import { loadCredentials } from '../credential-store.js';
-import { readJob } from '../job-store.js';
-import { STATUS_KEY } from '../status.js';
+import { readJob, STATUS_KEY } from '../job-store.js';
 
 const [zipPath, treePath]=process.argv.slice(2);
 const tree=JSON.parse(await fs.readFile(treePath,'utf8'));
@@ -50,6 +50,7 @@ function buildDOM() {
   elements.commit.checked=true;
   elements.start.disabled=true;
   globalThis.document={
+    documentElement:{lang:'en'},
     getElementById:name=>{
       if (!elements[name]) throw Error('Missing element: '+name);
       return elements[name];

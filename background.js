@@ -1,6 +1,6 @@
-import { readJob, stageJob, clearJob } from './job-store.js';
+import { t } from './i18n.js';
+import { readJob, stageJob, clearJob, STATUS_KEY } from './job-store.js';
 import { CREDENTIAL_KEY } from './credential-store.js';
-import { STATUS_KEY } from './status.js';
 
 const OFFSCREEN_PAGE = 'offscreen.html';
 let opening = null;
@@ -38,21 +38,21 @@ async function getStatus() {
   const status = await readStatus();
   if (status?.phase === 'running' && !starting && !(await offscreenOpen())) {
     return saveStatus({...status, phase:'error',
-      message:'업로드가 중단됐습니다. 다시 시도할 수 있습니다.'});
+      message:t('backgroundUploadInterruptedYouCanRetry')});
   }
   return status;
 }
 
 async function startImport(jobId) {
-  if (starting) throw Error('다른 업로드를 준비 중입니다.');
+  if (starting) throw Error(t('backgroundAnotherUploadIsBeingPrepared'));
   starting = true;
   let prepared = false;
   try {
     const previous = await getStatus();
-    if (previous?.phase === 'running') throw Error('이미 업로드 중입니다.');
+    if (previous?.phase === 'running') throw Error(t('backgroundAnUploadIsAlreadyRunning'));
 
     let job = await readJob();
-    if (job?.id !== jobId) throw Error('선택한 ZIP을 찾지 못했습니다.');
+    if (job?.id !== jobId) throw Error(t('backgroundSelectedZipNotFound'));
     // Migrate failed create jobs saved by older versions so Retry doesn't
     // create another Polygon problem when the original ID is already known.
     const resumeId = String(previous?.problemId ?? '');
@@ -64,25 +64,25 @@ async function startImport(jobId) {
     }
 
     const credentials = (await chrome.storage.local.get(CREDENTIAL_KEY))[CREDENTIAL_KEY];
-    if (!credentials) throw Error('API 키를 등록하세요.');
+    if (!credentials) throw Error(t('backgroundRegisterYourApiKeysFirst'));
 
     await saveStatus({
       id:job.id, phase:'running', progress:0,
       filename:job.filename, mode:job.mode,
       problemId:job.mode === 'replace' ? job.problemId : null,
-      message:'업로드 준비 중', log:['업로드 준비 중']
+      message:t('backgroundPreparingUpload'), log:[t('backgroundPreparingUpload')]
     });
     prepared = true;
     await openOffscreen();
     const reply = await chrome.runtime.sendMessage({
       type:'IMPORT_EXECUTE', jobId, encryptedRecord:credentials
     });
-    if (!reply?.ok) throw Error(reply?.reason || '업로드를 시작하지 못했습니다.');
+    if (!reply?.ok) throw Error(reply?.reason || t('backgroundFailedToStartUpload'));
     return {ok:true};
   } catch (error) {
     if (prepared) {
       await saveStatus({...await readStatus(), phase:'error',
-        message:error?.message || '업로드 시작 실패'});
+        message:error?.message || t('backgroundUploadCouldNotStart')});
     }
     throw error;
   } finally {
@@ -110,7 +110,7 @@ async function updateStatus(message) {
 }
 
 async function clearStatus() {
-  if ((await getStatus())?.phase === 'running') throw Error('업로드 중에는 지울 수 없습니다.');
+  if ((await getStatus())?.phase === 'running') throw Error(t('backgroundCannotClearARunningUpload'));
   await clearJob();
   await chrome.storage.local.remove(STATUS_KEY);
   return {ok:true};

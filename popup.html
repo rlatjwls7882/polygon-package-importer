@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,85 +10,84 @@
 <main>
   <header>
     <h1>Polygon ZIP Uploader</h1>
-    <button id="settings" class="link-button" type="button" hidden>API 키</button>
+    <button id="settings" class="link-button" type="button" data-i18n="apiKeys" hidden>API keys</button>
   </header>
 
-  <section id="credentialPanel" aria-label="Polygon API 키" hidden>
+  <section id="credentialPanel" data-i18n-aria-label="credentialSection" aria-label="Polygon API keys" hidden>
     <div class="section-heading">
-      <h2 id="credentialTitle">API 키 등록</h2>
-      <button id="closeCredentials" class="link-button" type="button" hidden>업로드로 돌아가기</button>
+      <h2 id="credentialTitle"></h2>
+      <button id="closeCredentials" class="link-button" type="button" data-i18n="backToUpload" hidden>Back to upload</button>
     </div>
-    <p id="credentialStatus" class="status-line" role="status">API 키 확인 중</p>
+    <p id="credentialStatus" class="status-line" role="status"></p>
 
     <div id="credentialInitHelp" hidden>
-      <p class="error">인증 저장소에 접근하지 못했습니다.</p>
-      <button id="retryCredentials" type="button">다시 확인</button>
+      <p class="error" data-i18n="credentialAccessError">Cannot access credential storage.</p>
+      <button id="retryCredentials" type="button" data-i18n="checkAgain">Try again</button>
     </div>
 
     <div id="credentialSetup" hidden>
-      <p class="secondary credential-help"><a href="https://polygon.codeforces.com/settings" target="_blank" rel="noopener noreferrer">Polygon API 설정</a>에서 Key와 Secret을 발급받으세요.</p>
+      <p class="secondary credential-help"><a href="https://polygon.codeforces.com/settings" target="_blank" rel="noopener noreferrer" data-i18n="getApiKeys">Get API keys from Polygon</a></p>
       <label for="key">API Key</label>
       <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="API Key">
       <label for="secret">API Secret</label>
       <input id="secret" type="password" autocomplete="off" spellcheck="false" placeholder="API Secret">
       <div class="credential-actions">
-        <button id="saveCredentials" class="primary" type="button">저장</button>
-        <button id="cancelReplace" type="button" hidden>취소</button>
+        <button id="saveCredentials" class="primary" type="button" data-i18n="save">Save</button>
+        <button id="cancelReplace" type="button" data-i18n="cancel" hidden>Cancel</button>
       </div>
     </div>
 
     <div id="credentialMigration" hidden>
-      <p class="secondary credential-help">이전 버전의 API 키를 이전하려면 기존 보관함 암호를 입력하세요. 한 번만 필요합니다.</p>
-      <label for="legacyPassword">보관함 암호</label>
+      <p class="secondary credential-help" data-i18n="migrationHelp">Enter your old vault password to migrate your keys.</p>
+      <label for="legacyPassword" data-i18n="vaultPassword">Vault password</label>
       <input id="legacyPassword" type="password" autocomplete="off">
       <div class="credential-actions">
-        <button id="migrateCredentials" type="button" class="primary">기존 키 이전</button>
+        <button id="migrateCredentials" type="button" class="primary" data-i18n="migrateKeys">Migrate keys</button>
       </div>
     </div>
 
     <div id="credentialManage" hidden>
       <div class="credential-actions">
-        <button id="replaceCredentials" type="button">키 변경</button>
-        <button id="deleteCredentials" class="danger" type="button">삭제</button>
+        <button id="replaceCredentials" type="button" data-i18n="changeKeys">Change keys</button>
+        <button id="deleteCredentials" class="danger" type="button" data-i18n="delete">Delete</button>
       </div>
     </div>
 
     <p id="credentialFeedback" class="feedback" role="status" aria-live="polite" hidden></p>
-    <p class="secondary credential-note">API 키는 이 Chrome 프로필에 암호화해 저장합니다. <a href="https://github.com/rlatjwls7882/polygon-package-importer/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">개인정보 처리방침</a></p>
+    <p class="secondary credential-note"><a href="https://github.com/rlatjwls7882/polygon-package-importer/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer" data-i18n="privacyPolicy">Privacy policy</a></p>
   </section>
 
-  <section id="importForm" aria-label="패키지 가져오기" hidden>
-    <label for="zipFile">로컬 Polygon 패키지 ZIP</label>
+  <section id="importForm" data-i18n-aria-label="uploadSection" aria-label="Upload package" hidden>
+    <label for="zipFile" data-i18n="packageZip">Polygon package ZIP</label>
     <input id="zipFile" type="file" accept=".zip,application/zip">
-    <p id="packageInfo" class="secondary" aria-live="polite">ZIP 파일을 선택하세요.</p>
+    <p id="packageInfo" class="secondary" aria-live="polite"></p>
 
     <fieldset class="mode">
-      <legend>가져올 위치</legend>
-      <label><input type="radio" name="mode" value="create" checked> 새 문제</label>
-      <label><input type="radio" name="mode" value="replace"> 기존 문제</label>
+      <legend data-i18n="destination">Destination</legend>
+      <label><input type="radio" name="mode" value="create" checked><span data-i18n="newProblem">New problem</span></label>
+      <label><input type="radio" name="mode" value="replace"><span data-i18n="existingProblem">Existing problem</span></label>
     </fieldset>
 
     <div id="problemIdField" class="field" hidden>
-      <label for="problemId">Polygon 문제 ID</label>
+      <label for="problemId" data-i18n="problemId">Polygon problem ID</label>
       <input id="problemId" type="text" inputmode="numeric" autocomplete="off" placeholder="123456">
-      <p class="secondary">ZIP에 없는 기존 항목은 삭제될 수 있습니다.</p>
+      <p class="secondary" data-i18n="replaceWarning">Files and tests absent from the ZIP may be deleted.</p>
     </div>
 
-    <label class="checkbox"><input id="commit" type="checkbox" checked> 완료 후 커밋</label>
-    <button id="start" class="primary submit" type="button" disabled>Polygon에 업로드</button>
-    <p class="secondary">업로드를 누르면 선택한 파일이 Codeforces Polygon으로 전송됩니다.</p>
+    <label class="checkbox"><input id="commit" type="checkbox" checked><span data-i18n="commitAfterUpload">Commit after upload</span></label>
+    <button id="start" class="primary submit" type="button" data-i18n="upload" disabled>Upload to Polygon</button>
   </section>
 
   <section id="progressSection" hidden aria-labelledby="progressTitle">
     <div class="section-heading">
-      <h2 id="progressTitle">최근 작업</h2>
-      <button id="clearStatus" class="link-button" type="button" hidden>지우기</button>
+      <h2 id="progressTitle" data-i18n="recentJob">Recent job</h2>
+      <button id="clearStatus" class="link-button" type="button" data-i18n="clear" hidden>Clear</button>
     </div>
     <p id="jobSummary" class="secondary"></p>
-    <p id="stateLabel" role="status">상태 확인 중</p>
-    <div id="jobActions" hidden><button id="retry" type="button">다시 시도</button></div>
+    <p id="stateLabel" role="status"></p>
+    <div id="jobActions" hidden><button id="retry" type="button" data-i18n="retry">Retry</button></div>
     <details id="logDetails">
-      <summary>로그</summary>
+      <summary data-i18n="log">Log</summary>
       <pre id="log"></pre>
     </details>
   </section>

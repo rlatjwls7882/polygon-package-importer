@@ -1,3 +1,4 @@
+import './mock-i18n.mjs';
 // Polygon problem.deleteTest supports a comma-separated batch of indices.
 import assert from 'node:assert/strict';
 import {syncPackage} from '../sync.js';

@@ -1,3 +1,4 @@
+import './mock-i18n.mjs';
 import assert from 'node:assert/strict';
 import { createFakeIndexedDB } from './mock-browser-storage.mjs';
 import { stageJob, readJob, clearJob } from '../job-store.js';

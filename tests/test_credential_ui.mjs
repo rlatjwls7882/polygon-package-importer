@@ -1,3 +1,4 @@
+import './mock-i18n.mjs';
 import assert from 'node:assert/strict';
 import { createFakeIndexedDB, createFakeChromeStorage } from './mock-browser-storage.mjs';
 import { CredentialsUI } from '../credentials-ui.js';

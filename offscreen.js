@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { readJob, stageJob, clearJob } from './job-store.js';
 import { decryptCredentialRecord } from './credential-store.js';
 import { PolygonAPI } from './api.js';
@@ -7,7 +8,7 @@ let activeJob = null;
 
 async function publish(type, payload) {
   const reply = await chrome.runtime.sendMessage({type, ...payload});
-  if (!reply?.ok) throw Error('작업 상태를 업데이트하지 못했습니다.');
+  if (!reply?.ok) throw Error(t('offscreenCouldNotUpdateJobStatus'));
 }
 
 async function processJob(jobId, encryptedRecord) {
@@ -16,7 +17,7 @@ async function processJob(jobId, encryptedRecord) {
   try {
     job = await readJob();
     if (!job || job.id !== jobId) {
-      throw Error('보관된 ZIP을 찾지 못했습니다. 다시 선택하세요.');
+      throw Error(t('offscreenSavedZipNotFoundSelectItAgain'));
     }
 
     const credentials = await decryptCredentialRecord(encryptedRecord);
@@ -24,7 +25,7 @@ async function processJob(jobId, encryptedRecord) {
     api.onRateLimit = ({method,waitMs}) => {
       publish('IMPORT_PROGRESS', {
         jobId,
-        message:method + ': 요청 제한 · ' + Math.ceil(waitMs / 1000) + '초 후 재시도'
+        message:t('offscreenRateLimitedRetryInS', method, Math.ceil(waitMs / 1000))
       }).catch(() => {});
     };
 
@@ -42,8 +43,7 @@ async function processJob(jobId, encryptedRecord) {
 
     await publish('IMPORT_COMPLETE', {
       jobId, phase:'done', progress:100, problemId:result.id,
-      message:'완료 · 문제 #' + result.id + ' · 변경 ' +
-        result.mutations + '개 · 생략 ' + result.skipped + '개'
+      message:t('offscreenDoneProblemChangesSkipped', result.id, result.mutations, result.skipped)
     });
     // Keep the ZIP until the completion state is safely recorded.
     await clearJob(jobId).catch(() => {});
@@ -61,7 +61,7 @@ async function processJob(jobId, encryptedRecord) {
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.type !== 'IMPORT_EXECUTE') return;
   if (activeJob) {
-    respond({ok:false, reason:'이미 다른 업로드가 실행 중입니다.'});
+    respond({ok:false, reason:t('offscreenAnotherUploadIsAlreadyRunning')});
     return;
   }
   activeJob = message.jobId;

@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import {
   CREDENTIAL_KEY, initializeCredentials, loadCredentials,
   saveCredentials, migrateCredentials, deleteCredentials, sameRecord
@@ -66,7 +67,7 @@ export class CredentialsUI {
     this.render();
     try {
       if (typeof location !== 'undefined' && location.protocol !== 'chrome-extension:')
-        throw Error('Chrome 확장 프로그램 팝업에서 열어 주세요.');
+        throw Error(t('credentialsUiOpenThisPageFromTheChromeExtension'));
       await initializeCredentials();
       await this.reload();
       if (!this.listening) {
@@ -98,11 +99,11 @@ export class CredentialsUI {
     this.$('cancelReplace').hidden = !this.editing;
     this.$('replaceCredentials').hidden = !canManage;
     const text = {
-      loading: 'API 키 확인 중',
-      empty: '등록된 API 키가 없습니다.',
-      legacy: '이전 버전의 API 키가 있습니다.',
-      ready: 'API 키 등록됨',
-      error: 'API 키 오류: ' + this.error
+      loading: t('credentialsUiCheckingApiKeys'),
+      empty: t('credentialsUiNoApiKeysSaved'),
+      legacy: t('credentialsUiApiKeysFromAnOlderVersionWere'),
+      ready: t('credentialsUiApiKeysSaved'),
+      error: t('credentialsUiApiKeyError', this.error)
     };
     const status = this.$('credentialStatus');
     status.textContent = text[this.state];
@@ -145,7 +146,7 @@ export class CredentialsUI {
           key:this.$('key').value,
           secret:this.$('secret').value
         };
-        this.accept(await saveCredentials(credentials), 'API 키를 저장했습니다.');
+        this.accept(await saveCredentials(credentials), t('credentialsUiApiKeysSaved2'));
       } finally {
         this.saving = false;
       }
@@ -157,7 +158,7 @@ export class CredentialsUI {
       this.saving = true;
       try {
         const saved = await migrateCredentials(this.$('legacyPassword').value);
-        this.accept(saved, '기존 API 키를 이전했습니다.');
+        this.accept(saved, t('credentialsUiPreviousApiKeysMigrated'));
       } finally {
         this.$('legacyPassword').value = '';
         this.saving = false;
@@ -181,7 +182,7 @@ export class CredentialsUI {
   }
 
   remove() {
-    if (!window.confirm('저장된 API 키를 삭제할까요?')) return;
+    if (!window.confirm(t('credentialsUiDeleteSavedApiKeys'))) return;
     return this.run(async () => {
       this.saving = true;
       try {
@@ -190,7 +191,7 @@ export class CredentialsUI {
         this.state = 'empty';
         this.editing = false;
         this.clearFields();
-        this.notice('API 키를 삭제했습니다.');
+        this.notice(t('credentialsUiApiKeysDeleted'));
       } catch (error) {
         await this.reload();
         throw error;

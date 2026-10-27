@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { decryptCredentials, normalizeCredentials, STORE_KEY as LEGACY_KEY } from './credential-vault.js';
 
 export const CREDENTIAL_KEY = 'polygonCredentialsV2';
@@ -16,19 +17,19 @@ function toBase64(bytes) {
 }
 
 function fromBase64(value) {
-  if (typeof value !== 'string' || value.length > 32768) throw Error('저장된 인증 정보가 올바르지 않습니다.');
+  if (typeof value !== 'string' || value.length > 32768) throw Error(t('credentialStoreStoredCredentialsAreInvalid'));
   return Uint8Array.from(atob(value), ch => ch.charCodeAt(0));
 }
 
 function requestResult(request) {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || Error('IndexedDB 요청 실패'));
+    request.onerror = () => reject(request.error || Error(t('credentialStoreIndexeddbRequestFailed')));
   });
 }
 
 async function openDatabase() {
-  if (!globalThis.indexedDB) throw Error('브라우저의 IndexedDB를 사용할 수 없습니다.');
+  if (!globalThis.indexedDB) throw Error(t('credentialStoreIndexeddbIsUnavailable'));
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
     request.onupgradeneeded = () => {
@@ -36,8 +37,8 @@ async function openDatabase() {
         request.result.createObjectStore(DB_STORE);
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || Error('IndexedDB 열기 실패'));
-    request.onblocked = () => reject(Error('다른 탭이 인증 저장소를 사용 중입니다. 다른 Importer 탭을 닫고 다시 시도하세요.'));
+    request.onerror = () => reject(request.error || Error(t('credentialStoreFailedToOpenIndexeddb')));
+    request.onblocked = () => reject(Error(t('credentialStoreCredentialStorageIsInUseInAnother')));
   });
 }
 
@@ -57,8 +58,8 @@ async function updateKey(value, remove = false) {
     await new Promise((resolve, reject) => {
       const tx = db.transaction(DB_STORE, 'readwrite');
       tx.oncomplete = resolve;
-      tx.onabort = () => reject(tx.error || Error('암호화 키 변경 실패'));
-      tx.onerror = () => reject(tx.error || Error('암호화 키 저장 실패'));
+      tx.onabort = () => reject(tx.error || Error(t('credentialStoreFailedToReplaceEncryptionKey')));
+      tx.onerror = () => reject(tx.error || Error(t('credentialStoreFailedToSaveEncryptionKey')));
       if (remove) tx.objectStore(DB_STORE).delete(DEVICE_KEY);
       else tx.objectStore(DB_STORE).put(value, DEVICE_KEY);
     });
@@ -84,22 +85,22 @@ export function sameRecord(a, b) {
 
 export async function initializeCredentials() {
   if (!globalThis.chrome?.storage?.local?.setAccessLevel)
-    throw Error('Chrome 확장 프로그램 저장소를 사용할 수 없습니다.');
+    throw Error(t('credentialStoreChromeExtensionStorageIsUnavailable'));
   await chrome.storage.local.setAccessLevel({ accessLevel:'TRUSTED_CONTEXTS' });
   if (!globalThis.crypto?.subtle || !globalThis.indexedDB)
-    throw Error('암호화 또는 IndexedDB API를 사용할 수 없습니다.');
+    throw Error(t('credentialStoreEncryptionOrIndexeddbIsUnavailable'));
 }
 
 export async function decryptCredentialRecord(record) {
   if (!record || record.version !== 2 || typeof record.iv !== 'string' ||
       typeof record.ciphertext !== 'string')
-    throw Error('저장된 API 인증 데이터 형식이 올바르지 않습니다.');
+    throw Error(t('credentialStoreStoredApiCredentialsHaveAnInvalidFormat'));
 
   const key = await readKey();
-  if (!key) throw Error('이 브라우저 프로필의 암호화 키가 없습니다. 인증 정보를 삭제하고 다시 등록하세요.');
+  if (!key) throw Error(t('credentialStoreThisBrowserProfileHasNoEncryptionKey'));
   try {
     const iv = fromBase64(record.iv);
-    if (iv.length !== 12) throw Error('잘못된 IV');
+    if (iv.length !== 12) throw Error(t('credentialStoreInvalidIv'));
     const ciphertext = fromBase64(record.ciphertext);
     const data = new Uint8Array(await crypto.subtle.decrypt(
       {name:'AES-GCM', iv, additionalData:CONTEXT}, key, ciphertext
@@ -108,7 +109,7 @@ export async function decryptCredentialRecord(record) {
     data.fill(0);
     return credentials;
   } catch {
-    throw Error('저장된 인증 정보를 복호화할 수 없습니다. 삭제 후 다시 등록하세요.');
+    throw Error(t('credentialStoreDecryptionFailed'));
   }
 }
 
@@ -131,13 +132,13 @@ export async function saveCredentials(credentials) {
   const record = {version:2, iv:toBase64(iv), ciphertext:toBase64(new Uint8Array(ciphertext))};
   await chrome.storage.local.set({[CREDENTIAL_KEY]:record});
   const verified = await loadCredentials();
-  if (!sameRecord(verified.record, record)) throw Error('인증 정보 저장 결과를 확인하지 못했습니다.');
+  if (!sameRecord(verified.record, record)) throw Error(t('credentialStoreCouldNotVerifyTheSavedCredentials'));
   return verified;
 }
 
 export async function migrateCredentials(passphrase) {
   const existing = await chrome.storage.local.get(LEGACY_KEY);
-  if (!existing[LEGACY_KEY]) throw Error('이전 인증 정보를 찾을 수 없습니다.');
+  if (!existing[LEGACY_KEY]) throw Error(t('credentialStorePreviousCredentialsWereNotFound'));
   const credentials = await decryptCredentials(existing[LEGACY_KEY], passphrase);
   const result = await saveCredentials(credentials);
   await chrome.storage.local.remove(LEGACY_KEY);

@@ -1,3 +1,4 @@
+import './mock-i18n.mjs';
 // Regression tests for Polygon's single Main (MA) solution invariant.
 import assert from 'node:assert/strict';
 import {syncPackage} from '../sync.js';
