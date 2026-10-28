@@ -895,5 +895,8 @@
   },
   "zipZipMustContainExactlyOneProblemXml": {
     "message": "ZIP must contain exactly one problem.xml for a single problem. Contest ZIPs are unsupported."
+  },
+  "formatCompilerAlias": {
+    "message": "Compiler ID: $1 → $2 (same C++ standard)."
   }
 }

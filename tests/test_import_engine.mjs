@@ -19,6 +19,7 @@ const archive=await ZipArchive.fromFile(file);
 const plan=await loadPolygonPackage(archive);
 
 function clone(obj){return JSON.parse(JSON.stringify(obj));}
+const remoteType = value => value === 'cpp.g++20' ? 'cpp.gcc13-64-winlibs-g++20' : value;
 
 async function buildMock() {
   const source=new Map();
@@ -31,13 +32,13 @@ async function buildMock() {
   ]) for(const f of list){
     const body=await archive.text(f.path);
     source.set(kind+':'+f.name,body);
-    files[key].push({name:f.name,length:new TextEncoder().encode(body).length,sourceType:f.sourceType,resourceAdvancedProperties:f.resourceAdvancedProperties});
+    files[key].push({name:f.name,length:new TextEncoder().encode(body).length,sourceType:remoteType(f.sourceType),resourceAdvancedProperties:f.resourceAdvancedProperties});
   }
   const sols=[];
   for(const solution of plan.solutions){
     const body=await archive.text(solution.path);
     solutions.set(solution.name,body);
-    sols.push({name:solution.name,length:new TextEncoder().encode(body).length,tag:solution.tag,sourceType:solution.sourceType});
+    sols.push({name:solution.name,length:new TextEncoder().encode(body).length,tag:solution.tag,sourceType:remoteType(solution.sourceType)});
   }
   const tests=[];
   for(const test of plan.tests){

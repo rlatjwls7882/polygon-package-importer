@@ -895,5 +895,8 @@
   },
   "zipZipMustContainExactlyOneProblemXml": {
     "message": "ZIP에는 단일 문제의 problem.xml이 정확히 한 개 있어야 합니다. 대회 ZIP은 지원하지 않습니다."
+  },
+  "formatCompilerAlias": {
+    "message": "컴파일러 ID: $1 → $2 (C++ 표준 유지)."
   }
 }

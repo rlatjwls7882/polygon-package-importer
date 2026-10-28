@@ -1,4 +1,4 @@
-import { canonicalResource } from '../package/metadata.js';
+import { canonicalResource, apiResource, apiSourceType } from '../package/metadata.js';
 import { t } from '../i18n.js';
 import { sameText } from './compare.js';
 import { textByteRange } from '../package/text.js';
@@ -37,13 +37,14 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
       }
       const props = {type, name:file.name};
       if (!same) props.file = localContent;
-      if (type === 'source' && file.sourceType && old?.sourceType !== file.sourceType)
-        props.sourceType = file.sourceType;
+      const sourceType = apiSourceType(file.sourceType);
+      if (type === 'source' && sourceType && old?.sourceType !== sourceType)
+        props.sourceType = sourceType;
       if (type === 'resource' && Object.hasOwn(file, 'resourceAdvancedProperties') &&
           JSON.stringify(canonicalResource(old?.resourceAdvancedProperties)) !==
-          JSON.stringify(canonicalResource(file.resourceAdvancedProperties))) {
+          JSON.stringify(apiResource(file.resourceAdvancedProperties))) {
         const advanced = file.resourceAdvancedProperties;
-        if (advanced) Object.assign(props, {forTypes:advanced.forTypes,
+        if (advanced) Object.assign(props, {forTypes:apiResource(advanced).forTypes,
           stages:advanced.stages.join(';'), assets:advanced.assets.join(';')});
         else props.forTypes = ''; // Documented way to remove grader linkage.
       }
@@ -97,11 +98,12 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
       }
     }
     const tagDiff = !old || old.tag !== solution.tag;
-    const typeDiff = solution.sourceType && old?.sourceType !== solution.sourceType;
+    const sourceType = apiSourceType(solution.sourceType);
+    const typeDiff = sourceType && old?.sourceType !== sourceType;
     if (same && !tagDiff && !typeDiff) unchanged(t('syncSolution', solution.name));
     else await apply(t('syncSavingSolution', solution.name), () => saveSolution({
       name:solution.name, ...(!same ? {file:localContent} : {}), ...(tagDiff ? {tag:solution.tag} : {}),
-      ...(typeDiff ? {sourceType:solution.sourceType} : {})
+      ...(typeDiff ? {sourceType} : {})
     }, () => remoteContent));
   }
 }
