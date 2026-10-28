@@ -79,6 +79,11 @@ A `.mu` sample enables interaction-log display. Different sample content for dif
 statement languages is rejected because the API stores one shared preview per test.
 
 Only the default `tests` testset is supported; multiple testsets are not flattened.
+Polygon's flat solution namespace cannot represent distinct ZIP paths with the same basename.
+For non-Java solutions, duplicate basenames receive stable, path-derived names
+(e.g. `solutions/verification/438/Main.cpp` becomes `Main-438.cpp`); the ZIP paths,
+source bytes, compiler IDs, and tags are preserved. Ambiguous duplicate source paths
+and Java names requiring a matching public class filename are rejected before writes.
 Exactly one main solution is required. Multiple validators (including extra validators
 already selected on an overwrite target) are rejected: the public API has no setter
 for that configuration. Binary-only interactors and statement images remain unsupported.
