@@ -134,3 +134,50 @@ test('wrong solutions can have WA results without failing verification when thei
   const result=await e.run();assert.equal(result.verification.state,'verified');
   assert(e.build.records[0].detail.runs.some(run=>run.verdict==='WA'));
 });
+
+
+for(const [supplied,expected] of [
+  ['cpp.g++20','cpp.gcc13-64-winlibs-g++20'],
+  ['cpp.g++23','cpp.gcc14-64-msys2-g++23'],
+  ['cpp.gcc11-64-winlibs-g++20','cpp.gcc11-64-winlibs-g++20'],
+  ['cpp.gcc13-64-winlibs-g++20','cpp.gcc13-64-winlibs-g++20'],
+  ['cpp.g++17','cpp.g++17']
+]) test('API and built descriptor agree on compiler '+supplied,async()=>{
+  const e=environment({interactive:true,generated:true,grader:true,extraTags:true,mutate({root}){
+    const visit=node=>{if(node.tag==='source')node.attributes.type=supplied;node.children.forEach(visit);};visit(root);
+    const resource=root.children.find(n=>n.tag==='files').children.find(n=>n.tag==='resources').children[0];
+    resource.attributes['for-types']=supplied;
+  }});
+  const original=e.mock.api.problem;
+  e.mock.api.problem=(method,id,args={},options)=>{
+    if(['saveFile','saveSolution'].includes(method)&&args.sourceType)
+      assert.equal(args.sourceType,expected,'only the selected exact compiler is sent');
+    return original(method,id,args,options);
+  };
+  assert.equal((await e.run()).verification.state,'verified');
+  assert.equal(e.mock.state.solutions.get('main.cpp').sourceType,expected);
+  assert.equal(e.mock.state.fileMetadata.resource.get('grader.cpp').resourceAdvancedProperties.forTypes,expected);
+  const notices=e.progress.filter(event=>event.message.includes(' → '));
+  assert.equal(notices.length,supplied===expected?0:1);
+  if(notices.length)assert(notices[0].message.includes(supplied)&&notices[0].message.includes(expected));
+});
+
+for(const wrong of ['cpp.g++20','cpp.gcc11-64-winlibs-g++20','cpp.g++17'])
+  test('build read-back must report the exact resolved compiler, not '+wrong,async()=>{
+    const e=environment();
+    e.build.transformArchive=root=>{
+      root.children.find(n=>n.tag==='assets').children.find(n=>n.tag==='solutions').children[0].children[0].attributes.type=wrong;
+    };
+    await assert.rejects(()=>e.run());
+    assert(!e.progress.some(event=>event.stage==='verified'));
+  });
+
+test('ignored exact grader compiler resolution is caught before committing',async()=>{
+  const e=environment({grader:true,mutate({root}){
+    root.children.find(n=>n.tag==='files').children.find(n=>n.tag==='resources').children[0].attributes['for-types']='cpp.g++20';
+  }});
+  const original=e.mock.api.problem;
+  e.mock.api.problem=(method,id,args={},options)=>original(method,id,
+    method==='saveFile'&&args.type==='resource'&&args.forTypes?{...args,forTypes:'cpp.g++20'}:args,options);
+  await assert.rejects(()=>e.run());assert.equal(e.mock.state.commits,0);
+});

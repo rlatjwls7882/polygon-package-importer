@@ -1,4 +1,4 @@
-import { canonicalResource } from '../package/metadata.js';
+import { canonicalResource, apiResource, apiSourceType } from '../package/metadata.js';
 import { filesSnapshot, namedSnapshot } from './snapshot.js';
 import { t } from '../i18n.js';
 
@@ -16,8 +16,8 @@ export async function verifyFileMetadata({api, id, plan, read}) {
     const byName = new Map(actual.map(file => [file.name, file]));
     for (const file of wanted) {
       const saved = byName.get(file.name);
-      if (!saved || (file.sourceType && saved.sourceType !== file.sourceType))
-        throw Error(t('formatSourceTypeMismatch', file.name, file.sourceType || ''));
+      if (!saved || (file.sourceType && saved.sourceType !== apiSourceType(file.sourceType)))
+        throw Error(t('formatSourceTypeMismatch', file.name, apiSourceType(file.sourceType) || ''));
     }
   }
   const resources = new Map(files.resourceFiles.map(file => [file.name, file]));
@@ -25,7 +25,7 @@ export async function verifyFileMetadata({api, id, plan, read}) {
     if (!Object.hasOwn(file, 'resourceAdvancedProperties')) continue;
     const saved = resources.get(file.name);
     if (!saved || JSON.stringify(canonicalResource(saved.resourceAdvancedProperties)) !==
-        JSON.stringify(canonicalResource(file.resourceAdvancedProperties)))
+        JSON.stringify(apiResource(file.resourceAdvancedProperties)))
       throw Error(t('formatResourceMismatch', file.name));
   }
 }

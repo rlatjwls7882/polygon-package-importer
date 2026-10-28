@@ -3,7 +3,7 @@ import { CHILD, CHILDREN, ATTR, resolveXmlText } from '../../package/xml.js';
 import { readJudging } from '../../package/judging.js';
 import { readAssets } from '../../package/assets.js';
 import { readGroups, readPoints } from '../../package/groups.js';
-import { canonicalExtraTags, canonicalResource } from '../../package/metadata.js';
+import { canonicalExtraTags, canonicalResource, apiResource, apiSourceType } from '../../package/metadata.js';
 
 import { sameText } from '../../package/text.js';
 
@@ -50,12 +50,12 @@ export async function verifyBuiltDescriptor(built, plan, original) {
     const actual = new Map(saved[kind].map(file => [file.name, file]));
     for (const file of plan[kind]) {
       const value = actual.get(file.name);
-      if (!value || (file.sourceType && file.sourceType !== value.sourceType))
+      if (!value || (file.sourceType && apiSourceType(file.sourceType) !== value.sourceType))
         throw Error(t('verifyDescriptorMismatch', file.name));
       if (kind === 'solutions' && (file.tag !== value.tag ||
           JSON.stringify(canonicalExtraTags(file.extraTags || [])) !== JSON.stringify(canonicalExtraTags(value.extraTags || []))))
         throw Error(t('verifyDescriptorMismatch', file.name));
-      if (kind === 'resources' && JSON.stringify(canonicalResource(file.resourceAdvancedProperties)) !==
+      if (kind === 'resources' && JSON.stringify(apiResource(file.resourceAdvancedProperties)) !==
           JSON.stringify(canonicalResource(value.resourceAdvancedProperties)))
         throw Error(t('verifyDescriptorMismatch', file.name));
       if (!sameText(await built.text(value.path), await original.text(file.path)))

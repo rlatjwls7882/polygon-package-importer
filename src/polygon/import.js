@@ -2,6 +2,7 @@ import { verifyProblem } from './verify.js';
 import { t } from '../i18n.js';
 import { ZipArchive } from '../package/zip.js';
 import { loadPolygonPackage } from '../package/load.js';
+import { apiSourceType } from '../package/metadata.js';
 import { syncPackage } from './sync.js';
 import { readTarget, assertCurrentTarget } from './target.js';
 
@@ -39,6 +40,10 @@ async function importPackage({job, api, archive, plan, onProgress, onCreated, on
   let current = null;
   let result = null;
   try {
+    for (const type of new Set([...plan.sources, ...plan.solutions].map(file => file.sourceType))) {
+      const resolved = apiSourceType(type);
+      if (resolved !== type) await emit(t('formatCompilerAlias', type, resolved));
+    }
     if (job.verification) {
       id = Number(job.problemId);
       committed = true;

@@ -84,8 +84,16 @@ already selected on an overwrite target) are rejected: the public API has no set
 for that configuration. Binary-only interactors and statement images remain unsupported.
 No downloaded compiler or source is run locally.
 
-Compiler identifiers are preserved verbatim, sent as `sourceType`, and read back.
-Unknown server compiler IDs fail instead of falling back to a different version.
+Original ZIP compiler identifiers, filenames, paths and source bytes are preserved.
+At the API boundary only, generic `cpp.g++20` maps to Polygon's
+`cpp.gcc13-64-winlibs-g++20`, and `cpp.g++23` maps to
+`cpp.gcc14-64-msys2-g++23`. Each resolution is reported once in the import log;
+the C++ standard is not downgraded. The explicit IDs are used for source files,
+solutions, exact grader `forTypes`, metadata read-back and built-descriptor checks.
+Concrete native compiler IDs remain exact; unknown IDs and uncertain write failures
+are not retried using a default or another compiler. The ZIP itself is never rewritten.
+Compiler references: [rbx Polygon C++20 mapping](https://rbx.rsalesc.dev/setters/cheatsheet/)
+and [Polygon C++23 identifier](https://codeforces.com/blog/entry/133919).
 Resource `forTypes`/`stages`/`assets` linkage supports the API's COMPILE/SOLUTION subset;
 other configurations are refused before uploading. Validator self-tests retain group
 and testset context. Changed/obsolete judge tests are deleted before replacement.

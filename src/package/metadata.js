@@ -8,11 +8,20 @@ export const TAGS = {
   'memory-limit-exceeded':'ML', 'do-not-run':'NR', 'runtime-error':'RE'
 };
 
+// Generic standard labels are not Polygon server compiler IDs. Resolve only
+// these explicit aliases; never infer a version from filenames or retry a
+// rejected concrete ID with a different compiler.
+const API_SOURCE_TYPES = new Map([
+  ['cpp.g++20', 'cpp.gcc13-64-winlibs-g++20'],
+  ['cpp.g++23', 'cpp.gcc14-64-msys2-g++23']
+]);
+export function apiSourceType(value) { return API_SOURCE_TYPES.get(value) ?? value; }
+
 export function readSourceType(element) {
   const value = ATTR(element, 'type');
   if (!value) return undefined;
-  // Preserve native Polygon IDs exactly. Guessing a compiler from an extension
-  // (or silently falling back when the server rejects this ID) changes semantics.
+  // Keep the package identifier unchanged. Only the API boundary resolves
+  // the explicit generic aliases above; concrete native IDs remain exact.
   if (!/^[A-Za-z0-9][A-Za-z0-9.+_-]{0,127}$/.test(value))
     throw Error(t('formatInvalidSourceType', value));
   return value;
@@ -40,6 +49,12 @@ export function canonicalResource(value) {
       typeof value.forTypes !== 'string') return {invalid:true};
   return {forTypes:[...new Set(value.forTypes.split(/[;:]/).map(x => x.trim()))].sort().join(';'),
     stages:[...value.stages].sort(), assets:[...value.assets].sort()};
+}
+
+export function apiResource(value) {
+  const result = canonicalResource(value);
+  if (!result || result.invalid) return result;
+  return {...result, forTypes:[...new Set(result.forTypes.split(';').map(apiSourceType))].sort().join(';')};
 }
 
 export function readExtraTags(solution) {

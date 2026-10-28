@@ -55,9 +55,9 @@ test('F03: compiler-only differences produce metadata-only updates, never a sile
   const start=mock.calls.length;await f.upload(mock,'replace');
   const saves=mock.calls.slice(start).filter(c=>['saveFile','saveSolution'].includes(c.method));
   assert.equal(saves.length,3);
-  assert(saves.every(c=>c.args.sourceType==='cpp.g++20' && !Object.hasOwn(c.args,'file')));
-  assert.equal(mock.state.solutions.get('main.cpp').sourceType,'cpp.g++20');
-  assert([...mock.state.fileMetadata.source.values()].every(x=>x.sourceType==='cpp.g++20'));
+  assert(saves.every(c=>c.args.sourceType==='cpp.gcc13-64-winlibs-g++20' && !Object.hasOwn(c.args,'file')));
+  assert.equal(mock.state.solutions.get('main.cpp').sourceType,'cpp.gcc13-64-winlibs-g++20');
+  assert([...mock.state.fileMetadata.source.values()].every(x=>x.sourceType==='cpp.gcc13-64-winlibs-g++20'));
 });
 
 test('an ignored compiler setting fails read-back verification before commit',async()=>{
@@ -183,4 +183,45 @@ test('hidden group dependencies cannot block replacement with an ordinary proble
   assert.equal(mock.state.tests.get(1).manual,true);
   assert.equal(mock.state.tests.get(2).manual,true);
   assert(![...mock.state.groups.values()].some(group=>group.dependencies.length));
+});
+
+
+test('generic C++20 package types use a native API ID without changing names, bytes or tags',async()=>{
+  const f=fixture({interactive:true,generated:true,extraTags:true}),mock=createPolygon();
+  const original=mock.api.problem;
+  mock.api.problem=(method,id,args={},options)=>{
+    if (['saveFile','saveSolution'].includes(method) && args.sourceType==='cpp.g++20')
+      throw Error('problem.'+method+": sourceType: Unknown file type 'cpp.g++20'.");
+    return original(method,id,args,options);
+  };
+  const expected='cpp.gcc13-64-winlibs-g++20';
+  const before=await f.parse();
+  assert(before.sources.every(file=>file.sourceType==='cpp.g++20'));
+  await f.upload(mock);
+  const writes=mock.calls.filter(call=>['saveFile','saveSolution'].includes(call.method)&&call.args.sourceType);
+  assert(writes.length>=4);
+  assert(writes.every(call=>call.args.sourceType===expected));
+  assert.equal(mock.state.files.source.get('val.cpp'),f.contents['files/val.cpp']);
+  assert.equal(mock.state.solutions.get('main.cpp').file,f.contents['solutions/main.cpp']);
+  assert.equal(mock.state.solutions.get('main.cpp').tag,'MA');
+  assert.equal(mock.state.solutions.get('partial.cpp').tag,'WA');
+  assert.deepEqual(await f.parse(),before,'original package metadata is never rewritten');
+  const start=mock.calls.length;
+  const result=await f.upload(mock,'replace');
+  assertNoDataWrites(result,mock.calls.slice(start));
+});
+
+test('compiler alias mapping does not silently retry unknown compiler IDs or network failures',async()=>{
+  for(const failure of ["sourceType: Unknown file type 'cpp.future99'.",'network response lost']) {
+    const f=fixture({mutate({validator}){validator.children[0].attributes.type='cpp.future99';}}),mock=createPolygon();
+    const original=mock.api.problem;let attempts=0;
+    mock.api.problem=(method,id,args={},options)=>{
+      if(method==='saveFile'&&args.name==='val.cpp'){
+        attempts++;assert.equal(args.sourceType,'cpp.future99');throw Error(failure);
+      }
+      return original(method,id,args,options);
+    };
+    await assert.rejects(()=>f.upload(mock),error=>error.message===failure);
+    assert.equal(attempts,1);assert.equal(mock.state.commits,0);
+  }
 });
