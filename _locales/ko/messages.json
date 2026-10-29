@@ -707,6 +707,12 @@
   "syncSavingStatement": {
     "message": "지문 저장: $1"
   },
+  "syncStatementInteractionOn": {
+    "message": "숨겨진 지문 설명을 복원하기 위해 인터랙티브 모드 켜는 중"
+  },
+  "syncStatementInteractionOff": {
+    "message": "원래의 일반 채점 방식으로 복원 중"
+  },
   "syncSavingTags": {
     "message": "태그 설정"
   },
