@@ -299,8 +299,8 @@
   "modelCannotUploadStatementImagesOrExtraResources": {
     "message": "지문 이미지/추가 리소스는 자동 업로드 불가: $1"
   },
-  "modelCannotVerifySojCheckerSelectionMetadataCheck": {
-    "message": "SOJ Checker 선택 메타데이터를 검증할 수 없습니다: $1. Checker 설정을 확인하세요."
+  "modelCannotVerifyCheckerSelectionMetadataCheck": {
+    "message": "패키지의 Checker 선택 메타데이터를 검증할 수 없습니다. Checker 설정을 확인하세요."
   },
   "modelDeclaredTestCountDiffersOrExceeds1": {
     "message": "테스트 개수 선언이 다르거나 1000개를 초과합니다."

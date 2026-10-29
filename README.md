@@ -2,7 +2,7 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Create or update [Codeforces Polygon](https://polygon.codeforces.com) problems from a local problem-package ZIP.
+Create or update [Codeforces Polygon](https://polygon.codeforces.com) problems from a local Polygon-format problem-package ZIP.
 
 [![Install from Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/polygon-zip-uploader/fhlocfeafcanblbeppffhdilbkblmdcn)
 
