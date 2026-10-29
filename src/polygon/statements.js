@@ -7,10 +7,21 @@ export async function syncStatements({api, id, plan, target, apply, unchanged}) 
     if (!wantedLanguages.has(lang))
       await apply(t('syncDeletingStatement', lang), () => api.problem('deleteStatement', id, {lang}));
   }
-  for (const statement of plan.statements) {
-    const patch = statementChanges(target?.statements?.[statement.lang], statement);
-    if (!patch) unchanged(t('syncStatement', statement.lang));
-    else await apply(t('syncSavingStatement', statement.lang), () => api.problem('saveStatement', id, patch));
+  const patches = plan.statements.map(statement => ({statement,
+    patch:statementChanges(target?.statements?.[statement.lang], statement)}));
+  // Native non-interactive ZIPs can retain a dormant interaction.tex. Polygon
+  // hides it in statements() and rejects its setter unless interaction is on.
+  const temporaryInteraction = !plan.info.interactive && patches.some(({patch}) => patch?.interaction);
+  try {
+    if (temporaryInteraction)
+      await apply(t('syncStatementInteractionOn'), () => api.problem('updateInfo', id, {interactive:'true'}));
+    for (const {statement, patch} of patches) {
+      if (!patch) unchanged(t('syncStatement', statement.lang));
+      else await apply(t('syncSavingStatement', statement.lang), () => api.problem('saveStatement', id, patch));
+    }
+  } finally {
+    if (temporaryInteraction)
+      await apply(t('syncStatementInteractionOff'), () => api.problem('updateInfo', id, {interactive:'false'}));
   }
 }
 

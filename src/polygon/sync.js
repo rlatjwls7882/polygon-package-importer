@@ -3,7 +3,7 @@ import { testsSnapshot, infoSnapshot, judgeSnapshot, tagsSnapshot } from './snap
 import { clearObsoleteSolutionTags, syncSolutionTags } from './solution-tags.js';
 import { t } from '../i18n.js';
 import { orderGroups } from '../package/groups.js';
-import { sameTagList } from './compare.js';
+import { boolean, sameTagList } from './compare.js';
 import { syncStatements, deleteStatementResources } from './statements.js';
 import { syncFiles, deleteObsoleteFiles } from './files.js';
 import { syncInfo, syncJudges, syncJudgeTests, prepareJudgeTests, verifyJudging } from './judging.js';
@@ -37,13 +37,13 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
     judgeSnapshot(await read(t('syncComparingChecker'), () => api.problem('checker', id))) : null;
   const currentValidator = existing && plan.validator ?
     judgeSnapshot(await read(t('syncComparingValidator'), () => api.problem('validator', id))) : null;
-  const currentInteractor = existing && plan.interactor ?
+  const currentInteractor = existing && plan.interactor && boolean(currentInfo.interactive) ?
     judgeSnapshot(await read(t('syncComparingInteractor'), () => api.problem('interactor', id))) : null;
   const currentTags = existing ?
     tagsSnapshot(await read(t('syncComparingTags'), () => api.problem('viewTags', id))) : [];
 
   const context = {api, id, plan, archive, target, read, apply, unchanged};
-  let currentGroups = target && (plan.groups.length || target.tests.some(test => test.group)) ?
+  let currentGroups = target && target.tests.some(test => test.group) ?
     await readRemoteGroups(context) : [];
   await syncInfo(context, currentInfo);
   await syncStatements(context);

@@ -2,7 +2,7 @@ import { t } from '../i18n.js';
 import { restoreCheckpoint, pinCheckpoint } from './verification/checkpoint.js';
 import { ZipArchive } from '../package/zip.js';
 import { checkInvocation } from './verification/invocation.js';
-import { currentRevision, packages, validId } from './verification/packages.js';
+import { currentRevision, packages, validId, successfulComment } from './verification/packages.js';
 import { verifyBuiltDescriptor } from './verification/descriptor.js';
 
 // Keep the potentially large detail response out of the build-ZIP download
@@ -32,10 +32,11 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     // Persist before launching: losing the response must not start a second build.
     await save(state);
     await emit(t('verifyBuildStarting'));
-    const started = await api.problem('buildPackage', id, {full:'false', verify:'true'});
-    if (started != null && (!validId(started.id) || Number(started.revision) !== revision ||
-        state.beforeIds.includes(Number(started.id)))) throw Error(t('verifyInvalidResponse'));
-    state = started ? pinCheckpoint(state, Number(started.id)) : {...state, stage:'polling'};
+    const response = await api.problem('buildPackage', id, {full:'false', verify:'true'});
+    const started = response == null ? [] : packages(Array.isArray(response) ? response : [response]);
+    if (started.length > 1 || started.some(item => Number(item.revision) !== revision ||
+        state.beforeIds.includes(Number(item.id)))) throw Error(t('verifyInvalidResponse'));
+    state = started.length ? pinCheckpoint(state, Number(started[0].id)) : {...state, stage:'polling'};
     await save(state);
   }
   let previousIds = state.packageId == null ? new Set(state.beforeIds) : null;
@@ -55,7 +56,7 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     if (pkg?.state === 'FAILED') throw Error(t('verifyBuildFailed', pkg.id, pkg.comment || ''));
     if (pkg?.state === 'READY') {
       // Tag violations not associated with a specific run appear only here.
-      if (String(pkg.comment || '').trim()) throw Error(t('verifyBuildComment', pkg.id, pkg.comment));
+      if (!successfulComment(pkg.comment)) throw Error(t('verifyBuildComment', pkg.id, pkg.comment));
       const invocations = await api.problem('invocations', id, {packageId:pkg.id});
       if (!Array.isArray(invocations) || invocations.some(item => Number(item.packageId) !== Number(pkg.id) ||
           !validId(item.id) || item.testset !== 'tests') || invocations.length > 1)
@@ -77,7 +78,7 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
           finally { built.dispose(); archive.clearCache?.(); }
           await assertRevision();
           const final = packages(await api.problem('packages', id)).find(item => Number(item.id) === Number(pkg.id));
-          if (!final || final.state !== 'READY' || Number(final.revision) !== revision || String(final.comment || '').trim())
+          if (!final || final.state !== 'READY' || Number(final.revision) !== revision || !successfulComment(final.comment))
             throw Error(t('verifyInvalidResponse'));
           const report = {state:'verified', revision, packageId:Number(pkg.id), ...result};
           await save({...state, stage:'verified', report});

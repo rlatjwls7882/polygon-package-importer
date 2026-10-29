@@ -707,6 +707,12 @@
   "syncSavingStatement": {
     "message": "Saving statement: $1"
   },
+  "syncStatementInteractionOn": {
+    "message": "Enabling interaction to restore hidden statement sections"
+  },
+  "syncStatementInteractionOff": {
+    "message": "Restoring non-interactive judging"
+  },
   "syncSavingTags": {
     "message": "Saving tags"
   },

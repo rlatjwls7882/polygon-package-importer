@@ -121,7 +121,10 @@ export function createPolygon() {
       case 'deleteStatement': delete state.statements[args.lang];return {};
       case 'statementResources': return copy(state.statementResources);
       case 'deleteStatementResource': state.statementResources=state.statementResources.filter(file=>file.name!==args.name);return {};
-      case 'checker':case 'validator':case 'interactor':return state[method];
+      case 'checker':case 'validator':return state[method];
+      case 'interactor':
+        assert.equal(state.info.interactive,true,'Polygon cannot read an interactor while interaction is disabled');
+        return state.interactor;
       case 'setChecker':case 'setValidator':case 'setInteractor': {
         const key=method.slice(3).toLowerCase(), name=args[key];
         assert(name.startsWith('std::') || state.files.source.has(name),'Judge source must be uploaded before selection');
@@ -195,7 +198,9 @@ export function createPolygon() {
       case 'deleteTest':
         for (const index of String(args.testIndices??args.testIndex).split(',')) state.tests.delete(Number(index));
         pruneGroups();return {};
-      case 'viewTestGroup':return state.groupsEnabled?copy([...state.groups.values()]):[];
+      case 'viewTestGroup':
+        assert(state.groupsEnabled,'Polygon cannot read group policies while groups are disabled');
+        return copy([...state.groups.values()]);
       case 'saveTestGroup': {
         assert(state.groupsEnabled);
         const old=state.groups.get(args.group);assert(old,'Groups must be created by a test first');

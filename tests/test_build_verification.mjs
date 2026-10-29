@@ -6,6 +6,7 @@ import { createPolygon } from './helpers/polygon.mjs';
 import { attachBuild } from './helpers/build.mjs';
 import { installNativeTestParser } from './helpers/native-xml.mjs';
 import { executeImport } from '../src/polygon/import.js';
+import { packages } from '../src/polygon/verification/packages.js';
 
 function environment(options={}) {
   const f=fixture(options),mock=createPolygon(),build=attachBuild(mock),progress=[];
@@ -75,6 +76,64 @@ test('a lost build response is recovered without issuing a duplicate build',asyn
 test('build APIs without a result object are correlated to a single new package',async()=>{
   const e=environment();e.build.noBuildResult=true;
   assert.equal((await e.run()).verification.state,'verified');assert.equal(e.build.builds,1);
+});
+
+test('native per-format package rows and array build replies pin one standard build',async()=>{
+  const e=environment();
+  const original=e.mock.api.problem;
+  e.mock.api.problem=async(method,id,args,options)=>{
+    const value=await original(method,id,args,options);
+    if(method==='buildPackage'||method==='packages') {
+      const rows=(Array.isArray(value)?value:[value]).flatMap(pkg=>[
+        {...pkg,type:'linux',comment:'Package created in 112103 ms with verification'},
+        {...pkg,type:'standard',comment:'Package created in 112103 ms with verification'},
+        {...pkg,type:'windows',comment:'Package created in 112103 ms with verification'}
+      ]);
+      return rows;
+    }
+    return value;
+  };
+  assert.equal((await e.run()).verification.state,'verified');
+  assert.equal((await e.run()).verification.state,'verified');
+  assert.equal(e.build.builds,1);
+});
+
+test('lost array build reply recovers from grouped native rows without another build',async()=>{
+  const e=environment();e.build.loseBuildResponse=true;
+  const original=e.mock.api.problem;
+  e.mock.api.problem=async(method,id,args,options)=>{
+    const value=await original(method,id,args,options);
+    return method==='packages'?value.flatMap(pkg=>['windows','standard','linux'].map(type=>({...pkg,type}))):value;
+  };
+  await assert.rejects(()=>e.run(),/Build response lost/);
+  assert.equal((await e.run()).verification.state,'verified');assert.equal(e.build.builds,1);
+});
+
+for(const rows of [
+  [{type:'standard'},{type:'standard'}], [{},{type:'linux'}],
+  [{type:'standard'},{type:'linux',revision:2}], [{type:'unknown'}]
+]) test('malformed or conflicting package rows are rejected: '+JSON.stringify(rows),()=>{
+  assert.throws(()=>packages(rows.map(row=>({id:101,revision:1,state:'READY',...row}))));
+});
+
+for(const comment of [
+  'Package created in 16547 ms with verification\nWarning: tag violation',
+  'Package created in 16547 ms without verification',
+  'Package created in 16547 ms with verification (warnings)'
+]) test('normal completion text cannot hide warnings: '+comment,async()=>{
+  const e=environment();e.build.afterBuild=record=>{record.pkg.comment=comment;};
+  await assert.rejects(()=>e.run());assert(!e.progress.some(value=>value.stage==='verified'));
+});
+
+test('native failed solution tag preserves RE in source and built descriptors',async()=>{
+  const e=environment({extraTags:true,mutate({solutions}){
+    solutions[1].attributes.tag='failed';solutions[1].children.find(n=>n.tag==='extra-tags').children=[];
+  }});
+  e.build.transformArchive=root=>{
+    root.children.find(n=>n.tag==='assets').children.find(n=>n.tag==='solutions').children[1].attributes.tag='failed';
+  };
+  assert.equal((await e.run()).verification.state,'verified');
+  assert.equal(e.mock.state.solutions.get('partial.cpp').tag,'RE');
 });
 
 test('ambiguous build candidates are not guessed',async()=>{

@@ -5,7 +5,7 @@ export const TAGS = {
   main:'MA', accepted:'OK', rejected:'RJ', 'wrong-answer':'WA',
   'time-limit-exceeded':'TL', 'time-limit-exceeded-or-accepted':'TO',
   'time-limit-exceeded-or-memory-limit-exceeded':'TM', 'presentation-error':'PE',
-  'memory-limit-exceeded':'ML', 'do-not-run':'NR', 'runtime-error':'RE'
+  'memory-limit-exceeded':'ML', 'do-not-run':'NR', 'runtime-error':'RE', failed:'RE'
 };
 
 // Generic standard labels are not Polygon server compiler IDs. Resolve only

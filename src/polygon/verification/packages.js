@@ -12,9 +12,26 @@ export async function currentRevision(api, id) {
 }
 
 export function packages(value) {
-  if (!Array.isArray(value) || value.some(item => !validId(item.id) || !validId(item.revision) ||
-      !['PENDING','RUNNING','READY','FAILED'].includes(item.state)) ||
-      new Set(value.map(item => Number(item.id))).size !== value.length)
+  if (!Array.isArray(value) || value.some(item => !item || !validId(item.id) || !validId(item.revision) ||
+      !['PENDING','RUNNING','READY','FAILED'].includes(item.state) ||
+      (item.type != null && !['standard','linux','windows'].includes(item.type))))
     throw Error(t('verifyInvalidResponse'));
-  return value;
+  const builds = new Map();
+  for (const item of value) {
+    const id = Number(item.id), previous = builds.get(id);
+    if (!previous) builds.set(id, {selected:item, types:new Set([item.type])});
+    else {
+      // Full builds have one row per format, all sharing the same build ID.
+      // Only the standard artifact is used for descriptor verification.
+      if (Number(previous.selected.revision) !== Number(item.revision) ||
+          item.type == null || previous.types.has(undefined) || previous.types.has(null) || previous.types.has(item.type))
+        throw Error(t('verifyInvalidResponse'));
+      previous.types.add(item.type);
+      if (item.type === 'standard') previous.selected = item;
+    }
+  }
+  return [...builds.values()].map(build => build.selected);
 }
+
+export const successfulComment = value => !String(value || '').trim() ||
+  /^Package created in \d+ ms with verification$/.test(String(value).trim());

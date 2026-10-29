@@ -105,6 +105,15 @@ extra tags for the known testset/group scopes. These requests are not counted as
 no-op. Other unchanged files/tests still avoid writes, and group-only edits remain batched.
 The built descriptor and invocation snapshots verify these otherwise opaque settings.
 
+Native batch/two-step packages may retain a dormant `interaction.tex`. Polygon hides
+that field while interaction is disabled and rejects writing it in that mode. Restoring
+such a section temporarily enables interaction, then restores non-interactive judging
+in `finally`, including when a statement write fails. No commit/build occurs in this
+temporary mode. Reading the selected interactor is likewise skipped until the target
+is interactive; its source is uploaded before selection.
+Group policies are read only after groups are enabled: `viewTestGroup` rejects a
+disabled testset rather than returning an empty list.
+
 Format contracts: [Polygon API](https://codeforces.github.io/polygon-misc/API)
 (`runTwice`, `interactiveSecondRun`, `saveTest`, `setTestGroup`, `saveTestGroup`), native
 [run-count descriptor](https://github.com/noisg/sg_noi_archive/blob/d44b1d5964f609ccc13ac76f935e700fb9b794fb/2022_qualification/lboard/problem.xml),
@@ -192,11 +201,17 @@ also turns off this option. Upload-only jobs say **execution not checked**, neve
 3. Persist a checkpoint, start `buildPackage(full=false, verify=true)`, and pin the new
    package ID/revision. A lost response is resolved from the pre-build package list;
    ambiguous candidates stop instead of guessing or launching a second build.
-4. Require a READY package without a comment, a FINISHED invocation without tag violations,
+4. Require a READY package with no warning (an empty comment or Polygon's exact
+   `Package created in N ms with verification` completion message), a FINISHED invocation without tag violations,
    and one terminal run per expected solution/test pair. Missing runs, CE/FL, aborted runs,
    mismatched expectation tags, and changed revisions never count as verified.
 5. Download that package's standard ZIP and compare its descriptor, compiler types,
    grader linkage, extra tags, and uploaded source/resource bytes with the selected ZIP.
+
+Full builds expose standard/Linux/Windows rows with the same package ID. These are
+one build; duplicate format rows or conflicting revisions remain invalid. Verification
+selects the standard artifact, and launch responses may be absent, one package object,
+or per-format rows. Polygon's native `failed` solution tag maps to the API's `RE`.
 
 Verification polls every five seconds for at most 360 checks. Running invocations use
 summary responses; detailed solution/test runs are fetched only after FINISHED. Timeout is **incomplete**,
