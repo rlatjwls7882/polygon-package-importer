@@ -37,7 +37,7 @@ assert(badplan.unsupported.some(x => x.includes('testlib.h') && x.includes('내�
 const badMarkerBuffer=await fs.readFile(process.argv[5]);
 const badMarkerZip=new ZipArchive(badMarkerBuffer.buffer.slice(badMarkerBuffer.byteOffset,badMarkerBuffer.byteOffset+badMarkerBuffer.byteLength));
 const badMarkerPlan=await loadPolygonPackage(badMarkerZip);
-assert(badMarkerPlan.unsupported.some(x=>x.includes('SOJ Checker 선택 메타데이터')));
+assert(badMarkerPlan.unsupported.includes('패키지의 Checker 선택 메타데이터를 검증할 수 없습니다. Checker 설정을 확인하세요.'));
 const safeTree=xmlTree;
 xmlTree=JSON.parse(await fs.readFile(process.argv[7],'utf8'));
 const badNameBuffer=await fs.readFile(process.argv[6]);
@@ -45,7 +45,7 @@ const badNameZip=new ZipArchive(badNameBuffer.buffer.slice(badNameBuffer.byteOff
 const badNamePlan=await loadPolygonPackage(badNameZip);
 assert(badNamePlan.unsupported.some(x=>x.includes('파일명') && x.includes('.unknown-resource')));
 xmlTree=safeTree;
-console.log('PASS: ZIP, duplicate headers, verified SOJ metadata skip, mismatched marker and unknown dotfile rejection');
+console.log('PASS: ZIP, duplicate headers, verified checker metadata skip, mismatched marker and unknown dotfile rejection');
 
 const requests=[];
 globalThis.fetch=async function(url, req) {

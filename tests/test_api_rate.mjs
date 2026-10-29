@@ -70,11 +70,11 @@ console.log('PASS: Polygon validation failures are not retried');
 
 // A JSON resource is a raw file even when the MIME type is application/json.
 api._cooldownUntil=0;
-globalThis.fetch=async()=>new Response('{"name":"SOJ provenance","version":1}',{
+globalThis.fetch=async()=>new Response('{"name":"Polygon package metadata","version":1}',{
   status:200, headers:{'content-type':'application/json'}
 });
 assert.equal(await api.problem('viewFile',42,{type:'resource',name:'source-provenance.json'},{raw:true}),
-  '{"name":"SOJ provenance","version":1}');
+  '{"name":"Polygon package metadata","version":1}');
 console.log('PASS: application/json file is returned verbatim, not mistaken for a Polygon API envelope');
 const realDateNow=Date.now;
 let virtualNow=1800000000000;

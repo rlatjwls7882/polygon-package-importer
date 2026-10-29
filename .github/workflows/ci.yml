@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
       - name: Run tests
         run: python tests/run.py
-      - name: Validate Store listing text
+      - name: Validate public product text and Store listing
         run: python scripts/check_listing.py
       - name: Build Chrome Web Store package
         run: |

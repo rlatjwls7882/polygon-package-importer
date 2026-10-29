@@ -21,5 +21,5 @@ if(plan.checker==='std::ncmp.cpp') {
   assert.equal(plan.solutions.length,6);
   assert.equal(plan.tests.length,50);
   assert(!plan.resources.some(x=>x.name.startsWith('.')));
-  console.log('PASS: actual SOJ Linux ZIP: 50 tests, ncmp checker, 7 safe resources, no metadata upload');
+  console.log('PASS: actual Polygon-format Linux ZIP: 50 tests, ncmp checker, 7 safe resources, no metadata upload');
 }

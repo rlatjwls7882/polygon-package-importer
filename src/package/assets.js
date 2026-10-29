@@ -43,9 +43,9 @@ export async function readAssets(root, archive, plan) {
     if (!path || !archive.has(path)) throw Error(t('modelMissingResource', path));
     const name = basename(path);
     if (name === '.checker-selection-v1') {
-      // SOJ packages attach this private marker when a built-in checker is
-      // selected. It is not a Polygon resource and its name is rejected by
-      // problem.saveFile. Do not skip arbitrary hidden resources.
+      // Some packages include private metadata for a built-in checker.
+      // Preserve the legacy wire identifiers and validate them strictly;
+      // this marker is not an uploadable resource. Keep other hidden files visible.
       const parts = (await archive.text(path)).trimEnd().split('\t');
       const folder = path.match(/^files\/soj-checkers\/([0-9a-f]{64})\/\.checker-selection-v1$/);
       const valid = folder && parts.length === 5 &&
@@ -53,7 +53,7 @@ export async function readAssets(root, archive, plan) {
         parts[2] === 'builtin' && /^[a-z0-9_-]+$/.test(parts[3]) &&
         parts[4] === folder[1] &&
         (plan.checker === `std::${parts[3]}.cpp` || plan.checker === `std::${parts[3]}`);
-      if (!valid) plan.unsupported.push(t('modelCannotVerifySojCheckerSelectionMetadataCheck', path));
+      if (!valid) plan.unsupported.push(t('modelCannotVerifyCheckerSelectionMetadataCheck'));
       continue;
     }
     if (!validPolygonFileName(name)) {

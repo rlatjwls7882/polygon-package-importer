@@ -299,8 +299,8 @@
   "modelCannotUploadStatementImagesOrExtraResources": {
     "message": "Cannot upload statement images or extra resources: $1"
   },
-  "modelCannotVerifySojCheckerSelectionMetadataCheck": {
-    "message": "Cannot verify SOJ checker selection metadata: $1. Check the checker setting."
+  "modelCannotVerifyCheckerSelectionMetadataCheck": {
+    "message": "Cannot verify package checker selection metadata. Check the checker setting."
   },
   "modelDeclaredTestCountDiffersOrExceeds1": {
     "message": "Declared test count differs or exceeds 1,000."

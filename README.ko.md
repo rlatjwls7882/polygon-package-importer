@@ -2,7 +2,7 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-로컬 문제 패키지 ZIP으로 [Codeforces Polygon](https://polygon.codeforces.com)에 새 문제를 만들거나 기존 문제를 갱신합니다.
+로컬 Polygon 형식의 문제 패키지 ZIP으로 [Codeforces Polygon](https://polygon.codeforces.com)에 새 문제를 만들거나 기존 문제를 갱신합니다.
 
 [![Chrome 웹 스토어에서 설치](https://img.shields.io/badge/Chrome_Web_Store-%EC%84%A4%EC%B9%98-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/polygon-zip-uploader/fhlocfeafcanblbeppffhdilbkblmdcn)
 
