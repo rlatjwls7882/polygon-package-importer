@@ -8,6 +8,8 @@ export function restoreCheckpoint(value, problemId) {
   if (!value || typeof value !== 'object' || Array.isArray(value) ||
       value.problemId !== problemId || !id(value.revision) ||
       !['launching','polling','verified'].includes(value.stage) ||
+      (value.existingBuild !== undefined && typeof value.existingBuild !== 'boolean') ||
+      (value.existingBuild === true && value.packageId == null) ||
       !Array.isArray(value.beforeIds) || value.beforeIds.some(value => !id(value)) ||
       new Set(value.beforeIds).size !== value.beforeIds.length ||
       (value.packageId != null && !id(value.packageId)) ||
@@ -16,10 +18,11 @@ export function restoreCheckpoint(value, problemId) {
       (value.packageId != null && value.beforeIds.includes(value.packageId)))
     throw Error(t('verifyInvalidCheckpoint'));
   return {problemId, revision:value.revision, stage:value.stage,
-    packageId:value.packageId ?? null, beforeIds:value.packageId == null ? [...value.beforeIds] : []};
+    packageId:value.packageId ?? null, beforeIds:value.packageId == null ? [...value.beforeIds] : [],
+    ...(value.existingBuild ? {existingBuild:true} : {})};
 }
 
-export function pinCheckpoint(state, packageId) {
-  if (!id(packageId) || state.beforeIds.includes(packageId)) throw Error(t('verifyInvalidResponse'));
-  return {problemId:state.problemId, revision:state.revision, stage:'polling', packageId, beforeIds:[]};
+export function pinCheckpoint(state, packageId, {existing = false} = {}) {
+  if (!id(packageId) || state.beforeIds.includes(packageId) !== existing) throw Error(t('verifyInvalidResponse'));
+  return {problemId:state.problemId, revision:state.revision, stage:'polling', packageId, beforeIds:[], ...(existing ? {existingBuild:true} : {})};
 }

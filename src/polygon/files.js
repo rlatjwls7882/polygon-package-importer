@@ -21,6 +21,11 @@ function packageFiles(plan) {
 
 export async function syncFiles({api, id, plan, archive, target, read, apply, unchanged}) {
   const fileTypes = packageFiles(plan);
+  const previousFile = async (type, name, label) => {
+    const cached = target?.packageSnapshot?.file(type, name);
+    return cached === undefined ? read(label, () => api.problem(type === 'solution' ? 'viewSolution' : 'viewFile', id,
+      type === 'solution' ? {name} : {type, name}, {raw:true})) : cached;
+  };
   // Upload source and resource files before changing checker/generator settings.
   for (const [type, list, key] of fileTypes) {
     const remote = new Map((target?.files?.[key] || []).map(f => [f.name, f]));
@@ -30,8 +35,7 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
       let same = false;
       if (old) {
         if (mayMatchLength(old.length, localContent)) {
-          const remoteContent = await read(t('syncComparing', type, file.name),
-            () => api.problem('viewFile', id, {type, name:file.name}, {raw:true}));
+          const remoteContent = await previousFile(type, file.name, t('syncComparing', type, file.name));
           same = sameText(remoteContent, localContent);
         }
       }
@@ -82,8 +86,7 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
     const tag = retained?.tag ?? 'OK';
     await apply(t('syncUpdatingPreviousMainSolutionTag', previousMain.name),
       () => saveSolution({name:previousMain.name, tag}, () =>
-        read(t('syncComparingSolution', previousMain.name),
-          () => api.problem('viewSolution', id, {name:previousMain.name}, {raw:true}))));
+        previousFile('solution', previousMain.name, t('syncComparingSolution', previousMain.name))));
     remoteSolutions.set(previousMain.name, {...previousMain, tag});
   }
   for (const solution of plan.solutions) {
@@ -92,8 +95,7 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
     let same = false, remoteContent;
     if (old) {
       if (mayMatchLength(old.length, localContent)) {
-        remoteContent = await read(t('syncComparingSolution', solution.name),
-          () => api.problem('viewSolution', id, {name:solution.name}, {raw:true}));
+        remoteContent = await previousFile('solution', solution.name, t('syncComparingSolution', solution.name));
         same = sameText(remoteContent, localContent);
       }
     }

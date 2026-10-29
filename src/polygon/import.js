@@ -49,12 +49,12 @@ async function importPackage({job, api, archive, plan, onProgress, onCreated, on
       committed = true;
       const verification = await verifyProblem({api, id, plan, archive, checkpoint:job.verification,
         save:onCheckpoint, emit:message => emit(message, null, 'verifying'), ...verificationOptions});
-      await emit(t('verifySucceeded', verification.packageId, verification.runs), 100, 'verified');
+      await emit(t(verification.existingBuild ? 'verifyExistingSucceeded' : 'verifySucceeded', verification.packageId, verification.runs), 100, 'verified');
       return {id, name:plan.name, committed:true, mutations:0, skipped:0, verification};
     }
     if (job.mode === 'replace') {
       id = Number(job.problemId);
-      current = await step(t('polygonImportReadingProblem', id), () => readTarget(api, id, plan));
+      current = await step(t('polygonImportReadingProblem', id), () => readTarget(api, id, plan, {emit}));
       const latest = await step(t('polygonImportCheckingProblemRevision'),
         () => api.call('problems.list', {id}));
       assertCurrentTarget(current, latest);
@@ -87,14 +87,16 @@ async function importPackage({job, api, archive, plan, onProgress, onCreated, on
         throw Error(t('polygonImportCouldNotVerifyCommitResult'));
       }
       committed = true;
-    }
+    } else if (job.commit && current?.modified === false && !changed) committed = true;
 
     // Old manual-input snapshots can dwarf the archive. They are only needed
     // while synchronizing, never during the server build/polling phase.
+    const allowExisting = result.mutations === 0 && current?.modified === false;
+    current?.packageSnapshot?.dispose();
     current = null;
     let verification = {state:'not-run'};
     if (job.verify) {
-      verification = await verifyProblem({api, id, plan, archive, save:onCheckpoint,
+      verification = await verifyProblem({api, id, plan, archive, save:onCheckpoint, allowExisting,
         emit:message => emit(message, null, 'verifying'), ...verificationOptions});
     }
     const details = t('polygonImportChangesSkipped', result.mutations, result.skipped);
@@ -105,5 +107,5 @@ async function importPackage({job, api, archive, plan, onProgress, onCreated, on
     error.committed = committed;
     error.problemId = id;
     throw error;
-  }
+  } finally {current?.packageSnapshot?.dispose();}
 }

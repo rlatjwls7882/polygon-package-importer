@@ -100,10 +100,21 @@ and testset context. Changed/obsolete judge tests are deleted before replacement
 Public preview bodies, compiler metadata, and judge self-tests are read back before commit.
 
 The API has no documented current getter for checker-percentage mode or solution extra
-tags. Scored problems therefore explicitly set/reset percentage mode; overwrites reconcile
-extra tags for the known testset/group scopes. These requests are not counted as a data
-no-op. Other unchanged files/tests still avoid writes, and group-only edits remain batched.
-The built descriptor and invocation snapshots verify these otherwise opaque settings.
+tags. An overwrite of an unmodified, current working copy can compare against a READY
+standard package from exactly that revision. Both package-list metadata and the raw XML
+revision must match. This attempt-local snapshot supplies file bodies, manual inputs and
+opaque tags/percentage mode; current API metadata and the final pre-write revision check
+remain mandatory. A missing, stale, warning-bearing, unsupported or corrupt snapshot uses
+the existing live-read and explicit-reset path. Dirty working copies never use a package
+snapshot. It is disposed on success/failure and before build verification.
+
+Known unchanged extra tags and percentage mode avoid writes. Solution replacement and
+group deletion/recreation invalidate affected tag snapshots. Without a usable snapshot,
+scored problems still explicitly set/reset percentage mode and reconcile known tag scopes.
+These fallback requests are not counted as a data no-op. File, solution and judging
+mutations independently select their API read-backs: changing only test data does not
+re-read unchanged compiler or judging settings. Every changed namespace retains its
+read-back before commit; the built descriptor and invocation checks still run.
 
 Native batch/two-step packages may retain a dormant `interaction.tex`. Polygon hides
 that field while interaction is disabled and rejects writing it in that mode. Restoring
@@ -179,6 +190,7 @@ Offline comparison with an older checkout:
 
 ```sh
 node tests/benchmark_import.mjs /path/to/baseline-checkout
+node tests/benchmark_package_snapshot.mjs /path/to/baseline-checkout [optional-real-package.zip]
 node tests/benchmark_lifecycle.mjs /path/to/baseline-checkout
 node tests/benchmark_request_resources.mjs /path/to/baseline-checkout
 node tests/benchmark_preflight.mjs /path/to/baseline-checkout
@@ -201,6 +213,13 @@ also turns off this option. Upload-only jobs say **execution not checked**, neve
 3. Persist a checkpoint, start `buildPackage(full=false, verify=true)`, and pin the new
    package ID/revision. A lost response is resolved from the pre-build package list;
    ambiguous candidates stop instead of guessing or launching a second build.
+   Polygon can explicitly refuse another verified build of the same revision. Only an
+   upload with zero mutations and an already clean working copy may handle that exact
+   refusal by pinning the single prior READY package with Polygon's verified completion
+   message. Recheck the clean revision, fetch its invocation details and download its ZIP
+   again through the same strict checks. Other launch errors, changed uploads, warnings
+   and ambiguous candidates do not use this fallback. The UI/report labels an existing
+   build recheck; its checkpoint stays pinned on retry and never trusts a stored report.
 4. Require a READY package with no warning (an empty comment or Polygon's exact
    `Package created in N ms with verification` completion message), a FINISHED invocation without tag violations,
    and one terminal run per expected solution/test pair. Missing runs, CE/FL, aborted runs,

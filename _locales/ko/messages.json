@@ -904,5 +904,20 @@
   },
   "formatCompilerAlias": {
     "message": "컴파일러 ID: $1 → $2 (C++ 표준 유지)."
+  },
+  "snapshotReading": {
+    "message": "현재 리비전의 패키지 확인 중"
+  },
+  "snapshotUsing": {
+    "message": "현재 리비전의 패키지로 기존 내용 비교 중"
+  },
+  "snapshotFallback": {
+    "message": "패키지로 비교할 수 없어 기존 항목을 개별 조회합니다"
+  },
+  "verifyExistingBuild": {
+    "message": "Polygon에 동일 리비전의 검증 빌드가 있어 패키지 #$1을 다시 확인합니다"
+  },
+  "verifyExistingSucceeded": {
+    "message": "기존 빌드와 실행 결과 재검증 완료 · 패키지 #$1 · $2회 실행"
   }
 }

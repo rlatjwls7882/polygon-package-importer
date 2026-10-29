@@ -904,5 +904,20 @@
   },
   "formatCompilerAlias": {
     "message": "Compiler ID: $1 → $2 (same C++ standard)."
+  },
+  "snapshotReading": {
+    "message": "Looking for a package from the current clean revision"
+  },
+  "snapshotUsing": {
+    "message": "Comparing against the current revision package"
+  },
+  "snapshotFallback": {
+    "message": "Package comparison unavailable; reading current files individually"
+  },
+  "verifyExistingBuild": {
+    "message": "Polygon already verified this unchanged revision; rechecking package #$1"
+  },
+  "verifyExistingSucceeded": {
+    "message": "Existing build and execution rechecked · package #$1 · $2 runs"
   }
 }

@@ -54,7 +54,7 @@ async function processJob(jobId, encryptedRecord, locale, attempt) {
       committed:result.committed, verification:result.verification,
       stage:result.verification.state === 'verified' ? 'verified' : 'uploaded',
       message:result.verification.state === 'verified' ?
-        t('verifySucceeded', result.verification.packageId, result.verification.runs) :
+        t(result.verification.existingBuild ? 'verifyExistingSucceeded' : 'verifySucceeded', result.verification.packageId, result.verification.runs) :
         t('verifyUploadOnly', result.id)
     });
     // Keep the ZIP until the completion state is safely recorded.
