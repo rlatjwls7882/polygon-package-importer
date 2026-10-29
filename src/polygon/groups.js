@@ -4,11 +4,12 @@ import { orderGroups } from '../package/groups.js';
 const dependencies = group => [...group.dependencies].sort().join('\0');
 
 export async function configureScoring({api, id, plan, target, apply}) {
+  const currentPercent = target?.packageSnapshot?.checkerPercent;
   const wantedPoints = plan.tests.some(t => t.points != null);
   const existingPoints = (target?.tests || []).some(t => t.points != null);
   // Percent mode has no documented info() getter. Explicitly set/reset it,
   // and verify it again in the built descriptor in full verification mode.
-  if (plan.checkerPercent === false && (wantedPoints || existingPoints))
+  if (plan.checkerPercent === false && (wantedPoints || existingPoints) && currentPercent !== false)
     await apply(t('formatCheckerPercent'), () => api.problem('enableTreatPointsFromCheckerAsPercent', id, {enable:'false'}));
   const desiredGroups = plan.groups.length > 0 || plan.tests.some(t => t.group);
   const currentGroups = (target?.tests || []).some(t => t.group);
@@ -20,7 +21,7 @@ export async function configureScoring({api, id, plan, target, apply}) {
 
   if (wantedPoints !== existingPoints || (wantedPoints && !target))
     await apply(t('syncConfiguringTestPoints'), () => api.problem('enablePoints', id, {enable:String(wantedPoints)}));
-  if (plan.checkerPercent === true)
+  if (plan.checkerPercent === true && (currentPercent !== true || wantedPoints !== existingPoints))
     await apply(t('formatCheckerPercent'), () => api.problem('enableTreatPointsFromCheckerAsPercent', id, {enable:'true'}));
   return !!target && ((desiredGroups && !currentGroups) || (wantedPoints && !existingPoints));
 }

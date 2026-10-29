@@ -33,5 +33,5 @@ export function packages(value) {
   return [...builds.values()].map(build => build.selected);
 }
 
-export const successfulComment = value => !String(value || '').trim() ||
-  /^Package created in \d+ ms with verification$/.test(String(value).trim());
+export const verifiedComment = value => /^Package created in \d+ ms with verification$/.test(String(value || '').trim());
+export const successfulComment = value => !String(value || '').trim() || verifiedComment(value);

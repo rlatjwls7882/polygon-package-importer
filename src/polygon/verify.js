@@ -2,7 +2,7 @@ import { t } from '../i18n.js';
 import { restoreCheckpoint, pinCheckpoint } from './verification/checkpoint.js';
 import { ZipArchive } from '../package/zip.js';
 import { checkInvocation } from './verification/invocation.js';
-import { currentRevision, packages, validId, successfulComment } from './verification/packages.js';
+import { currentRevision, packages, validId, successfulComment, verifiedComment } from './verification/packages.js';
 import { verifyBuiltDescriptor } from './verification/descriptor.js';
 
 // Keep the potentially large detail response out of the build-ZIP download
@@ -14,7 +14,7 @@ async function readInvocation(api, id, invocationId, pkg, plan) {
 }
 
 export async function verifyProblem({api, id, plan, archive, checkpoint = null,
-    save = async () => {}, emit = async () => {},
+    save = async () => {}, emit = async () => {}, allowExisting = false,
     sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), pollMs = 5000, maxPolls = 360, revisionCheckEvery = 12}) {
   // Decoded files are no longer needed while the server is building. Keep
   // only the compressed source; descriptor verification may read it again.
@@ -32,12 +32,28 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     // Persist before launching: losing the response must not start a second build.
     await save(state);
     await emit(t('verifyBuildStarting'));
-    const response = await api.problem('buildPackage', id, {full:'false', verify:'true'});
-    const started = response == null ? [] : packages(Array.isArray(response) ? response : [response]);
-    if (started.length > 1 || started.some(item => Number(item.revision) !== revision ||
-        state.beforeIds.includes(Number(item.id)))) throw Error(t('verifyInvalidResponse'));
-    state = started.length ? pinCheckpoint(state, Number(started[0].id)) : {...state, stage:'polling'};
-    await save(state);
+    let response;
+    try {
+      response = await api.problem('buildPackage', id, {full:'false', verify:'true'});
+    } catch (error) {
+      // Polygon refuses another verified build for an unchanged revision. Only
+      // this explicit pre-write refusal permits rechecking an already known ID.
+      if (!allowExisting || !/^problem\.buildPackage: problemId: There is already non-failed package for this revision with verification\.$/.test(String(error?.message))) throw error;
+      const candidates = before.filter(pkg => Number(pkg.revision) === revision && pkg.state === 'READY' &&
+        (pkg.type == null || pkg.type === 'standard') && verifiedComment(pkg.comment));
+      if (candidates.length !== 1) throw Error(t('verifyAmbiguousBuild'));
+      state = pinCheckpoint(state, Number(candidates[0].id), {existing:true});
+      await save(state);
+      if (await currentRevision(api, id) !== revision) throw Error(t('verifyRevisionChanged'));
+    }
+    if (!state.existingBuild) {
+      const started = response == null ? [] : packages(Array.isArray(response) ? response : [response]);
+      if (started.length > 1 || started.some(item => Number(item.revision) !== revision ||
+          state.beforeIds.includes(Number(item.id)))) throw Error(t('verifyInvalidResponse'));
+      state = started.length ? pinCheckpoint(state, Number(started[0].id)) : {...state, stage:'polling'};
+    }
+    if (state.existingBuild) await emit(t('verifyExistingBuild', state.packageId));
+    else await save(state);
   }
   let previousIds = state.packageId == null ? new Set(state.beforeIds) : null;
   const assertRevision = async () => {
@@ -80,9 +96,10 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
           const final = packages(await api.problem('packages', id)).find(item => Number(item.id) === Number(pkg.id));
           if (!final || final.state !== 'READY' || Number(final.revision) !== revision || !successfulComment(final.comment))
             throw Error(t('verifyInvalidResponse'));
-          const report = {state:'verified', revision, packageId:Number(pkg.id), ...result};
+          const report = {state:'verified', revision, packageId:Number(pkg.id), ...result,
+            ...(state.existingBuild ? {existingBuild:true} : {})};
           await save({...state, stage:'verified', report});
-          await emit(t('verifySucceeded', pkg.id, result.runs));
+          await emit(state.existingBuild ? t('verifyExistingSucceeded', pkg.id, result.runs) : t('verifySucceeded', pkg.id, result.runs));
           return report;
         }
       }

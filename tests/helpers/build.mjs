@@ -7,6 +7,19 @@ const clone = value => structuredClone(value);
 
 function builtArchive(state, transform) {
   const contents = {}, source = (name,type,path='files/'+name) => n('source',{path,...(type?{type}:{})});
+  for (const [lang, statement] of Object.entries(state.statements)) {
+    for (const key of ['name','legend','input','output','scoring','interaction','notes','tutorial'])
+      contents['statement-sections/'+lang+'/'+key+'.tex']=statement[key] || '';
+    let sample=0;
+    for (const test of [...state.tests.values()].sort((a,b)=>a.index-b.index)) if (test.useInStatements) {
+      const path='statement-sections/'+lang+'/example.'+(++sample);
+      contents[path]=test.inputForStatement || '';
+      contents[path+'.a']=test.outputForStatement || '';
+      if (test.interactionLogForStatement) contents[path+'.mu']=test.interactionLogForStatement;
+    }
+  }
+  for (const test of state.tests.values()) if (test.manual)
+    contents['tests/'+String(test.index).padStart(2,'0')]=test.input;
   const executables = [];
   for (const [name,body] of state.files.source) {
     contents['files/'+name]=body;
@@ -48,13 +61,14 @@ function builtArchive(state, transform) {
     name:group.name,'points-policy':group.pointsPolicy.toLowerCase().replaceAll('_','-'),
     'feedback-policy':group.feedbackPolicy.toLowerCase()
   },[n('dependencies',{},group.dependencies.map(name=>n('dependency',{group:name})))])):[];
-  const root=n('problem',{'short-name':'verified-fixture'},[
+  const root=n('problem',{'short-name':'verified-fixture',revision:String(state.entry.revision)},[
     n('properties',{},[n('property',{name:'tests-wellformed',value:String(!!state.info.wellFormed)})]),
     n('files',{},[n('executables',{},executables),n('resources',{},resources),n('auxiliary-files',{},auxiliary)]),
     n('assets',{},assets),n('judging',{'run-count':state.info.runTwice?'2':'1',
       'input-file':state.info.inputFile,'output-file':state.info.outputFile,
       'treat-points-from-checker-as-percent':String(state.checkerPercent)
     },[n('testset',{name:'tests'},[
+      n('input-path-pattern',{},[],'tests/%02d'),
       n('time-limit',{},[],String(state.info.timeLimit)),n('memory-limit',{},[],String(state.info.memoryLimit*1024*1024)),
       n('tests',{},tests),n('groups',{},groupNodes)
     ])])

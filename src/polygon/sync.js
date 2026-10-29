@@ -42,7 +42,15 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   const currentTags = existing ?
     tagsSnapshot(await read(t('syncComparingTags'), () => api.problem('viewTags', id))) : [];
 
-  const context = {api, id, plan, archive, target, read, apply, unchanged};
+  const changed = {judging:!existing, files:!existing, solutions:!existing};
+  const trackedAPI = {problem:(method, problemId, args = {}, options = {}) => {
+    if (['updateInfo','setChecker','setValidator','setInteractor'].includes(method)) changed.judging = true;
+    if (['saveFile','deleteFile'].includes(method)) changed.files = true;
+    if (['saveSolution','deleteSolution'].includes(method)) changed.solutions = true;
+    target?.packageSnapshot?.invalidate(method, args);
+    return api.problem(method, problemId, args, options);
+  }};
+  const context = {api:trackedAPI, id, plan, archive, target, read, apply, unchanged};
   let currentGroups = target && target.tests.some(test => test.group) ?
     await readRemoteGroups(context) : [];
   await syncInfo(context, currentInfo);
@@ -91,8 +99,8 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
 
   await verifyTests(context, testMutations);
   if (mutations > 0) {
-    await verifyJudging(context);
-    await verifyFileMetadata(context);
+    if (changed.judging) await verifyJudging(context);
+    await verifyFileMetadata({...context, changed});
   }
   await deleteStatementResources(context);
   return {mutations, testMutations, skipped};

@@ -15,6 +15,8 @@ export async function clearObsoleteSolutionTags(context, groups) {
       const key = Object.keys(scope)[0];
       const token = JSON.stringify([solution.name, key, scope[key]]);
       if (cleared.has(token) || solution.extraTags.some(tag => tag[key] === scope[key])) continue;
+      const known = target.packageSnapshot?.extraTags(solution.name);
+      if (known && !known.some(tag => tag[key] === scope[key])) {cleared.add(token); continue;}
       await apply(t('formatClearExtraTag', solution.name, scope[key]),
         () => api.problem('editSolutionExtraTags', id, {name:solution.name, ...scope, remove:'true'}));
       cleared.add(token);
@@ -22,8 +24,10 @@ export async function clearObsoleteSolutionTags(context, groups) {
   }
 }
 
-export async function syncSolutionTags({api, id, plan, apply}) {
+export async function syncSolutionTags({api, id, plan, target, apply}) {
   for (const solution of plan.solutions) for (const extra of solution.extraTags || []) {
+    const known = target?.packageSnapshot?.extraTags(solution.name);
+    if (known?.some(tag => tag.tag === extra.tag && tag.testset === extra.testset && tag.testGroup === extra.testGroup)) continue;
     await apply(t('formatSaveExtraTag', solution.name, extra.testGroup || extra.testset),
       () => api.problem('editSolutionExtraTags', id, {name:solution.name, ...extra, remove:'false'}));
   }

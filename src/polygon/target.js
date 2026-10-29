@@ -1,6 +1,7 @@
 import { testsSnapshot, filesSnapshot, namedSnapshot, statementsSnapshot, judgeTestsSnapshot } from './snapshot.js';
 import { t } from '../i18n.js';
-export async function readTarget(api, id, plan) {
+import { readPackageSnapshot } from './package-snapshot.js';
+export async function readTarget(api, id, plan, {emit} = {}) {
   const listed = await api.call('problems.list', { id });
   if (!Array.isArray(listed)) throw Error(t('polygonImportInvalidResponseFromPolygonProblemList'));
   const entry = listed.find(problem => String(problem.id) === String(id) && !problem.deleted);
@@ -24,12 +25,20 @@ export async function readTarget(api, id, plan) {
   const statements = statementsSnapshot(await api.problem('statements', id));
   const validatorTests = judgeTestsSnapshot(await api.problem('validatorTests', id), 'validator');
   const checkerTests = judgeTestsSnapshot(await api.problem('checkerTests', id), 'checker');
-  const tests = testsSnapshot(await api.problem('tests', id,
-    {testset:'tests', noInputs:String(!plan.tests.some(test => test.method === 'manual'))}));
-
-  return {
-    ...entry, tests, files, solutions, statements, statementResources, validatorTests, checkerTests
-  };
+  let packageSnapshot = await readPackageSnapshot(api, id, entry, emit);
+  try {
+    const manualInputs = plan.tests.some(test => test.method === 'manual');
+    let tests = testsSnapshot(await api.problem('tests', id,
+      {testset:'tests', noInputs:String(!manualInputs || !!packageSnapshot)}));
+    if (packageSnapshot && manualInputs && !await packageSnapshot.addInputs(tests, plan.tests)) {
+      packageSnapshot.dispose(); packageSnapshot = null;
+      tests = testsSnapshot(await api.problem('tests', id, {testset:'tests', noInputs:'false'}));
+    }
+    if (packageSnapshot) await emit?.(t('snapshotUsing'));
+    return {
+      ...entry, tests, files, solutions, statements, statementResources, validatorTests, checkerTests, packageSnapshot
+    };
+  } catch (error) {packageSnapshot?.dispose(); throw error;}
 }
 
 export function assertCurrentTarget(before, listed) {
