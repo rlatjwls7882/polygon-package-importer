@@ -37,7 +37,8 @@ are disposed together through `ui/lifetime.js`; credential refreshes are coalesc
 `polygon/request-session.js` owns serialized requests, response timers and abortable
 cooldowns. `api.js` retains signing, API semantics, pacing and retry policy.
 `src/polygon/sync.js` orders the writes; its sibling modules handle their own content.
-Source files are uploaded before judge selection; obsolete attachments are removed last.
+Headers and resource files are uploaded before sources because Polygon can compile
+during `saveFile`. Source files precede judge selection; obsolete attachments are removed last.
 `src/polygon/snapshot.js` validates remote lists and settings before they become
 an overwrite plan. `src/storage/database.js` owns connection/transaction completion;
 `src/package/text.js` shares EOL comparison and UTF-8 length bounds without full copies.
@@ -98,6 +99,13 @@ Resource `forTypes`/`stages`/`assets` linkage supports the API's COMPILE/SOLUTIO
 other configurations are refused before uploading. Validator self-tests retain group
 and testset context. Changed/obsolete judge tests are deleted before replacement.
 Public preview bodies, compiler metadata, and judge self-tests are read back before commit.
+Missing uploaded files are reported separately from compiler differences; a compiler
+difference includes both the requested and stored IDs. Either failure stops the commit.
+Empty tag lists use the delimiter-only `tags=,` representation accepted by Polygon;
+an empty `tags` field is rejected. Unchanged empty lists still avoid a write.
+File and solution bodies use multipart file parts while signatures cover the original
+UTF-8 content. URL-encoded file fields can trigger Polygon's legacy charset conversion
+and lose characters; metadata-only edits retain the ordinary form encoding.
 
 The API has no documented current getter for checker-percentage mode or solution extra
 tags. An overwrite of an unmodified, current working copy can compare against a READY

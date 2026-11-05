@@ -7,6 +7,39 @@ import { createMockI18n } from './helpers/i18n.mjs';
 import { assertNoDataWrites } from './helpers/noop.mjs';
 
 const wrote = mock => mock.calls.some(call=>/^(?:save|set|delete|clear|enable|edit|updateInfo|problem\.create)/.test(call.method));
+test('empty package tags are valid on create and clear existing tags on overwrite',async()=>{
+  const f=fixture(),mock=createPolygon();
+  await f.upload(mock);
+  assert.deepEqual(mock.state.tags,[]);
+  mock.state.tags=['old-tag'];
+  await f.upload(mock,'replace');
+  assert.deepEqual(mock.state.tags,[]);
+  const writes=mock.calls.filter(call=>call.method==='saveTags');
+  assert.equal(writes.length,2);assert(writes.every(call=>call.args.tags===','));
+  const start=mock.calls.length;await f.upload(mock,'replace');
+  assert(!mock.calls.slice(start).some(call=>call.method==='saveTags'));
+});
+for (const mode of ['create','replace']) test(`headers are current before Polygon compiles uploaded sources (${mode})`,async()=>{
+  const header='#define PACKAGE_HEADER_VERSION 2\n';
+  const f=fixture({interactive:true,generated:true,extraTags:true,mutate({root,contents}){
+    root.children.find(node=>node.tag==='files').children.find(node=>node.tag==='resources').children.push(n('file',{path:'files/testlib.h'}));
+    contents['files/testlib.h']=header;
+    for(const path of ['files/gen.cpp','files/val.cpp','files/interactor.cpp','solutions/main.cpp'])
+      contents[path]='#include "testlib.h"\n'+contents[path];
+  }}),mock=createPolygon(),original=mock.api.problem;
+  if(mode==='replace'){
+    mock.state.files.resource.set('testlib.h','#define PACKAGE_HEADER_VERSION 1\n');
+    mock.state.files.source.set('gen.cpp','// old generator\n');
+  }
+  mock.api.problem=(method,id,args={},options)=>{
+    if(['saveFile','saveSolution'].includes(method)&&args.file?.includes('#include "testlib.h"'))
+      assert.equal(mock.state.files.resource.get('testlib.h'),header,'Polygon compiles the source during saveFile/saveSolution');
+    return original(method,id,args,options);
+  };
+  await f.upload(mock,mode);
+  assert.equal(mock.state.solutions.get('main.cpp').tag,'MA');
+  assert.equal(mock.state.commits,1);
+});
 async function blocked(options) {
   const mock=createPolygon();
   await assert.rejects(()=>fixture(options).upload(mock));

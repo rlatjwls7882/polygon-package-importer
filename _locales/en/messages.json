@@ -243,7 +243,10 @@
     "message": "Saving extra tag: $1 / $2"
   },
   "formatSourceTypeMismatch": {
-    "message": "Compiler settings were not preserved for $1 (expected $2)."
+    "message": "Compiler settings differ for $1 (expected \"$2\", received \"$3\"). Changes were not committed."
+  },
+  "formatUploadedFileMissing": {
+    "message": "Uploaded file not found on Polygon: $1. Changes were not committed. Retry with the same ZIP."
   },
   "formatTargetExtraValidators": {
     "message": "The target has extra validators, or their configuration cannot be read. Overwrite stopped before changes."

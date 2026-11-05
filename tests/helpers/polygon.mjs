@@ -210,7 +210,7 @@ export function createPolygon() {
         state.groups.set(args.group,next);acyclic();return {};
       }
       case 'viewTags':return copy(state.tags);
-      case 'saveTags':state.tags=args.tags?args.tags.split(','):[];return {};
+      case 'saveTags':assert(args.tags,'Polygon rejects empty tag fields');state.tags=args.tags.split(',').filter(Boolean);return {};
       case 'stresses':return [];
       case 'validatorTests':return copy(state.validatorTests);
       case 'checkerTests':return copy(state.checkerTests);
