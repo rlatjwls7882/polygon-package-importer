@@ -101,6 +101,8 @@ and testset context. Changed/obsolete judge tests are deleted before replacement
 Public preview bodies, compiler metadata, and judge self-tests are read back before commit.
 Missing uploaded files are reported separately from compiler differences; a compiler
 difference includes both the requested and stored IDs. Either failure stops the commit.
+Empty tag lists use the delimiter-only `tags=,` representation accepted by Polygon;
+an empty `tags` field is rejected. Unchanged empty lists still avoid a write.
 
 The API has no documented current getter for checker-percentage mode or solution extra
 tags. An overwrite of an unmodified, current working copy can compare against a READY

@@ -7,6 +7,18 @@ import { createMockI18n } from './helpers/i18n.mjs';
 import { assertNoDataWrites } from './helpers/noop.mjs';
 
 const wrote = mock => mock.calls.some(call=>/^(?:save|set|delete|clear|enable|edit|updateInfo|problem\.create)/.test(call.method));
+test('empty package tags are valid on create and clear existing tags on overwrite',async()=>{
+  const f=fixture(),mock=createPolygon();
+  await f.upload(mock);
+  assert.deepEqual(mock.state.tags,[]);
+  mock.state.tags=['old-tag'];
+  await f.upload(mock,'replace');
+  assert.deepEqual(mock.state.tags,[]);
+  const writes=mock.calls.filter(call=>call.method==='saveTags');
+  assert.equal(writes.length,2);assert(writes.every(call=>call.args.tags===','));
+  const start=mock.calls.length;await f.upload(mock,'replace');
+  assert(!mock.calls.slice(start).some(call=>call.method==='saveTags'));
+});
 for (const mode of ['create','replace']) test(`headers are current before Polygon compiles uploaded sources (${mode})`,async()=>{
   const header='#define PACKAGE_HEADER_VERSION 2\n';
   const f=fixture({interactive:true,generated:true,extraTags:true,mutate({root,contents}){

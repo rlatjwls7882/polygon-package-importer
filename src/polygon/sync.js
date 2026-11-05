@@ -94,7 +94,8 @@ export async function syncPackage({api, id, plan, archive, target = null, read, 
   // Old generator files cannot be removed while the previous script uses them.
   await deleteObsoleteFiles(context);
   if (!existing || !sameTagList(currentTags, plan.tags))
-    await apply(t('syncSavingTags'), () => api.problem('saveTags', id, {tags:plan.tags.join(',')}));
+    // Polygon rejects an empty field; a delimiter-only list clears all tags.
+    await apply(t('syncSavingTags'), () => api.problem('saveTags', id, {tags:plan.tags.join(',') || ','}));
   else unchanged(t('syncTags'));
 
   await verifyTests(context, testMutations);
