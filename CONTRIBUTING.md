@@ -98,6 +98,8 @@ Resource `forTypes`/`stages`/`assets` linkage supports the API's COMPILE/SOLUTIO
 other configurations are refused before uploading. Validator self-tests retain group
 and testset context. Changed/obsolete judge tests are deleted before replacement.
 Public preview bodies, compiler metadata, and judge self-tests are read back before commit.
+Missing uploaded files are reported separately from compiler differences; a compiler
+difference includes both the requested and stored IDs. Either failure stops the commit.
 
 The API has no documented current getter for checker-percentage mode or solution extra
 tags. An overwrite of an unmodified, current working copy can compare against a READY
