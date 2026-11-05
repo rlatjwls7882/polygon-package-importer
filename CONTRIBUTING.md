@@ -103,6 +103,9 @@ Missing uploaded files are reported separately from compiler differences; a comp
 difference includes both the requested and stored IDs. Either failure stops the commit.
 Empty tag lists use the delimiter-only `tags=,` representation accepted by Polygon;
 an empty `tags` field is rejected. Unchanged empty lists still avoid a write.
+File and solution bodies use multipart file parts while signatures cover the original
+UTF-8 content. URL-encoded file fields can trigger Polygon's legacy charset conversion
+and lose characters; metadata-only edits retain the ordinary form encoding.
 
 The API has no documented current getter for checker-percentage mode or solution extra
 tags. An overwrite of an unmodified, current working copy can compare against a READY

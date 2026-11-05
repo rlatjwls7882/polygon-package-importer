@@ -84,8 +84,16 @@ export class PolygonAPI {
       const canonical = prefix + '/' + method + '?' + p.map(([k, v]) => k + '=' + v).join('&') + '#' + this.secret;
       const digest = await crypto.subtle.digest('SHA-512', encoder.encode(canonical));
       const hex = [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2, '0')).join('');
-      const form = new URLSearchParams();
-      for (const [k, v] of p) form.append(k, v);
+      // Polygon may transcode URL-encoded file fields using a legacy charset.
+      // A multipart file part preserves the UTF-8 bytes, including mixed EOLs.
+      const upload = ['problem.saveFile', 'problem.saveSolution'].includes(method) &&
+        p.some(([k]) => k === 'file');
+      const form = upload ? new FormData() : new URLSearchParams();
+      for (const [k, v] of p) {
+        if (upload && k === 'file')
+          form.append(k, new Blob([v], {type:'text/plain;charset=UTF-8'}), String(args.name));
+        else form.append(k, v);
+      }
       form.set('apiSig', prefix + hex);
       if (this.sessionActive && !this.sessionActive())
         throw Error(t('apiApiVaultLockedBeforeTheRequestUpload', method));
