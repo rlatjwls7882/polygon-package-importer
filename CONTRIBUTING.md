@@ -37,7 +37,8 @@ are disposed together through `ui/lifetime.js`; credential refreshes are coalesc
 `polygon/request-session.js` owns serialized requests, response timers and abortable
 cooldowns. `api.js` retains signing, API semantics, pacing and retry policy.
 `src/polygon/sync.js` orders the writes; its sibling modules handle their own content.
-Source files are uploaded before judge selection; obsolete attachments are removed last.
+Headers and resource files are uploaded before sources because Polygon can compile
+during `saveFile`. Source files precede judge selection; obsolete attachments are removed last.
 `src/polygon/snapshot.js` validates remote lists and settings before they become
 an overwrite plan. `src/storage/database.js` owns connection/transaction completion;
 `src/package/text.js` shares EOL comparison and UTF-8 length bounds without full copies.

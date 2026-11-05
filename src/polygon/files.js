@@ -13,8 +13,8 @@ function mayMatchLength(length, text) {
 
 function packageFiles(plan) {
   return [
-    ['source', plan.sources, 'sourceFiles'],
     ['resource', plan.resources, 'resourceFiles'],
+    ['source', plan.sources, 'sourceFiles'],
     ['aux', plan.aux, 'auxFiles']
   ];
 }
@@ -26,7 +26,8 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
     return cached === undefined ? read(label, () => api.problem(type === 'solution' ? 'viewSolution' : 'viewFile', id,
       type === 'solution' ? {name} : {type, name}, {raw:true})) : cached;
   };
-  // Upload source and resource files before changing checker/generator settings.
+  // Polygon can compile a source during saveFile, so its headers/resources
+  // must already be current. Both precede checker/generator selection.
   for (const [type, list, key] of fileTypes) {
     const remote = new Map((target?.files?.[key] || []).map(f => [f.name, f]));
     for (const file of list) {
