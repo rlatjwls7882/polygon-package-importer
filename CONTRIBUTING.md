@@ -37,8 +37,10 @@ are disposed together through `ui/lifetime.js`; credential refreshes are coalesc
 `polygon/request-session.js` owns serialized requests, response timers and abortable
 cooldowns. `api.js` retains signing, API semantics, pacing and retry policy.
 `src/polygon/sync.js` orders the writes; its sibling modules handle their own content.
-Headers and resource files are uploaded before sources because Polygon can compile
-during `saveFile`. Source files precede judge selection; obsolete attachments are removed last.
+An old main is demoted before changing its compilation resources. Obsolete grader
+links are cleared before uploading new solutions; their files remain until replacement
+succeeds. Headers and resource files precede sources because Polygon can compile
+during `saveFile`/`saveSolution`. Source files precede judge selection; obsolete attachments are removed last.
 `src/polygon/snapshot.js` validates remote lists and settings before they become
 an overwrite plan. `src/storage/database.js` owns connection/transaction completion;
 `src/package/text.js` shares EOL comparison and UTF-8 length bounds without full copies.
@@ -186,7 +188,10 @@ surrogates follow TextEncoder's length semantics. Tag-only solution updates
 use the API's optional `file` parameter rather than downloading and re-uploading the
 old main solution. An explicit `file: Field should not be empty` validation error
 falls back to the original source; network errors do not trigger this fallback.
-API response parsing and backoff stay in the serialized request
+The same explicit required-file refusal on metadata-only `saveFile` edits falls back
+to the wanted source or the existing resource text. Obsolete-resource reads use strict
+UTF-8 decoding and refuse NULs, so the fallback cannot silently re-encode binary data.
+Other errors stop without replaying the mutation. API response parsing and backoff stay in the serialized request
 queue; network errors on mutations are still not retried automatically.
 Discarded HTTP bodies are cancelled, request timers are cleared after body consumption,
 and queue tails do not retain response values. Offscreen completion disposes its API

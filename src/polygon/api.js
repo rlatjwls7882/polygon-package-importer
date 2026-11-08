@@ -112,12 +112,12 @@ export class PolygonAPI {
     });
   }
 
-  async callSerial(method, args, { binary = false, raw = false } = {}) {
+  async callSerial(method, args, { binary = false, raw = false, strictText = false } = {}) {
     for (let attempt = 0; attempt <= 4; attempt++) {
       const response = await this.requestOnce(method, args);
       try {
         const limit = response.ok ? (raw ? this.limits.rawBytes : this.limits.jsonBytes) : this.limits.errorBytes;
-        const textBody = () => readText(response, limit, t('apiResponseTooLarge', method, limit));
+        const textBody = () => readText(response, limit, t('apiResponseTooLarge', method, limit), strictText);
         const rateLimited = response.status === 429;
         if (rateLimited) await discardResponse(response);
         let payload = null;

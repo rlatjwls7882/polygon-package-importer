@@ -21,43 +21,33 @@ function packageFiles(plan) {
 
 export async function syncFiles({api, id, plan, archive, target, read, apply, unchanged}) {
   const fileTypes = packageFiles(plan);
-  const previousFile = async (type, name, label) => {
+  const previousFile = async (type, name, label, strict = false) => {
     const cached = target?.packageSnapshot?.file(type, name);
-    return cached === undefined ? read(label, () => api.problem(type === 'solution' ? 'viewSolution' : 'viewFile', id,
-      type === 'solution' ? {name} : {type, name}, {raw:true})) : cached;
-  };
-  // Polygon can compile a source during saveFile, so its headers/resources
-  // must already be current. Both precede checker/generator selection.
-  for (const [type, list, key] of fileTypes) {
-    const remote = new Map((target?.files?.[key] || []).map(f => [f.name, f]));
-    for (const file of list) {
-      const localContent = await archive.text(file.path);
-      const old = remote.get(file.name);
-      let same = false;
-      if (old) {
-        if (mayMatchLength(old.length, localContent)) {
-          const remoteContent = await previousFile(type, file.name, t('syncComparing', type, file.name));
-          same = sameText(remoteContent, localContent);
-        }
-      }
-      const props = {type, name:file.name};
-      if (!same) props.file = localContent;
-      const sourceType = apiSourceType(file.sourceType);
-      if (type === 'source' && sourceType && old?.sourceType !== sourceType)
-        props.sourceType = sourceType;
-      if (type === 'resource' && Object.hasOwn(file, 'resourceAdvancedProperties') &&
-          JSON.stringify(canonicalResource(old?.resourceAdvancedProperties)) !==
-          JSON.stringify(apiResource(file.resourceAdvancedProperties))) {
-        const advanced = file.resourceAdvancedProperties;
-        if (advanced) Object.assign(props, {forTypes:apiResource(advanced).forTypes,
-          stages:advanced.stages.join(';'), assets:advanced.assets.join(';')});
-        else props.forTypes = ''; // Documented way to remove grader linkage.
-      }
-      if (Object.keys(props).length === 2) unchanged(type + ': ' + file.name);
-      else await apply(t('syncSaving', type, file.name), () => api.problem('saveFile', id, props));
+    if (cached !== undefined) return cached;
+    try {
+      return await read(label, () => api.problem(type === 'solution' ? 'viewSolution' : 'viewFile', id,
+        type === 'solution' ? {name} : {type, name}, {raw:true, ...(strict ? {strictText:true} : {})}));
+    } catch (error) {
+      if (strict && error?.name === 'TypeError') throw Error(t('syncFileSourceUnavailable', name));
+      throw error;
     }
+  };
+  let requiresFile = false;
+  async function saveFile(props, original) {
+    if (Object.hasOwn(props, 'file')) return api.problem('saveFile', id, props);
+    if (!requiresFile) {
+      try { return await api.problem('saveFile', id, props); }
+      catch (error) {
+        // Add the unchanged body only after explicit pre-write validation.
+        if (!/^(?:problem\.saveFile:\s*)?file:\s*Field should not be empty\.?$/i.test(String(error?.message).trim()))
+          throw error;
+        requiresFile = true;
+      }
+    }
+    const file = await original();
+    if (typeof file !== 'string' || file.includes('\0')) throw Error(t('syncFileSourceUnavailable', props.name));
+    return api.problem('saveFile', id, {...props, file});
   }
-
   let requiresSolutionFile = false;
   async function saveSolution(props, original) {
     if (Object.hasOwn(props, 'file')) return api.problem('saveSolution', id, props);
@@ -90,6 +80,47 @@ export async function syncFiles({api, id, plan, archive, target, read, apply, un
         previousFile('solution', previousMain.name, t('syncComparingSolution', previousMain.name))));
     remoteSolutions.set(previousMain.name, {...previousMain, tag});
   }
+  // Tag-only fallback can compile the old main, so demote it with its original
+  // resources first. Obsolete graders must then stop affecting new solutions.
+  const wantedResources = new Set(plan.resources.map(file => file.name));
+  for (const file of target?.files?.resourceFiles || []) {
+    if (wantedResources.has(file.name) || !file.resourceAdvancedProperties) continue;
+    await apply(t('syncClearingObsoleteResourceLink', file.name), () =>
+      saveFile({type:'resource', name:file.name, forTypes:''}, () =>
+        previousFile('resource', file.name, t('syncComparing', 'resource', file.name), true)));
+  }
+  // Polygon can compile a source during saveFile, so its headers/resources
+  // must already be current. Both precede checker/generator selection.
+  for (const [type, list, key] of fileTypes) {
+    const remote = new Map((target?.files?.[key] || []).map(f => [f.name, f]));
+    for (const file of list) {
+      const localContent = await archive.text(file.path);
+      const old = remote.get(file.name);
+      let same = false;
+      if (old) {
+        if (mayMatchLength(old.length, localContent)) {
+          const remoteContent = await previousFile(type, file.name, t('syncComparing', type, file.name));
+          same = sameText(remoteContent, localContent);
+        }
+      }
+      const props = {type, name:file.name};
+      if (!same) props.file = localContent;
+      const sourceType = apiSourceType(file.sourceType);
+      if (type === 'source' && sourceType && old?.sourceType !== sourceType)
+        props.sourceType = sourceType;
+      if (type === 'resource' && Object.hasOwn(file, 'resourceAdvancedProperties') &&
+          JSON.stringify(canonicalResource(old?.resourceAdvancedProperties)) !==
+          JSON.stringify(apiResource(file.resourceAdvancedProperties))) {
+        const advanced = file.resourceAdvancedProperties;
+        if (advanced) Object.assign(props, {forTypes:apiResource(advanced).forTypes,
+          stages:advanced.stages.join(';'), assets:advanced.assets.join(';')});
+        else props.forTypes = ''; // Documented way to remove grader linkage.
+      }
+      if (Object.keys(props).length === 2) unchanged(type + ': ' + file.name);
+      else await apply(t('syncSaving', type, file.name), () => saveFile(props, () => localContent));
+    }
+  }
+
   for (const solution of plan.solutions) {
     const old = remoteSolutions.get(solution.name);
     const localContent = await archive.text(solution.path);

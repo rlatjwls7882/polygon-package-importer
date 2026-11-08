@@ -257,6 +257,12 @@
   "formatUnsupportedResourceTypes": {
     "message": "Unsupported resource language filter for $1: $2. This importer supports one language group (cpp.* or python.*). Compiler-specific and combined filters cannot be preserved."
   },
+  "syncClearingObsoleteResourceLink": {
+    "message": "Clearing obsolete resource linkage: $1"
+  },
+  "syncFileSourceUnavailable": {
+    "message": "Cannot safely read the existing text of $1 to update its settings."
+  },
   "formatVerifyFiles": {
     "message": "Verifying source and resource settings"
   },
