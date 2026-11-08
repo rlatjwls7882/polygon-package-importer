@@ -296,6 +296,9 @@
   "modelATestReferencesAGroupNotDefined": {
     "message": "A test references a group not defined in the package."
   },
+  "modelUnsupportedSourceUnicode": {
+    "message": "Polygon does not accept some Unicode characters (such as emoji) in source files: $1. Remove those characters before uploading."
+  },
   "modelCannotUploadBinaryFiles": {
     "message": "Cannot upload binary files: $1"
   },

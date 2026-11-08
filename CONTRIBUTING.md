@@ -84,6 +84,9 @@ Exactly one main solution is required. Multiple validators (including extra vali
 already selected on an overwrite target) are rejected: the public API has no setter
 for that configuration. Binary-only interactors and statement images remain unsupported.
 No downloaded compiler or source is run locally.
+Polygon rejects supplementary Unicode characters (above U+FFFF, including emoji)
+in source and solution files. Package analysis reports the affected paths before
+contacting Polygon. Resource and test text retain their existing Unicode support.
 
 Original ZIP compiler identifiers, filenames, paths and source bytes are preserved.
 At the API boundary only, generic `cpp.g++20` maps to Polygon's

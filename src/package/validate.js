@@ -17,12 +17,14 @@ export async function validatePackage(archive, plan) {
     throw Error(t('syncZipContainsSolutionsWithDuplicateNames'));
   if (plan.info.interactive && !plan.interactor)
     throw Error(t('packageMissingInteractorSource'));
+  const sourcePaths = new Set([...plan.sources, ...plan.solutions].map(file => file.path));
   const checked = new Map();
   const inspect = async (path, checkNul = false) => {
     if (!checked.has(path) || (checkNul && checked.get(path).valid && checked.get(path).hasNul === undefined)) {
       try {
         const text = await archive.text(path);
-        checked.set(path, {valid:true, ...(checkNul ? {hasNul:text.includes('\0')} : {})});
+        checked.set(path, {valid:true, ...(checkNul ? {hasNul:text.includes('\0'),
+          hasSupplementary:sourcePaths.has(path) && /[\uD800-\uDBFF][\uDC00-\uDFFF]/.test(text)} : {})});
       } catch (error) {
         if (error?.name === 'AbortError') throw error;
         checked.set(path, {valid:false, hasNul:false});
@@ -31,16 +33,22 @@ export async function validatePackage(archive, plan) {
     return checked.get(path);
   };
   const binaryPaths = new Set();
+  const unsupportedSourcePaths = new Set();
   // Sources and solutions must be textual. Binary statement resources cannot be safely
   // round-tripped through the current text-only API adapter.
   for (const {path} of [...plan.sources, ...plan.solutions, ...plan.resources, ...plan.aux]) {
     const result = await inspect(path, true);
     if (!result.valid || result.hasNul) binaryPaths.add(path);
+    // Polygon accepts supplementary characters in resources, but rejects them
+    // in source/solution bodies. Refuse before any target queries or writes.
+    else if (sourcePaths.has(path) && result.hasSupplementary) unsupportedSourcePaths.add(path);
   }
   const sectionsExtras = archive.names().filter(p => /^statement-sections\/[^/]+\//.test(p) &&
     !/\/(?:name|legend|input|output|notes|scoring|interaction|tutorial|example\.\d+(?:\.a|\.mu)?)\.tex?$/.test(p) &&
     !/\/example\.\d+(?:\.a|\.mu)?$/.test(p));
   if (binaryPaths.size) plan.unsupported.push(t('modelCannotUploadBinaryFiles', [...binaryPaths].join(', ')));
+  if (unsupportedSourcePaths.size)
+    plan.unsupported.push(t('modelUnsupportedSourceUnicode', [...unsupportedSourcePaths].join(', ')));
   if (sectionsExtras.length) plan.unsupported.push(t('modelCannotUploadStatementImagesOrExtraResources', sectionsExtras.slice(0,12).join(', ')));
   for (const test of plan.tests) {
     for (const path of [test.path, test.outputPath, test.sampleInputPath, test.sampleOutputPath, test.interactionLogPath].filter(Boolean)) {

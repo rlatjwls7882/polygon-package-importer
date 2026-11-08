@@ -296,6 +296,9 @@
   "modelATestReferencesAGroupNotDefined": {
     "message": "테스트가 참조하는 그룹이 그룹 정의 목록에 없습니다."
   },
+  "modelUnsupportedSourceUnicode": {
+    "message": "Polygon은 소스 파일의 이모지 등 일부 유니코드 문자를 지원하지 않습니다: $1. 해당 문자를 제거한 뒤 다시 선택하세요."
+  },
   "modelCannotUploadBinaryFiles": {
     "message": "바이너리 파일은 자동 업로드 불가: $1"
   },
