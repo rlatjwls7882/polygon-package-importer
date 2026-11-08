@@ -221,6 +221,12 @@ also turns off this option. Upload-only jobs say **execution not checked**, neve
 
 1. Save and compare readable metadata; abort without committing on a mismatch.
 2. Commit the working copy. Polygon package readiness requires a clean revision.
+   A lost/failed commit response is never retried. For an existing target, exactly
+   one new clean revision (including its working-copy revision and write access)
+   permits continuing only with build verification enabled. Verification pins that
+   confirmed revision and still checks every run, descriptor and file. Ambiguous,
+   dirty, inaccessible or changed revisions remain errors. Upload-only jobs stop
+   and report a confirmed commit separately from unverified contents.
 3. Persist a checkpoint, start `buildPackage(full=false, verify=true)`, and pin the new
    package ID/revision. A lost response is resolved from the pre-build package list;
    ambiguous candidates stop instead of guessing or launching a second build.

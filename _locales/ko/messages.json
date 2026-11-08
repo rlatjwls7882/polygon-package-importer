@@ -296,6 +296,12 @@
   "modelATestReferencesAGroupNotDefined": {
     "message": "테스트가 참조하는 그룹이 그룹 정의 목록에 없습니다."
   },
+  "verifyCommitResponseRecovered": {
+    "message": "커밋 응답은 실패했지만 새 리비전 $1을 확인했습니다. 빌드와 파일 내용을 검증합니다."
+  },
+  "verifyCommitConfirmedNotVerified": {
+    "message": "리비전 $1의 커밋은 확인했지만 응답 오류로 내용 검증을 완료하지 못했습니다. 빌드·실행 검증을 켜고 같은 ZIP을 다시 선택하세요."
+  },
   "modelUnsupportedSourceUnicode": {
     "message": "Polygon은 소스 파일의 이모지 등 일부 유니코드 문자를 지원하지 않습니다: $1. 해당 문자를 제거한 뒤 다시 선택하세요."
   },

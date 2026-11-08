@@ -296,6 +296,12 @@
   "modelATestReferencesAGroupNotDefined": {
     "message": "A test references a group not defined in the package."
   },
+  "verifyCommitResponseRecovered": {
+    "message": "The commit response failed, but clean revision $1 was confirmed. Checking its build and file contents."
+  },
+  "verifyCommitConfirmedNotVerified": {
+    "message": "Revision $1 was committed, but its contents were not verified after a commit response error. Enable build verification and select the same ZIP again."
+  },
   "modelUnsupportedSourceUnicode": {
     "message": "Polygon does not accept some Unicode characters (such as emoji) in source files: $1. Remove those characters before uploading."
   },

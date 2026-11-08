@@ -14,7 +14,7 @@ async function readInvocation(api, id, invocationId, pkg, plan) {
 }
 
 export async function verifyProblem({api, id, plan, archive, checkpoint = null,
-    save = async () => {}, emit = async () => {}, allowExisting = false,
+    save = async () => {}, emit = async () => {}, allowExisting = false, expectedRevision = null,
     sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), pollMs = 5000, maxPolls = 360, revisionCheckEvery = 12}) {
   // Decoded files are no longer needed while the server is building. Keep
   // only the compressed source; descriptor verification may read it again.
@@ -23,6 +23,7 @@ export async function verifyProblem({api, id, plan, archive, checkpoint = null,
     throw Error(t('verifyInvalidCheckpoint'));
   let state = checkpoint ? restoreCheckpoint(checkpoint, id) : null;
   const revision = await currentRevision(api, id);
+  if (expectedRevision !== null && revision !== expectedRevision) throw Error(t('verifyRevisionChanged'));
   if (state && state.revision !== revision) throw Error(t('verifyRevisionChanged'));
   if (checkpoint?.packageId != null && checkpoint.beforeIds.length) await save(state);
   checkpoint = null;
