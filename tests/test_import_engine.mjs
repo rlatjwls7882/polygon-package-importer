@@ -99,7 +99,7 @@ async function buildMock() {
             state.tests.push({index:2,manual:false,useInStatements:false,description:''});
           return {};
         case 'saveTest':return {};
-        case 'saveTags':state.tags=args.tags.split(',');return {};
+        case 'saveTags':state.tags=args.tags.split(',').filter(Boolean);return {};
         case 'updateInfo':Object.assign(state.info,args);return {};
         case 'saveStatement':state.statements[args.lang]={...state.statements[args.lang],...args};return {};
         case 'saveFile': {

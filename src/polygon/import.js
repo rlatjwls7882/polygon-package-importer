@@ -5,6 +5,7 @@ import { loadPolygonPackage } from '../package/load.js';
 import { apiSourceType } from '../package/metadata.js';
 import { syncPackage } from './sync.js';
 import { readTarget, assertCurrentTarget } from './target.js';
+import { commitProblem } from './commit.js';
 
 export async function executeImport({job, api, onProgress = async () => {}, onCreated = async () => {},
     onCheckpoint = async () => {}, verificationOptions = {}}) {
@@ -29,7 +30,7 @@ export async function executeImport({job, api, onProgress = async () => {}, onCr
 }
 
 async function importPackage({job, api, archive, plan, onProgress, onCreated, onCheckpoint, verificationOptions}) {
-  let id = null, committed = false, changed = false;
+  let id = null, committed = false, changed = false, confirmedRevision = null;
   const emit = (message, progress = null, stage = 'uploading') => onProgress({message, progress, stage, committed});
 
   const step = async (label, task) => {
@@ -80,13 +81,12 @@ async function importPackage({job, api, archive, plan, onProgress, onCreated, on
 
     if (job.commit && (changed || !!current?.modified)) {
       const commit = await step(t('polygonImportCommittingChanges'),
-        () => api.problem('commitChanges', id,
-          {minorChanges:'true', message:'Import from Polygon ZIP Uploader'}));
-      if (!commit || commit.conflictOccurred ||
-          (commit.committed !== true && commit.message !== 'No changes')) {
-        throw Error(t('polygonImportCouldNotVerifyCommitResult'));
-      }
+        () => commitProblem({api, id, revision:current?.revision, verify:job.verify}));
       committed = true;
+      if (commit.recovered) {
+        confirmedRevision = commit.revision;
+        await emit(t('verifyCommitResponseRecovered', commit.revision));
+      }
     } else if (job.commit && current?.modified === false && !changed) committed = true;
 
     // Old manual-input snapshots can dwarf the archive. They are only needed
@@ -96,15 +96,15 @@ async function importPackage({job, api, archive, plan, onProgress, onCreated, on
     current = null;
     let verification = {state:'not-run'};
     if (job.verify) {
-      verification = await verifyProblem({api, id, plan, archive, save:onCheckpoint, allowExisting,
+      verification = await verifyProblem({api, id, plan, archive, save:onCheckpoint, allowExisting, expectedRevision:confirmedRevision,
         emit:message => emit(message, null, 'verifying'), ...verificationOptions});
     }
     const details = t('polygonImportChangesSkipped', result.mutations, result.skipped);
     await emit(t('polygonImportProblemComplete', id, details), 100, job.verify ? 'verified' : 'uploaded');
     return {id, name:plan.name, committed, verification, ...result};
   } catch (error) {
-    error.partial = changed || committed;
-    error.committed = committed;
+    error.partial = changed || committed || error.committed === true;
+    error.committed = committed || error.committed === true;
     error.problemId = id;
     throw error;
   } finally {current?.packageSnapshot?.dispose();}

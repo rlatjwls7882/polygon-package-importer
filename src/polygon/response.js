@@ -39,8 +39,8 @@ export async function readBinary(response, maxBytes, tooLarge) {
   return blob;
 }
 
-export async function readText(response, maxBytes, tooLarge) {
-  const decoder = new TextDecoder();
+export async function readText(response, maxBytes, tooLarge, fatal = false) {
+  const decoder = new TextDecoder('utf-8', {fatal});
   let text = '';
   if (await consume(response, maxBytes, tooLarge, chunk => {text += decoder.decode(chunk, {stream:true});}))
     return text + decoder.decode();

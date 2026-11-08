@@ -2,6 +2,7 @@ import './helpers/i18n.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { verifyFileMetadata } from '../src/polygon/file-metadata.js';
+import { createMockI18n } from './helpers/i18n.mjs';
 const plan=()=>({sources:[],solutions:[],resources:[],aux:[]});
 const read=(_,task)=>task();
 
@@ -45,4 +46,16 @@ test('untyped solutions still have their existence checked when files are verifi
 test('all required metadata is checked before success, including a changed compiler',async()=>{
   const p=plan();p.solutions=[{name:'main.cpp',sourceType:'cpp.g++20'}];
   await assert.rejects(()=>verifyFileMetadata({id:42,plan:p,read,api:{problem:async()=>[{name:'main.cpp',sourceType:'cpp.g++17'}]}}));
+});
+
+for (const locale of ['en','ko']) test(`missing uploaded solutions and compiler differences have distinct diagnostics (${locale})`,async()=>{
+  const previous=chrome.i18n;
+  chrome.i18n=createMockI18n(locale);
+  try {
+    const p=plan();p.solutions=[{name:'MCS.cpp',sourceType:'cpp.g++20'}];
+    const verify=solutions=>verifyFileMetadata({id:42,plan:p,read,api:{problem:async()=>solutions}});
+    await assert.rejects(()=>verify([]),error=>error.message===chrome.i18n.getMessage('formatUploadedFileMissing',['MCS.cpp']));
+    await assert.rejects(()=>verify([{name:'MCS.cpp',sourceType:'cpp.g++17'}]),error=>
+      error.message===chrome.i18n.getMessage('formatSourceTypeMismatch',['MCS.cpp','cpp.gcc13-64-winlibs-g++20','cpp.g++17']));
+  } finally {chrome.i18n=previous;}
 });

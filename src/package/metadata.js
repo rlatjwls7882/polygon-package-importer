@@ -15,6 +15,7 @@ const API_SOURCE_TYPES = new Map([
   ['cpp.g++20', 'cpp.gcc13-64-winlibs-g++20'],
   ['cpp.g++23', 'cpp.gcc14-64-msys2-g++23']
 ]);
+const API_RESOURCE_GROUPS = new Set(['cpp.*', 'python.*']);
 export function apiSourceType(value) { return API_SOURCE_TYPES.get(value) ?? value; }
 
 export function readSourceType(element) {
@@ -30,13 +31,15 @@ export function readSourceType(element) {
 export function readResourceProperties(element) {
   const stages = CHILD(element, 'stages'), assets = CHILD(element, 'assets');
   if (!element.hasAttribute('for-types') && !stages && !assets) return null;
-  const forTypes = ATTR(element, 'for-types').split(/[;:]/).map(value => value.trim());
+  const rawTypes = ATTR(element, 'for-types');
+  const forTypes = [...new Set(rawTypes.split(/[;:]/).map(value => value.trim()))];
   const stageNames = CHILDREN(stages, 'stage').map(node => ATTR(node, 'name').toUpperCase());
   const assetNames = CHILDREN(assets, 'asset').map(node => ATTR(node, 'name').toUpperCase());
-  // These are the combinations documented by saveFile, not all combinations
-  // that can exist in a package. Refuse the rest before creating a problem.
-  if (forTypes.some(value => !/^[A-Za-z0-9*?][A-Za-z0-9.+_*?-]{0,127}$/.test(value)) ||
-      stageNames.length !== 1 || stageNames[0] !== 'COMPILE' ||
+  // The API accepts one language group, not compiler IDs or arbitrary patterns.
+  // Never broaden a compiler-specific filter to make an upload succeed.
+  if (forTypes.length !== 1 || !API_RESOURCE_GROUPS.has(forTypes[0]))
+    throw Error(t('formatUnsupportedResourceTypes', ATTR(element, 'path'), rawTypes.slice(0, 200)));
+  if (stageNames.length !== 1 || stageNames[0] !== 'COMPILE' ||
       assetNames.length !== 1 || assetNames[0] !== 'SOLUTION' ||
       (element.hasAttribute('main') && ATTR(element, 'main') !== 'false'))
     throw Error(t('formatUnsupportedResourceProperties', ATTR(element, 'path')));
@@ -51,11 +54,7 @@ export function canonicalResource(value) {
     stages:[...value.stages].sort(), assets:[...value.assets].sort()};
 }
 
-export function apiResource(value) {
-  const result = canonicalResource(value);
-  if (!result || result.invalid) return result;
-  return {...result, forTypes:[...new Set(result.forTypes.split(';').map(apiSourceType))].sort().join(';')};
-}
+export function apiResource(value) { return canonicalResource(value); }
 
 export function readExtraTags(solution) {
   const result = [], scopes = new Set();

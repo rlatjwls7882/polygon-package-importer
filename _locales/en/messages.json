@@ -243,13 +243,25 @@
     "message": "Saving extra tag: $1 / $2"
   },
   "formatSourceTypeMismatch": {
-    "message": "Compiler settings were not preserved for $1 (expected $2)."
+    "message": "Compiler settings differ for $1 (expected \"$2\", received \"$3\"). Changes were not committed."
+  },
+  "formatUploadedFileMissing": {
+    "message": "Uploaded file not found on Polygon: $1. Changes were not committed. Retry with the same ZIP."
   },
   "formatTargetExtraValidators": {
     "message": "The target has extra validators, or their configuration cannot be read. Overwrite stopped before changes."
   },
   "formatUnsupportedResourceProperties": {
     "message": "Unsupported resource linkage for $1. Only COMPILE/SOLUTION resources can be restored by the API."
+  },
+  "formatUnsupportedResourceTypes": {
+    "message": "Unsupported resource language filter for $1: $2. This importer supports one language group (cpp.* or python.*). Compiler-specific and combined filters cannot be preserved."
+  },
+  "syncClearingObsoleteResourceLink": {
+    "message": "Clearing obsolete resource linkage: $1"
+  },
+  "syncFileSourceUnavailable": {
+    "message": "Cannot safely read the existing text of $1 to update its settings."
   },
   "formatVerifyFiles": {
     "message": "Verifying source and resource settings"
@@ -292,6 +304,15 @@
   },
   "modelATestReferencesAGroupNotDefined": {
     "message": "A test references a group not defined in the package."
+  },
+  "verifyCommitResponseRecovered": {
+    "message": "The commit response failed, but clean revision $1 was confirmed. Checking its build and file contents."
+  },
+  "verifyCommitConfirmedNotVerified": {
+    "message": "Revision $1 was committed, but its contents were not verified after a commit response error. Enable build verification and select the same ZIP again."
+  },
+  "modelUnsupportedSourceUnicode": {
+    "message": "Polygon does not accept some Unicode characters (such as emoji) in source files: $1. Remove those characters before uploading."
   },
   "modelCannotUploadBinaryFiles": {
     "message": "Cannot upload binary files: $1"

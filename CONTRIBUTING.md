@@ -37,7 +37,10 @@ are disposed together through `ui/lifetime.js`; credential refreshes are coalesc
 `polygon/request-session.js` owns serialized requests, response timers and abortable
 cooldowns. `api.js` retains signing, API semantics, pacing and retry policy.
 `src/polygon/sync.js` orders the writes; its sibling modules handle their own content.
-Source files are uploaded before judge selection; obsolete attachments are removed last.
+An old main is demoted before changing its compilation resources. Obsolete grader
+links are cleared before uploading new solutions; their files remain until replacement
+succeeds. Headers and resource files precede sources because Polygon can compile
+during `saveFile`/`saveSolution`. Source files precede judge selection; obsolete attachments are removed last.
 `src/polygon/snapshot.js` validates remote lists and settings before they become
 an overwrite plan. `src/storage/database.js` owns connection/transaction completion;
 `src/package/text.js` shares EOL comparison and UTF-8 length bounds without full copies.
@@ -83,21 +86,34 @@ Exactly one main solution is required. Multiple validators (including extra vali
 already selected on an overwrite target) are rejected: the public API has no setter
 for that configuration. Binary-only interactors and statement images remain unsupported.
 No downloaded compiler or source is run locally.
+Polygon rejects supplementary Unicode characters (above U+FFFF, including emoji)
+in source and solution files. Package analysis reports the affected paths before
+contacting Polygon. Resource and test text retain their existing Unicode support.
 
 Original ZIP compiler identifiers, filenames, paths and source bytes are preserved.
 At the API boundary only, generic `cpp.g++20` maps to Polygon's
 `cpp.gcc13-64-winlibs-g++20`, and `cpp.g++23` maps to
 `cpp.gcc14-64-msys2-g++23`. Each resolution is reported once in the import log;
 the C++ standard is not downgraded. The explicit IDs are used for source files,
-solutions, exact grader `forTypes`, metadata read-back and built-descriptor checks.
+solutions, metadata read-back and built-descriptor checks.
 Concrete native compiler IDs remain exact; unknown IDs and uncertain write failures
 are not retried using a default or another compiler. The ZIP itself is never rewritten.
 Compiler references: [rbx Polygon C++20 mapping](https://rbx.rsalesc.dev/setters/cheatsheet/)
 and [Polygon C++23 identifier](https://codeforces.com/blog/entry/133919).
-Resource `forTypes`/`stages`/`assets` linkage supports the API's COMPILE/SOLUTION subset;
-other configurations are refused before uploading. Validator self-tests retain group
+Resource `forTypes`/`stages`/`assets` linkage supports COMPILE/SOLUTION with one
+language group, `cpp.*` or `python.*`. Group selectors are independent of compiler
+IDs and are never passed through source-compiler alias resolution. Exact compiler
+filters, combined groups and other configurations fail before API queries or writes;
+their applicability is never broadened. Validator self-tests retain group
 and testset context. Changed/obsolete judge tests are deleted before replacement.
 Public preview bodies, compiler metadata, and judge self-tests are read back before commit.
+Missing uploaded files are reported separately from compiler differences; a compiler
+difference includes both the requested and stored IDs. Either failure stops the commit.
+Empty tag lists use the delimiter-only `tags=,` representation accepted by Polygon;
+an empty `tags` field is rejected. Unchanged empty lists still avoid a write.
+File and solution bodies use multipart file parts while signatures cover the original
+UTF-8 content. URL-encoded file fields can trigger Polygon's legacy charset conversion
+and lose characters; metadata-only edits retain the ordinary form encoding.
 
 The API has no documented current getter for checker-percentage mode or solution extra
 tags. An overwrite of an unmodified, current working copy can compare against a READY
@@ -172,7 +188,10 @@ surrogates follow TextEncoder's length semantics. Tag-only solution updates
 use the API's optional `file` parameter rather than downloading and re-uploading the
 old main solution. An explicit `file: Field should not be empty` validation error
 falls back to the original source; network errors do not trigger this fallback.
-API response parsing and backoff stay in the serialized request
+The same explicit required-file refusal on metadata-only `saveFile` edits falls back
+to the wanted source or the existing resource text. Obsolete-resource reads use strict
+UTF-8 decoding and refuse NULs, so the fallback cannot silently re-encode binary data.
+Other errors stop without replaying the mutation. API response parsing and backoff stay in the serialized request
 queue; network errors on mutations are still not retried automatically.
 Discarded HTTP bodies are cancelled, request timers are cleared after body consumption,
 and queue tails do not retain response values. Offscreen completion disposes its API
@@ -210,6 +229,12 @@ also turns off this option. Upload-only jobs say **execution not checked**, neve
 
 1. Save and compare readable metadata; abort without committing on a mismatch.
 2. Commit the working copy. Polygon package readiness requires a clean revision.
+   A lost/failed commit response is never retried. For an existing target, exactly
+   one new clean revision (including its working-copy revision and write access)
+   permits continuing only with build verification enabled. Verification pins that
+   confirmed revision and still checks every run, descriptor and file. Ambiguous,
+   dirty, inaccessible or changed revisions remain errors. Upload-only jobs stop
+   and report a confirmed commit separately from unverified contents.
 3. Persist a checkpoint, start `buildPackage(full=false, verify=true)`, and pin the new
    package ID/revision. A lost response is resolved from the pre-build package list;
    ambiguous candidates stop instead of guessing or launching a second build.

@@ -17,8 +17,9 @@ export async function verifyFileMetadata({api, id, plan, read, changed = null}) 
     const byName = new Map(actual.map(file => [file.name, file]));
     for (const file of wanted) {
       const saved = byName.get(file.name);
-      if (!saved || (file.sourceType && saved.sourceType !== apiSourceType(file.sourceType)))
-        throw Error(t('formatSourceTypeMismatch', file.name, apiSourceType(file.sourceType) || ''));
+      if (!saved) throw Error(t('formatUploadedFileMissing', file.name));
+      if (file.sourceType && saved.sourceType !== apiSourceType(file.sourceType))
+        throw Error(t('formatSourceTypeMismatch', file.name, apiSourceType(file.sourceType), saved.sourceType || ''));
     }
   }
   const resources = new Map(files.resourceFiles.map(file => [file.name, file]));
