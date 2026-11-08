@@ -254,6 +254,9 @@
   "formatUnsupportedResourceProperties": {
     "message": "Unsupported resource linkage for $1. Only COMPILE/SOLUTION resources can be restored by the API."
   },
+  "formatUnsupportedResourceTypes": {
+    "message": "Unsupported resource language filter for $1: $2. This importer supports one language group (cpp.* or python.*). Compiler-specific and combined filters cannot be preserved."
+  },
   "formatVerifyFiles": {
     "message": "Verifying source and resource settings"
   },

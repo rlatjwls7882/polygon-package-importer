@@ -205,7 +205,7 @@ for(const [supplied,expected] of [
   const e=environment({interactive:true,generated:true,grader:true,extraTags:true,mutate({root}){
     const visit=node=>{if(node.tag==='source')node.attributes.type=supplied;node.children.forEach(visit);};visit(root);
     const resource=root.children.find(n=>n.tag==='files').children.find(n=>n.tag==='resources').children[0];
-    resource.attributes['for-types']=supplied;
+    resource.attributes['for-types']='cpp.*';
   }});
   const original=e.mock.api.problem;
   e.mock.api.problem=(method,id,args={},options)=>{
@@ -215,7 +215,7 @@ for(const [supplied,expected] of [
   };
   assert.equal((await e.run()).verification.state,'verified');
   assert.equal(e.mock.state.solutions.get('main.cpp').sourceType,expected);
-  assert.equal(e.mock.state.fileMetadata.resource.get('grader.cpp').resourceAdvancedProperties.forTypes,expected);
+  assert.equal(e.mock.state.fileMetadata.resource.get('grader.cpp').resourceAdvancedProperties.forTypes,'cpp.*');
   const notices=e.progress.filter(event=>event.message.includes(' → '));
   assert.equal(notices.length,supplied===expected?0:1);
   if(notices.length)assert(notices[0].message.includes(supplied)&&notices[0].message.includes(expected));
@@ -231,12 +231,10 @@ for(const wrong of ['cpp.g++20','cpp.gcc11-64-winlibs-g++20','cpp.g++17'])
     assert(!e.progress.some(event=>event.stage==='verified'));
   });
 
-test('ignored exact grader compiler resolution is caught before committing',async()=>{
-  const e=environment({grader:true,mutate({root}){
-    root.children.find(n=>n.tag==='files').children.find(n=>n.tag==='resources').children[0].attributes['for-types']='cpp.g++20';
-  }});
+test('ignored grader language group is caught before committing',async()=>{
+  const e=environment({grader:true});
   const original=e.mock.api.problem;
   e.mock.api.problem=(method,id,args={},options)=>original(method,id,
-    method==='saveFile'&&args.type==='resource'&&args.forTypes?{...args,forTypes:'cpp.g++20'}:args,options);
+    method==='saveFile'&&args.type==='resource'&&args.forTypes?{...args,forTypes:'python.*'}:args,options);
   await assert.rejects(()=>e.run());assert.equal(e.mock.state.commits,0);
 });

@@ -93,13 +93,16 @@ At the API boundary only, generic `cpp.g++20` maps to Polygon's
 `cpp.gcc13-64-winlibs-g++20`, and `cpp.g++23` maps to
 `cpp.gcc14-64-msys2-g++23`. Each resolution is reported once in the import log;
 the C++ standard is not downgraded. The explicit IDs are used for source files,
-solutions, exact grader `forTypes`, metadata read-back and built-descriptor checks.
+solutions, metadata read-back and built-descriptor checks.
 Concrete native compiler IDs remain exact; unknown IDs and uncertain write failures
 are not retried using a default or another compiler. The ZIP itself is never rewritten.
 Compiler references: [rbx Polygon C++20 mapping](https://rbx.rsalesc.dev/setters/cheatsheet/)
 and [Polygon C++23 identifier](https://codeforces.com/blog/entry/133919).
-Resource `forTypes`/`stages`/`assets` linkage supports the API's COMPILE/SOLUTION subset;
-other configurations are refused before uploading. Validator self-tests retain group
+Resource `forTypes`/`stages`/`assets` linkage supports COMPILE/SOLUTION with one
+language group, `cpp.*` or `python.*`. Group selectors are independent of compiler
+IDs and are never passed through source-compiler alias resolution. Exact compiler
+filters, combined groups and other configurations fail before API queries or writes;
+their applicability is never broadened. Validator self-tests retain group
 and testset context. Changed/obsolete judge tests are deleted before replacement.
 Public preview bodies, compiler metadata, and judge self-tests are read back before commit.
 Missing uploaded files are reported separately from compiler differences; a compiler

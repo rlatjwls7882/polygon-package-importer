@@ -254,6 +254,9 @@
   "formatUnsupportedResourceProperties": {
     "message": "$1의 리소스 연결 설정을 지원하지 않습니다. API로는 COMPILE/SOLUTION 연결만 복원할 수 있습니다."
   },
+  "formatUnsupportedResourceTypes": {
+    "message": "$1의 리소스 적용 조건을 지원하지 않습니다: $2. 현재 단일 언어 그룹(cpp.* 또는 python.*)만 지원하며, 컴파일러별 조건이나 여러 그룹 조합은 보존할 수 없습니다."
+  },
   "formatVerifyFiles": {
     "message": "소스·리소스 설정 검증"
   },
